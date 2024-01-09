@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.contrib.auth.hashers import check_password
 from django.http import JsonResponse
 from .models import CustomUser  # Import your CustomUser model here
@@ -38,7 +38,7 @@ def login(request):
        
         try:
             user = CustomUser.objects.get(username=username, project_code__code=project_code) 
-            print("**", user)
+            request.session['user_id'] = user.id
         except CustomUser.DoesNotExist:
             return JsonResponse({'status': 'error', 'message': 'Invalid username, password, or project code.'})
 
@@ -64,7 +64,8 @@ def forgot_password(request):
         try:
             user = CustomUser.objects.get(username=username, project_code__code=project_code) 
             if user:
-                return render(request, 'pages/onboard/recover-password.html')
+                request.session['pass_reset_user_id'] = user.id
+                return redirect('recover-password')
         except CustomUser.DoesNotExist:
             return JsonResponse({'status': 'error', 'message': 'Invalid username, password, or project code.'})
         
@@ -74,7 +75,24 @@ def forgot_password(request):
 def recover_password(request):
     """
     
-    """
+    """  
+    if request.method == 'POST':       
+        password = request.POST.get('password')
+        confirm_password = request.POST.get('confirm_password')
+        if not all([password, confirm_password]):
+            return JsonResponse({'status': 'error', 'message': 'Please insert all the required fields'}) 
+        try:
+            if confirm_password == password:                   
+                user_id = request.session.get('pass_reset_user_id')
+                print("matched",user_id)
+                user=CustomUser.objects.filter(id=user_id).first()
+                print(user)
+                user.set_password(confirm_password)  # This will hash the password
+                user.save()
+                return render(request, 'pages/onboard/login.html')
+            return JsonResponse({'status': 'error', 'message': "Password Does't Match'"})
+        except CustomUser.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Invalid username, password, or project code.'})
     return render(request, 'pages/onboard/recover-password.html')
 
 
@@ -83,10 +101,6 @@ def index(request):
     """
   
     """
-    if request.method == 'POST':
-        username = request.POST.get('password')
-        project_code = request.POST.get('confirm_password')
-        
     return render(request, 'index.html')
 
 

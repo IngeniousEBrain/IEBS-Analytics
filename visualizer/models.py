@@ -8,7 +8,7 @@ class CustomUserManager(BaseUserManager):
             raise ValueError('The Username field must be set')
 
         user = self.model(username=username, project_code=project_code, **extra_fields)
-        user.set_password(password)  # Hash the password
+        user.set_password(password) 
         user.save(using=self._db)
         return user
 
