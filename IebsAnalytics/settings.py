@@ -71,6 +71,12 @@ TEMPLATES = [
 WSGI_APPLICATION = 'IebsAnalytics.wsgi.application'
 
 
+PASSWORD_HASHERS = [
+    'django.contrib.auth.hashers.Argon2PasswordHasher',  # Use Argon2 hasher
+    'django.contrib.auth.hashers.PBKDF2PasswordHasher',  
+]
+
+ 
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
