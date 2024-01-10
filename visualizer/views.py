@@ -87,7 +87,7 @@ def recover_password(request):
                 print("matched",user_id)
                 user=CustomUser.objects.filter(id=user_id).first()
                 print(user)
-                user.set_password(confirm_password)  # This will hash the password
+                user.set_password(confirm_password)
                 user.save()
                 return render(request, 'pages/onboard/login.html')
             return JsonResponse({'status': 'error', 'message': "Password Does't Match'"})
@@ -122,15 +122,15 @@ def techcharts(request):
     """
     return render(request, 'tech_charts.html')
 
-def chart_data(request):
-    """
+# def chart_data(request):
+#     """
 
-    """
-    data = {
-        'labels': ['January', 'February', 'March', 'April', 'May'],
-        'values': [40, 20, 30, 80, 50]
-    }
-    return JsonResponse(data)
+#     """
+#     data = {
+#         'labels': ['January', 'February', 'March', 'April', 'May'],
+#         'values': [40, 20, 30, 80, 50]
+#     }
+#     return JsonResponse(data)
 
 
 def chart_view(request):
