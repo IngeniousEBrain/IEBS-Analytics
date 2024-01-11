@@ -1,11 +1,12 @@
 from django.contrib import admin
-from django.contrib.auth.hashers import make_password
-from .models import CustomUser, Project
+from django.contrib.auth.models import Group, User
+from .models import CustomUser, Project, UserProjectAssociation
+
 
 @admin.register(CustomUser)
 class CustomUserAdmin(admin.ModelAdmin):
-    list_display = ('username', 'project_code', 'roles', 'created_date', 'updated_date')
-    search_fields = ('username', 'project_code', 'roles')
+    list_display = ('username', 'roles', 'created_date', 'updated_date')
+    search_fields = ('username', 'roles')
     list_filter = ('roles',)
 
     def save_model(self, request, obj, form, change):
@@ -14,7 +15,19 @@ class CustomUserAdmin(admin.ModelAdmin):
             obj.set_password(form.cleaned_data['password'])
         obj.save()
 
+
 @admin.register(Project)
 class ProjectAdmin(admin.ModelAdmin):
     list_display = ('code', 'name', 'created_date', 'updated_date')
     search_fields = ('code', 'name')
+
+
+@admin.register(UserProjectAssociation)
+class UserProjectAdmin(admin.ModelAdmin):
+    list_display = ('user',)
+    list_filter = ('user',)
+    search_fields = ('user',)
+
+
+admin.site.unregister(Group)
+admin.site.unregister(User)

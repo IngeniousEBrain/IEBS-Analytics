@@ -40,14 +40,14 @@
             </div>
           </div>
         </div>
-        <div class="input-group mb-3">
-          <input type="number" min="0" class="form-control" id="project_code" placeholder="Project code*" required>
+        <!--<div class="input-group mb-3">
+          <input type="email" min="0" class="form-control" id="email" placeholder="email*" required>
           <div class="input-group-append">
             <div class="input-group-text">
               <span class="fa fa-ellipsis-h"></span>
             </div>
           </div>
-        </div>
+        </div> -->
         <div class="input-group mb-3">
           <input type="password" class="form-control" id="password" placeholder="Password*" required>
           <div class="input-group-append">
@@ -108,16 +108,14 @@ function getCookie(name) {
 $('#login-btn').click(function() {
   
   var username = $('#username').val();
-  var password = $('#password').val();
-  var project_code = $('#project_code').val();
+  var password = $('#password').val();  
   
   $.ajax({
       type: 'POST',
       url: '{% url 'login' %}',
       data: {
           username: username,
-          password: password,
-          project_code: project_code
+          password: password          
       },
       headers: {
           'X-CSRFToken': getCookie('csrftoken') // Include CSRF token in headers

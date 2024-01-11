@@ -8,7 +8,7 @@ __pycache__/
 */migrations/*.pyc
 db.sqlite3
 
-
+*/migrations/
 # Local development settings
 local_settings.py
 
