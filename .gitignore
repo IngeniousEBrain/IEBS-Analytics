@@ -3,11 +3,17 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Ignore Django migration files
+*/migrations/*.py
+*/migrations/*.pyc
+db.sqlite3
+
+*/migrations/
 # Local development settings
 local_settings.py
 
 # Database
-db.sqlite3
+../db.sqlite3
 
 # Static files
 static/
@@ -27,3 +33,15 @@ env/
 # Others
 *.log
 *.swp
+
+*.pyc
+__pycache__/
+*.pyo
+*.pyc
+__pycache__/
+*.pyo
+*.pyc
+*.pyc
+*.db
+*.sqlite3
+*.log
