@@ -22,8 +22,19 @@ class CustomUserManager(BaseUserManager):
 
 
 class Project(models.Model):
+    objects = None
+    COMPLETED = 'Completed'
+    IN_PROGRESS = 'In Progress'
+
+    STATUS_CHOICES = [
+        (COMPLETED, 'Completed'),
+        (IN_PROGRESS, 'In Progress')
+    ]
+
     code = models.CharField(max_length=100, unique=True)
     name = models.CharField(max_length=255)
+    description = models.TextField()
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=IN_PROGRESS)
     created_date = models.DateTimeField(default=timezone.now)
     updated_date = models.DateTimeField(auto_now=True)
 
@@ -56,7 +67,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         verbose_name='groups',
         blank=True,
         help_text='The groups this user belongs to. A user will get all permissions granted to each of their groups.',
-        related_name='customuser_set',
+        related_name='custom_user_set',
         related_query_name='user'
     )
     roles = models.CharField(max_length=20, choices=ROLE_CHOICES, default=CLIENT)
@@ -65,7 +76,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         verbose_name='user permissions',
         blank=True,
         help_text='Specific permissions for this user.',
-        related_name='customuser_set',
+        related_name='custom_user_set',
         related_query_name='user'
     )
     objects = CustomUserManager()

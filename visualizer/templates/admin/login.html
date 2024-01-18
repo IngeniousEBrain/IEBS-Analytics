@@ -1,0 +1,21 @@
+{% load url from future %}
+<html>
+    <head>
+        <title>Please log in</title>
+    </head>
+    <body>
+        <div id="loginform">
+            <form method="post" action="{% url 'id.views.auth' %}">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ next }}" />
+                {{ form.username.label_tag }}<br/>
+                {{ form.username }}<br/>
+                {{ form.password.label_tag }}<br/>
+                {{ form.password }}<br/>
+                {{ form.token.label_tag }}<br/>
+                {{ form.token }}<br/>
+                <input type="submit" value="Log In" />
+           </form>
+        </div>
+    </body>
+</html>

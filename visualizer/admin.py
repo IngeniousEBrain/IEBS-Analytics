@@ -18,15 +18,16 @@ class CustomUserAdmin(admin.ModelAdmin):
 
 @admin.register(Project)
 class ProjectAdmin(admin.ModelAdmin):
-    list_display = ('code', 'name', 'created_date', 'updated_date')
+    list_display = ('code', 'name', 'status', 'created_date', 'updated_date')
+    list_filter = ('status',)
     search_fields = ('code', 'name')
 
 
 @admin.register(UserProjectAssociation)
 class UserProjectAdmin(admin.ModelAdmin):
     list_display = ('user',)
-    list_filter = ('user',)
-    search_fields = ('user',)
+    list_filter = ('user', 'projects')
+    search_fields = ('user', 'projects')
 
 
 admin.site.unregister(Group)

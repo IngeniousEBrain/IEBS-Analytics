@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block head %}
+{% endblock %}
+  <!-- Content Wrapper. Contains page content -->
+  {% block content %}
+    <section class="content-header">
+      <div class="container-fluid">
+        <div class="row mb-2">
+          <div class="col-sm-6">
+            <h1>Product Listing</h1>
+          </div>          
+        </div>
+      </div>
+    </section>
+    <!-- Main content -->
+    <section class="content">
+      <div class="container-fluid">
+        <div class="row">
+          <div class="col-12">            
+            <!-- /.card -->
+            <div class="card">
+              <!-- /.card-header -->
+              <div class="card-body">
+                <table id="example1" class="table table-bordered table-striped">
+                  <thead>
+                  <tr>
+                    <th>Product Code</th>
+                    <th>Name</th>                   
+                    <th>Description</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                  </tr>
+                  </thead>
+                  <tbody>
+                    {% for project in projects_data %}
+                    <tr>
+                        <td>{{project.code}}</td>
+                        <td>{{project.name}}</td>
+                        <td>{{project.description}}</td>
+                        <td>{{project.status}}</td>
+                        <td>
+                            <i class="fas fa-edit" style="color: rgb(87, 151, 87);"></i>
+                            <i class="fa fa-eye" aria-hidden="true" style="color: rgb(27, 124, 180);"></i>
+                            <i class="fa fa-trash" aria-hidden="true" style="color: rgb(219, 77, 77);"></i>                            
+                          </td>
+                    </tr>
+                      {% endfor %}
+                  </tbody>
+                  <tfoot>
+                  <tr>
+                    <th>Product Code</th>
+                    <th>Name</th>                   
+                    <th>Description</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                  </tr>
+                  </tfoot>
+                </table>
+              </div>
+              <!-- /.card-body -->
+            </div>
+            <!-- /.card -->
+          </div>
+          <!-- /.col -->
+        </div>
+        <!-- /.row -->
+      </div>
+      <!-- /.container-fluid -->
+    </section>
+    <!-- /.content -->
+{% endblock %}
+  <!-- Control Sidebar -->
+  <aside class="control-sidebar control-sidebar-dark">
+    <!-- Control sidebar content goes here -->
+  </aside>
+
+
+

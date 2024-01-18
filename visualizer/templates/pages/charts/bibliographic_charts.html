@@ -1,0 +1,845 @@
+{% load static %}
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>IEBS Analytics | Dashboard</title>
+    <!-- Tell the browser to be responsive to screen width -->
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="{% static 'plugins/fontawesome-free/css/all.min.css' %}">
+    <!-- Ionicons -->
+    <link rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+    <!-- Tempusdominus Bbootstrap 4 -->
+    <link rel="stylesheet"
+          href="{% static 'plugins/tempusdominus-bootstrap-4/css/tempusdominus-bootstrap-4.min.css' %}">
+    <!-- iCheck -->
+    <link rel="stylesheet" href="{% static 'plugins/icheck-bootstrap/icheck-bootstrap.min.css' %}">
+    <!-- JQVMap -->
+    <link rel="stylesheet" href="{% static 'plugins/jqvmap/jqvmap.min.css' %}">
+    <!-- Theme style -->
+    <link rel="stylesheet" href="{% static 'dist/css/adminlte.min.css' %}">
+    <!-- overlayScrollbars -->
+    <link rel="stylesheet" href="{% static 'plugins/overlayScrollbars/css/OverlayScrollbars.min.css' %}">
+    <!-- Daterange picker -->
+    <link rel="stylesheet" href="{% static 'plugins/daterangepicker/daterangepicker.css' %}">
+    <!-- summernote -->
+    <link rel="stylesheet" href="{% static 'plugins/summernote/summernote-bs4.css' %}">
+    <!-- Google Font: Source Sans Pro -->
+    <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700" rel="stylesheet">
+</head>
+
+<body class="hold-transition sidebar-mini layout-fixed">
+<div class="wrapper">
+    <!-- Main Sidebar Container -->
+    <aside class="main-sidebar sidebar-dark-primary elevation-4">
+        <!-- Brand Logo -->
+        <a href="#" class="brand-link">
+            <img src="{% static 'dist/img/AdminLTELogo.png' %}" alt="AdminLTE Logo"
+                 class="brand-image img-circle elevation-3" style="opacity: .8">
+            <span class="brand-text font-weight-light">IEBS Analytics</span>
+        </a>
+
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <!-- Sidebar user panel (optional) -->
+            <div class="user-panel mt-3 pb-3 mb-3 d-flex">
+                <!--<div class="image">
+                  <img src="{% static 'dist/img/user2-160x160.jpg' %}" class="img-circle elevation-2" alt="User Image">
+                </div> -->
+                <div class="info">
+                    <a href="#" class="d-block">{{user.username|title}}</a>
+                </div>
+            </div>
+
+            <!-- Sidebar Menu -->
+            <nav class="mt-2">
+                <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu"
+                    data-accordion="false">
+                    <!-- Add icons to the links using the .nav-icon class
+                       with font-awesome or any other icon font library -->
+                    <li class="nav-item has-treeview menu-open">
+                        <a href="{% url 'index' %}" class="nav-link ">
+                            <i class="nav-icon fas fa-tachometer-alt"></i>
+                            <p>
+                                Dashboard
+                            </p>
+                        </a>
+
+                    </li>
+
+                    <li class="nav-item has-treeview">
+                        <a href="#" class="nav-link active">
+                            <i class="nav-icon fas fa-chart-pie"></i>
+                            <p>
+                                Visulaiation Analitics
+                                <i class="right fas fa-angle-left"></i>
+                            </p>
+                        </a>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item">
+                                <a href="{% url 'bibliographic_charts' %}" class="nav-link active">
+                                    <i class="far fa-circle nav-icon"></i>
+                                    <p>Bibliographic Charts</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="pages/charts/flot.html" class="nav-link">
+                                    <i class="far fa-circle nav-icon"></i>
+                                    <p>Technical Charts</p>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+            </nav>
+            <!-- /.sidebar-menu -->
+        </div>
+        <!-- /.sidebar -->
+    </aside>
+    <!-- Content Wrapper. Contains page content -->
+    <div class="content-wrapper">
+        <div class="content-header">
+            <div class="container-fluid">
+                <div class="row mb-2">
+                    <div class="col-sm-6">
+                        <h1 class="m-0 text-dark">Dashboard</h1>
+                    </div><!-- /.col -->
+                    <div class="col-sm-6">
+                        <ol class="breadcrumb float-sm-right">
+                            <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
+                        </ol>
+                    </div><!-- /.col -->
+                </div><!-- /.row -->
+            </div><!-- /.container-fluid -->
+        </div>
+        <!-- /.content-header -->
+        <!-- Main content -->
+        <section class="content">
+            <div class="container-fluid">
+                <div class="row align-items-center">
+                    <div class="col-lg-8">
+                        <div class="input-group mb-3">
+                            <div class="input-group-prepend">
+                                <label class="input-group-text" for="chartType">
+                                    <i class="fas fa-chart-pie"></i>
+                                </label>
+                            </div>
+                            <select class="form-control" id="chartType" onchange="changeChartType()">
+                                <option value="area">Area Chart</option>
+                                <option value="line">Line Chart</option>
+                                <option value="donut">Donut Chart</option>
+                                <option value="pie">Pie Chart</option>
+                                <option value="bar">Bar Chart</option>
+                                <option value="stackedBar">Stacked Bar Chart</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-lg-4 text-lg-right">
+                        <form method="post" action="bibliographic_charts" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            <label class="btn btn-primary btn-round m-2">
+                                <i class="fas fa-file-upload"></i>
+                                Upload File
+                                <input type="file" accept=".xlsx,.xls" style="display: none;" name="patient_data">
+                            </label>
+                            <button type="submit" class="btn btn-dark btn-round ml-2">
+                                <i class="fas fa-chart-line"></i>Go
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                <!-- /.row -->
+                <!-- Main row -->
+                <div class="row">
+                    <section class="content">
+                        <div class="container-fluid">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <!-- AREA CHART -->
+                                    <div class="card card-info">
+                                        <div class="card-header">
+                                            <h3 class="card-title">Publication Trend</h3>
+                                            <div class="card-tools">
+                                                <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                                    <i class="fas fa-minus"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-tool" data-card-widget="remove"><i
+                                                        class="fas fa-times"></i></button>
+                                            </div>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="chart">
+                                                <canvas id="areaChart"
+                                                        style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
+                                            </div>
+                                        </div>
+                                        <!-- /.card-body -->
+                                    </div>
+                                    <!-- /.card -->
+
+                                    <!-- DONUT CHART -->
+                                    <div class="card card-info">
+                                        <div class="card-header">
+                                            <h3 class="card-title">Top Citing</h3>
+
+                                            <div class="card-tools">
+                                                <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                                    <i
+                                                            class="fas fa-minus"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-tool" data-card-widget="remove"><i
+                                                        class="fas fa-times"></i></button>
+                                            </div>
+                                        </div>
+                                        <div class="card-body">
+                                            <canvas id="donutChart"
+                                                    style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
+                                        </div>
+                                    </div>
+                                    <!-- /.card -->
+
+                                    <!-- PIE CHART -->
+                                    <div class="card card-info">
+                                        <div class="card-header">
+                                            <h3 class="card-title">Legal Status Analysis</h3>
+                                            <div class="card-tools">
+                                                <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                                    <i class="fas fa-minus"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-tool" data-card-widget="remove"><i
+                                                        class="fas fa-times"></i></button>
+                                            </div>
+                                        </div>
+                                        <div class="card-body">
+                                            <canvas id="pieChart"
+                                                    style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
+                                        </div>
+                                        <!-- /.card-body -->
+                                    </div>
+                                    <!-- /.card -->
+                                </div>
+                                <!-- /.col (LEFT) -->
+                                <div class="col-md-6">
+                                    <!-- LINE CHART -->
+                                    <div class="card card-info">
+                                        <div class="card-header">
+                                            <h3 class="card-title">Top Cited</h3>
+
+                                            <div class="card-tools">
+                                                <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                                    <i
+                                                            class="fas fa-minus"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-tool" data-card-widget="remove"><i
+                                                        class="fas fa-times"></i></button>
+                                            </div>
+                                        </div>
+                                        <div class="card-body">
+                                            <canvas id="donut_cited_Chart"
+                                                    style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
+                                        </div>
+                                    </div>
+                                    <!-- /.card -->
+
+                                    <!-- BAR CHART -->
+                                    <div class="card card-info">
+                                        <div class="card-header">
+                                            <h3 class="card-title">Top Assignee</h3>
+
+                                            <div class="card-tools">
+                                                <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                                    <i
+                                                            class="fas fa-minus"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-tool" data-card-widget="remove"><i
+                                                        class="fas fa-times"></i></button>
+                                            </div>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="chart">
+                                                <canvas id="barChart"
+                                                        style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
+                                            </div>
+                                        </div>
+                                        <!-- /.card-body -->
+                                    </div>
+                                    <!-- /.card -->
+
+                                    <!-- STACKED BAR CHART -->
+                                    <div class="card card-info">
+                                        <div class="card-header">
+                                            <h3 class="card-title">Recent Active Assignee</h3>
+
+                                            <div class="card-tools">
+                                                <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                                    <i class="fas fa-minus"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-tool" data-card-widget="remove"><i
+                                                        class="fas fa-times"></i></button>
+                                            </div>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="chart">
+                                                <canvas id="stackedBarChart"
+                                                        style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
+                                            </div>
+                                        </div>
+                                        <!-- /.card-body -->
+                                    </div>
+                                    <!-- /.card -->
+                                    <!-- LINE CHART -->
+                                    <div class="card card-info">
+                                        <div class="card-header">
+                                            <h3 class="card-title">Top Innovative Jurisdiction</h3>
+
+                                            <div class="card-tools">
+                                                <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                                    <i
+                                                            class="fas fa-minus"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-tool" data-card-widget="remove"><i
+                                                        class="fas fa-times"></i></button>
+                                            </div>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="chart">
+                                                <canvas id="lineChart"
+                                                        style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
+                                            </div>
+                                        </div>
+                                        <!-- /.card-body -->
+                                    </div>
+                                    <!-- /.card -->
+                                </div>
+                                <!-- /.col (RIGHT) -->
+                            </div>
+                            <!-- /.row -->
+
+                            <h5>Expected Expiry Date</h5>
+                            <canvas id="myChart" style="width:100%;max-width:100%;height:15%;"></canvas>
+
+                            <h5>TOP IPC</h5>
+                            <canvas id="horizontal-stacker-bar-chart"
+                                    style="width:100%;max-width:100%;height:15%;"></canvas>
+
+                            <h5>TOP CPC</h5>
+                            <canvas id="horizontal-stacker-bar-chart_cpc"
+                                    style="width:100%;max-width:100%;height:15%;"></canvas>
+
+                        </div><!-- /.container-fluid -->
+                    </section>
+                </div>
+                <!-- /.row (main row) -->
+            </div><!-- /.container-fluid -->
+        </section>
+        <!-- /.content -->
+    </div>
+    <!-- /.content-wrapper -->
+    <footer class="main-footer">
+        <strong>Copyright &copy; 2024-2025 <a href="https://www.iebrain.com/">IEBS</a>.</strong>
+        All rights reserved.
+        <div class="float-right d-none d-sm-inline-block">
+            <b>Version</b> 1.0.0
+        </div>
+    </footer>
+    <!-- Control Sidebar -->
+    <aside class="control-sidebar control-sidebar-dark">
+        <!-- Control sidebar content goes here -->
+    </aside>
+    <!-- /.control-sidebar -->
+</div>
+<!-- ./wrapper -->
+
+<!-- jQuery -->
+<script src="{% static 'plugins/jquery/jquery.min.js' %}"></script>
+<!-- Bootstrap 4 -->
+<script src="{% static 'plugins/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+<!-- ChartJS -->
+<script src="{% static 'plugins/chart.js/Chart.min.js' %}"></script>
+<!-- AdminLTE App -->
+<script src="{% static 'dist/js/adminlte.min.js' %}"></script>
+<!-- AdminLTE for demo purposes -->
+<script src="{% static 'dist/js/demo.js' %}"></script>
+<!-- page script -->
+<script>
+    // top cpc
+       var data_cpc =  {'A61K': 8286, 'C07K': 3557, 'C12N': 1641, 'A61P': 6651, 'C12Y': 110, 'B01D': 48, 'B01J': 35, 'Y02P': 27, 'C12P': 112, 'Y02A': 63, 'G01N': 270, 'G06K': 1, 'G06F': 3, 'A23J': 5, 'C12Q': 67, 'C40B': 10, 'Y10T': 24, 'Y10S': 23, 'C07D': 867, 'C08G': 88, 'G06Q': 6, 'A61J': 41, 'C12M': 22, 'nan': 2, 'A01K': 71, 'C08B': 18, 'C08H': 1, 'C07B': 17, 'C07C': 196, 'C09D': 2, 'C08F': 11, 'C08L': 37, 'C12R': 20, 'A23L': 52, 'A23V': 19, 'B82Y': 30, 'A61M': 864, 'C30B': 5, 'G16B': 13, 'C07H': 27, 'C07F': 21, 'C11D': 2, 'A61Q': 21, 'A01N': 9, 'B65D': 27, 'A61F': 26, 'F25B': 1, 'F25C': 1, 'F25D': 1, 'F26B': 2, 'A61L': 163, 'A41D': 2, 'B08B': 2, 'B63B': 2, 'B64D': 1, 'F05C': 1, 'Y02T': 3, 'F16F': 1, 'F16K': 1, 'A23K': 12, 'A23P': 7, 'B05D': 4, 'C08J': 24, 'A61B': 68, 'G09B': 6, 'A23G': 5, 'G01D': 2, 'G16H': 11, 'B65B': 15, 'A62C': 2, 'C08K': 3, 'C09B': 8, 'G02F': 4, 'C07J': 12, 'C25D': 4, 'F04C': 1, 'H01J': 3, 'B29K': 8, 'B29L': 5, 'B29C': 10, 'A23C': 3, 'A21D': 1, 'B05B': 9, 'C23C': 15, 'A63B': 1, 'C03C': 32, 'C01P': 5, 'C01B': 3, 'A61N': 10, 'A01H': 4, 'H05K': 1, 'G01R': 6, 'B01F': 41, 'B01L': 13, 'B81B': 1, 'B81C': 2, 'B33Y': 5, 'B23K': 13, 'G16C': 3, 'E05D': 3, 'E05Y': 1, 'E06B': 8, 'Y02E': 2, 'G08B': 1, 'F16J': 2, 'B30B': 2, 'B29B': 4, 'A23Y': 2, 'G06N': 3, 'H03M': 1, 'G06T': 2, 'H04B': 2, 'C03B': 3, 'C12C': 1, 'G01B': 2, 'G01F': 3}
+
+     // Extract labels and generate dynamic colors
+     const labels_cpc = Object.keys(data_cpc);
+     const colors_cpc = generateRandomColors(labels_cpc.length);
+
+     // Create datasets array for Chart.js
+     const chartDatasets_cpc = [{
+       label: 'Count',
+       backgroundColor: colors_cpc,
+       data: Object.values(data_cpc),
+     }];
+
+     var ctx = document.getElementById("horizontal-stacker-bar-chart_cpc").getContext('2d');
+     var myChart = new Chart(ctx, {
+       type: 'bar',
+       data: {
+         labels: labels_cpc,
+         datasets: chartDatasets_cpc,
+       },
+       options: {
+         tooltips: {
+           displayColors: true,
+           callbacks: {
+             mode: 'x',
+           },
+         },
+         scales: {
+           x: {
+             stacked: true,
+           },
+           y: {
+             stacked: true,
+           },
+         },
+         indexAxis: 'y',
+         responsive: true,
+       },
+     });
+    // top cpc
+
+    // top ipc
+      var data =  {'C12N': 828, 'A61K': 5704, 'C07K': 2064, 'G01N': 135, 'B01D': 24, 'B01J': 23, 'C12P': 150, 'G06F': 3, 'G06K': 1, 'A61P': 1685, 'A23J': 2, 'C07H': 50, 'C12Q': 50, 'A01H': 8, 'C40B': 16, 'C12R': 31, 'C07D': 630, 'C08G': 42, 'A61J': 38, 'C08H': 2, 'C07F': 10, 'C08B': 9, 'C07C': 147, 'C08F': 16, 'C08L': 18, 'A01K': 10, 'A61M': 260, 'B82Y': 16, 'C01B': 4, 'A61F': 27, 'A01N': 25, 'A61L': 53, 'C11D': 2, 'G16B': 8, 'A61Q': 13, 'B65D': 17, 'C01C': 1, 'C12M': 12, 'F25B': 1, 'F25C': 1, 'F26B': 2, 'A61B': 18, 'B63B': 2, 'A41D': 1, 'B08B': 2, 'B64D': 1, 'B23K': 2, 'G03G': 1, 'B05D': 6, 'F16F': 1, 'F16K': 1, 'A23K': 7, 'A23L': 24, 'A23P': 6, 'C08J': 9, 'B29C': 4, 'G09B': 2, 'C07J': 8, 'G16H': 4, 'B65B': 6, 'G06Q': 2, 'B01F': 5, 'C25D': 4, 'H01J': 2, 'B32B': 1, 'C07B': 1, 'B05B': 8, 'C23C': 6, 'C03C': 24, 'C30B': 2, 'A61N': 3, 'C09B': 1, 'B01L': 2, 'B81C': 1, 'B33Y': 2, 'G01R': 3, 'A21D': 1, 'A23C': 1, 'A23F': 1, 'B30B': 1, 'C03B': 3, 'B23P': 1, 'B25J': 1, 'B81B': 2, 'G01D': 1, 'G01F': 1};
+
+     // Extract labels and generate dynamic colors
+     const labels = Object.keys(data);
+     const colors = generateRandomColors(labels.length);
+     // Create datasets array for Chart.js
+     const chartDatasets = [{
+       label: 'Count',
+       backgroundColor: colors,
+       data: Object.values(data),
+     }];
+
+     var ctx = document.getElementById("horizontal-stacker-bar-chart").getContext('2d');
+     var myChart = new Chart(ctx, {
+       type: 'bar',
+       data: {
+         labels: labels,
+         datasets: chartDatasets,
+       },
+       options: {
+         tooltips: {
+           displayColors: true,
+           callbacks: {
+             mode: 'x',
+           },
+         },
+         scales: {
+           x: {
+             stacked: true,
+           },
+           y: {
+             stacked: true,
+           },
+         },
+         indexAxis: 'y',
+         responsive: true,
+       },
+     });
+    // top ipc
+     // Function to generate random colors
+     function generateRandomColors(count) {
+       const randomColors = [];
+       for (let i = 0; i < count; i++) {
+         randomColors.push(`rgba(${Math.floor(Math.random() * 256)}, ${Math.floor(Math.random() * 256)}, ${Math.floor(Math.random() * 256)}, 0.8)`);
+       }
+       return randomColors;
+     }
+
+     var year_wise_exp_date = {{ year_wise_exp_date | safe }};
+
+     // Extract xValues and yValues from the JavaScript object
+     const xValues = Object.keys(year_wise_exp_date).map(Number);
+     const yValues = Object.values(year_wise_exp_date);
+
+     new Chart("myChart", {
+       type: "line",
+       data: {
+         labels: xValues,
+         datasets: [{
+           fill: false,
+           lineTension: 0,
+           backgroundColor: "rgba(0,0,255,1.0)",
+           borderColor: "rgba(0,0,255,0.1)",
+           data: yValues
+         }]
+       },
+       options: {
+         legend: {display: false},
+         scales: {
+           yAxes: [{ticks: {min: Math.min(...yValues), max: Math.max(...yValues) + 1}}],
+         }
+       }
+     });
+   $(function () {
+
+   var areaChartCanvas = $('#areaChart').get(0).getContext('2d');
+   var year_wise_count = {{ year_wise_count | safe }};
+   // Extracting labels and data from the year_wise_count dictionary
+   var labels = Object.keys(year_wise_count);
+   var data = Object.values(year_wise_count);
+   var areaChartData = {
+       labels: labels,
+       datasets: [
+           {
+               label: 'Year-wise Count',
+               backgroundColor: 'rgba(60,141,188,0.9)',
+               borderColor: 'rgba(60,141,188,0.8)',
+               pointRadius: false,
+               pointColor: '#3b8bba',
+               pointStrokeColor: 'rgba(60,141,188,1)',
+               pointHighlightFill: '#fff',
+               pointHighlightStroke: 'rgba(60,141,188,1)',
+               data: data
+           }
+       ]
+   };
+
+   var areaChartOptions = {
+       maintainAspectRatio: false,
+       responsive: true,
+       legend: {
+           display: false
+       },
+       scales: {
+           xAxes: [{
+               gridLines: {
+                   display: false,
+               }
+           }],
+           yAxes: [{
+               gridLines: {
+                   display: false,
+               }
+           }]
+       }
+   };
+
+   var areaChart = new Chart(areaChartCanvas, {
+       type: 'line',
+       data: areaChartData,
+       options: areaChartOptions
+   });
+
+   //-------------
+   //- LINE CHART -
+   //--------------
+     var country_code_counts = {'US': 1436, 'WO': 541, 'EP': 221};
+     var lineChartCanvas = $('#lineChart').get(0).getContext('2d');
+     var lineChartOptions = {
+       responsive: true,
+       maintainAspectRatio: false,
+       tooltips: {
+         mode: 'index',
+         intersect: false,
+       },
+       scales: {
+         x: {
+           display: true,
+           scaleLabel: {
+             display: true,
+             labelString: 'Country Code',
+           },
+         },
+         y: {
+           display: true,
+           scaleLabel: {
+             display: true,
+             labelString: 'Top Innovative Jurisdiction',
+           },
+         },
+       },
+     };
+
+     var lineChartData = {
+       labels: Object.keys(country_code_counts),
+       datasets: [{
+         label: 'Top Innovative Jurisdiction',
+         borderColor: 'rgba(60,141,188,0.9)',
+         pointRadius: false,
+         pointColor: '#3b8bba',
+         pointStrokeColor: 'rgba(60,141,188,1)',
+         pointHighlightFill: '#fff',
+         pointHighlightStroke: 'rgba(60,141,188,1)',
+         data: Object.values(country_code_counts),
+       }],
+     };
+
+     lineChartData.datasets[0].fill = false;
+     lineChartOptions.datasetFill = false;
+
+     var lineChart = new Chart(lineChartCanvas, {
+       type: 'line',
+       data: lineChartData,
+       options: lineChartOptions,
+     });
+   //-------------
+   //- DONUT CITED CHART -
+   //-------------
+   // Get context with jQuery - using jQuery's .get() method.
+   var donutChartCanvas_cited = $('#donut_cited_Chart').get(0).getContext('2d');
+
+   var topCitedPatentsDict_cited = {{ top_cited_patents | safe }};
+
+   // Extract keys and values from top_cited_patents_dict
+   var keys_cited = Object.keys(topCitedPatentsDict_cited);
+   var values_cited = Object.values(topCitedPatentsDict_cited);
+
+   var donutData_cited = {
+     labels: keys_cited,
+     datasets: [
+       {
+         data: values_cited,
+         backgroundColor: ['#f56954', '#00a65a', '#f39c12', '#00c0ef', '#3c8dbc', '#d2d6de', '#ff5733', '#33ff57', '#5733ff', '#ff3366'],
+       }
+     ]
+   };
+
+   var donutOptions_cited = {
+     maintainAspectRatio: false,
+     responsive: true,
+   };
+
+   // Create doughnut chart
+   var donutChart_cited = new Chart(donutChartCanvas_cited, {
+     type: 'doughnut',
+     data: donutData_cited,
+     options: donutOptions_cited
+   });
+
+   donutChartCanvas_cited.canvas.addEventListener('click', function (event) {
+     // Check if a segment is clicked
+     var activeElements = donutChart_cited.getElementsAtEventForMode(event, 'index', { intersect: true });
+
+     if (activeElements.length > 0) {
+       // Get the index of the clicked segment
+       var clickedIndex = activeElements[0].index;
+
+       // Get the click coordinates
+       var clickX = event.clientX;
+       var clickY = event.clientY;
+
+       // Generate the HTML content for the larger table with styling
+       var tableContent = '<table style="background-color: #f9f9f9; color: #000;" border="1"><tr><th>Patent</th><th>Citations</th></tr>';
+       keys_cited.forEach(function (key, index) {
+         tableContent += '<tr><td>' + key + '</td><td>' + values_cited[index] + '</td></tr>';
+       });
+       tableContent += '</table>';
+
+       // Display a popup with the larger table content
+       $('<div></div>').html(tableContent).dialog({
+         title: 'All Patents Details',
+         modal: true,
+         position: { my: 'left top', at: 'right top', of: event, collision: 'fit' },
+         buttons: {
+           Ok: function () {
+             $(this).dialog('close');
+           }
+         }
+       });
+     }
+   });
+
+   //-------------
+   //- DONUT CHART -
+   //-------------
+   // Get context with jQuery - using jQuery's .get() method.
+   var donutChartCanvas = $('#donutChart').get(0).getContext('2d');
+
+   // Assuming top_citing_patents_dict is available in your JavaScript code
+   var topCitingPatentsDict = {{ top_citing_patents | safe }};
+
+   // Extract keys and values from top_citing_patents_dict
+   var keys_citing = Object.keys(topCitingPatentsDict);
+   var values_citing = Object.values(topCitingPatentsDict);
+
+   var donutData_citing = {
+     labels: keys_citing,
+     datasets: [
+       {
+         data: values_citing,
+         backgroundColor: ['#f56954', '#00a65a', '#f39c12', '#00c0ef', '#3c8dbc', '#d2d6de', '#ff5733', '#33ff57', '#5733ff', '#ff3366'],
+       }
+     ]
+   };
+
+   var donutOptions_citing = {
+     maintainAspectRatio: false,
+     responsive: true,
+   };
+
+   // Create doughnut chart
+   var donutChart_citing = new Chart(donutChartCanvas, {
+     type: 'doughnut',
+     data: donutData_citing,
+     options: donutOptions_citing
+   });
+
+   //-------------
+   //- PIE CHART -
+   //-------------
+   // Get context with jQuery - using jQuery's .get() method.
+   var legalStatusCounts = {{ legal_status_counts | safe }};
+   var pieChartCanvas = $('#pieChart').get(0).getContext('2d');
+
+   var pieData = {
+       labels: Object.keys(legalStatusCounts),
+       datasets: [{
+           data: Object.values(legalStatusCounts),
+           backgroundColor: ['#f56954', '#00a65a', '#f39c12', '#00c0ef'],
+       }],
+   };
+
+   var pieOptions = {
+       maintainAspectRatio: false,
+       responsive: true,
+   };
+
+   var pieChart = new Chart(pieChartCanvas, {
+       type: 'pie',
+       data: pieData,
+       options: pieOptions,
+   });
+
+   //-------------
+   //- BAR CHART -
+   //-------------
+
+   var topAssigneesData = {{ top_assignees | safe }};
+   var barChartCanvas = $('#barChart').get(0).getContext('2d');
+   var barChartData = {
+       labels: topAssigneesData.map(function (item) {
+           return item['Assignee - Standardized'];
+       }),
+       datasets: [{
+           label: 'Top Assignees',
+           backgroundColor: 'rgba(60,141,188,0.9)',
+           borderColor: 'rgba(60,141,188,0.8)',
+           borderWidth: 1,
+           data: topAssigneesData.map(function (item) {
+               return item.count;
+           }),
+       }],
+   };
+
+   var stackedBarChartOptions = {
+   responsive: true,
+   maintainAspectRatio: false,
+   scales: {
+       xAxes: [{
+       stacked: true,
+       }],
+       yAxes: [{
+       stacked: true
+       }]
+   }
+   }
+
+   var barChart = new Chart(barChartCanvas, {
+       type: 'bar',
+       data: barChartData,
+       options: stackedBarChartOptions,
+   });
+
+   //---------------------
+   //- STACKED BAR CHART -
+   //---------------------
+   var topAssigneesDataStacked = {{ top_assignees_last_five_years | safe }};
+   var stackedBarChartCanvas = $('#stackedBarChart').get(0).getContext('2d')
+
+   var stackedBarChartData = {
+   labels: topAssigneesDataStacked.map(function (item) {
+       return item['Assignee - Standardized'];
+   }),
+   datasets: [{
+       label: 'Recent Active Assignees',
+       backgroundColor: 'rgba(60,141,188,0.9)',
+       borderColor: 'rgba(60,141,188,0.8)',
+       borderWidth: 1,
+       data: topAssigneesDataStacked.map(function (item) {
+           return item.count;
+       }),
+   }],
+   };
+
+   var stackedBarChartOptions = {
+       responsive: true,
+       maintainAspectRatio: false,
+       scales: {
+           xAxes: [{
+               stacked: true,
+           }],
+           yAxes: [{
+               stacked: true
+           }]
+       }
+   };
+
+   var stackedBarChart = new Chart(stackedBarChartCanvas, {
+       type: 'bar',
+       data: stackedBarChartData,
+       options: stackedBarChartOptions,
+   });
+
+   });
+   function changeChartType() {
+       var selectedChartType = $("#chartType").val()
+       // Hide all chart containers
+
+
+       // Show the selected chart container
+       $("#" + selectedChartType + "Chart").show();
+   }
+
+   // Trigger the function on page load to show the initial chart
+   $(document).ready(function () {
+       changeChartType();
+   });
+</script>
+<!-- jQuery -->
+<script src="{% static 'plugins/jquery/jquery.min.js' %}"></script>
+<!-- jQuery UI 1.11.4 -->
+<script src="{% static 'plugins/jquery-ui/jquery-ui.min.js' %}"></script>
+<!-- Resolve conflict in jQuery UI tooltip with Bootstrap tooltip -->
+<script>
+    $.widget.bridge('uibutton', $.ui.button)
+</script>
+
+<!-- Bootstrap 4 -->
+<script src="{% static 'plugins/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+<!-- ChartJS -->
+<script src="{% static 'plugins/chart.js/Chart.min.js' %}"></script>
+<!-- Sparkline -->
+<script src="{% static 'plugins/sparklines/sparkline.js' %}"></script>
+<!-- JQVMap -->
+<script src="{% static 'plugins/jqvmap/jquery.vmap.min.js' %}"></script>
+<script src="{% static 'plugins/jqvmap/maps/jquery.vmap.usa.js' %}"></script>
+<!-- jQuery Knob Chart -->
+<script src="{% static 'plugins/jquery-knob/jquery.knob.min.js' %}"></script>
+<!-- Tempusdominus Bootstrap 4 -->
+<script src="{% static 'plugins/tempusdominus-bootstrap-4/js/tempusdominus-bootstrap-4.min.js' %}"></script>
+<!-- Summernote -->
+<script src="{% static 'plugins/summernote/summernote-bs4.min.js' %}"></script>
+<!-- overlayScrollbars -->
+<script src="{% static 'plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js' %}"></script>
+<!-- AdminLTE App -->
+<script src="{% static 'dist/js/adminlte.js' %}"></script>
+<!-- AdminLTE dashboard demo (This is only for demo purposes) -->
+<script src="{% static 'dist/js/pages/dashboard.js' %}"></script>
+<!-- AdminLTE for demo purposes -->
+<script src="{% static 'dist/js/demo.js' %}"></script>
+<script
+        src="https://cdn.jsdelivr.net/npm/chart.js@4.0.1/dist/chart.umd.min.js"></script>
+
+</body>
+
+</html>
