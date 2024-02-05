@@ -25,6 +25,7 @@ media/
 venv/
 .venv/
 env/
+.env
 
 # IDE files
 .idea/
