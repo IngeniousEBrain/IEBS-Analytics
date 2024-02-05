@@ -1,18 +1,29 @@
-from django.shortcuts import render, redirect
-from django.contrib.auth.hashers import check_password
-from django.http import JsonResponse
-from .models import CustomUser, Project
-from django.core.exceptions import ObjectDoesNotExist
-from .packages import request
-from django.contrib.sessions.models import Session
-from django.utils import timezone
-import pandas as pd
+"""
+Views for the 'visualizer' app.
+"""
+# Third-party imports
 from datetime import datetime
 from collections import Counter
-
-
-# from django.db.models import Q
-# import json
+import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+import numpy as np
+# Django imports
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.hashers import check_password
+from django.http import JsonResponse
+from django.core.exceptions import ObjectDoesNotExist
+from django.contrib.sessions.models import Session
+from django.utils import timezone
+from django.http import HttpResponse
+from django.http import HttpResponseServerError
+from django.db.models.functions import ExtractYear
+# Local imports
+from .models import CustomUser, Project, PatentData
+from .packages import request
+from django.db.models import Count, F, Sum
+from .tasks import process_excel_data_task
 
 
 def ie_analytics_home(req):
@@ -43,44 +54,57 @@ def login(req):
         username = req.POST.get('username')
         password = req.POST.get('password')
         if not all([username, password]):
-            return JsonResponse({'status': 'error', 'message': 'Please insert all the required fields'})
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Please insert all the required fields'
+            })
         try:
             user = CustomUser.objects.get(username=username, is_superuser=False)
-            req.session['user_id'] = user.id
+            req.session['logged_in_user_id'] = user.id
             req.session['user_name'] = username
         except ObjectDoesNotExist:
-            return JsonResponse({'status': 'error', 'message': 'Invalid username or password'})
-
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Invalid username or password'
+            })
         if check_password(password, user.password):
-            return JsonResponse({'status': 'success', 'redirect_url': '/index'})
-        else:
-            return JsonResponse({'status': 'error', 'message': 'Invalid username or password'})
-
+            return JsonResponse({
+                'status': 'success',
+                'redirect_url': '/index'
+            })
+        return JsonResponse({
+            'status': 'error',
+            'message': 'Invalid username or password'
+        })
     return render(req, 'pages/onboard/login.html')
 
 
 def forgot_password(req):
     """
     Handle the forgot password process.
-
-    This function processes a POST request containing a username and project code, verifies their presence,
-    checks if the provided combination exists in the database, and sets a session variable for password reset.
+    This function processes a POST request containing a username and project code,
+    verifies their presence,checks if the provided combination exists in the database,
+    and sets a session variable for password reset.
 
     Parameters:
     - request (HttpRequest): The HTTP request object containing forgot password data.
 
     Returns:
-    - JsonResponse or HttpResponse: A JSON response or an HTML response indicating the status of the forgot password
+    - JsonResponse or HttpResponse: A JSON response or an HTML response indicating
+    the status of the forgot password
     process.
-      - If successful, the response includes a success status, an empty message, and a redirect URL to the password
+      - If successful, the response includes a success status, an empty message,
+       and a redirect URL to the password
       recovery page.
-      - If unsuccessful (e.g., missing fields, invalid username or project code), the response includes
+      - If unsuccessful (e.g., missing fields, invalid username or project code),
+      the response includes
        an error status
         and an appropriate error message.
 
     Example:
     Suppose the user submits a forgot password form with a valid username and project code.
-    The function processes the request, sets a session variable for password reset, and returns a JSON response:
+    The function processes the request, sets a session variable for password reset,
+    and returns a JSON response:
     {
         'status': 'success',
         'message': '',
@@ -90,15 +114,28 @@ def forgot_password(req):
     if req.method == 'POST':
         email = req.POST.get('email')
         if not all([email]):
-            return JsonResponse({'status': 'error', 'message': 'Please insert all the required fields'})
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Please insert all the required fields'
+            })
         try:
             user = CustomUser.objects.filter(email=email).first()
             if user:
                 req.session['pass_reset_user_id'] = user.id
-                return JsonResponse({'status': 'success', 'message': '', 'redirect_url': 'recover-password'})
-            return JsonResponse({'status': 'error', 'message': 'user with this email does not exists.'})
+                return JsonResponse({
+                    'status': 'success',
+                    'message': '',
+                    'redirect_url': 'recover-password'
+                })
+            return JsonResponse({
+                'status': 'error',
+                'message': 'user with this email does not exists.'
+            })
         except ObjectDoesNotExist:
-            return JsonResponse({'status': 'error', 'message': 'Oops, Something went wrong, Please try again later.'})
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Oops, Something went wrong, Please try again later.'
+            })
     return render(req, 'pages/onboard/forgot-password.html')
 
 
@@ -106,7 +143,8 @@ def recover_password(req):
     """
        Handle the password recovery process.
 
-       This function processes a POST request containing new password information, verifies the provided passwords,
+       This function processes a POST request containing new password
+       information, verifies the provided passwords,
        and updates the user's password securely using Django's set_password method.
 
        Parameters:
@@ -114,14 +152,17 @@ def recover_password(req):
 
        Returns:
        - JsonResponse: A JSON response indicating the status of the password recovery process.
-         - If successful, the response includes a success status, a success message, and a redirect URL.
-         - If unsuccessful (e.g., invalid user or session data, password mismatch), the response includes an error
+         - If successful, the response includes a success status, a success message,
+          and a redirect URL.
+         - If unsuccessful (e.g., invalid user or session data, password mismatch),
+         the response includes an error
           status
            and an appropriate error message.
 
        Example:
        Suppose the user submits a password recovery form with matching passwords.
-       The function processes the request, updates the user's password, and returns a JSON response:
+       The function processes the request, updates the user's password, and
+       returns a JSON response:
        {
            'status': 'success',
            'message': 'Password changed successfully. Please log in to continue',
@@ -131,8 +172,12 @@ def recover_password(req):
     if req.method == 'POST':
         password = req.POST.get('password')
         confirm_password = req.POST.get('confirm_password')
+
         if not all([password, confirm_password]):
-            return JsonResponse({'status': 'error', 'message': 'Please insert all the required fields'})
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Please insert all the required fields'
+            })
 
         try:
             user_id = req.session.get('pass_reset_user_id')
@@ -141,210 +186,653 @@ def recover_password(req):
                 user.set_password(confirm_password)
                 user.save()
                 return JsonResponse(
-                    {'status': 'success', 'message': 'Password changed successfully. Please login to continue',
-                     'redirect_url': '/'})
-            else:
-                return JsonResponse({'status': 'error', 'message': "Passwords don't match"})
+                    {'status': 'success',
+                     'message': 'Password changed successfully. Please login to continue',
+                     'redirect_url': '/'
+                     })
+
+            return JsonResponse({
+                'status': 'error',
+                'message': "Passwords don't match"
+            })
         except ObjectDoesNotExist:
-            return JsonResponse({'status': 'error', 'message': 'Invalid user or session data.'})
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Invalid user or session data.'
+            })
+
     return render(req, 'pages/onboard/recover-password.html')
 
 
 @request.validator
 def index(req):
     """
-  
+    Renders the 'index.html' template with user-specific project information.
+
+    Args:
+        req (HttpRequest): The HTTP request object.
+
+    Returns:
+        HttpResponse: Rendered response containing user-specific project data.
+
+    Example:
+        The function fetches user-related data such as total projects, completed
+        projects, and in-progress projects, and renders the 'index.html' template
+        with the fetched information.
+
+    Note:
+        This function assumes the presence of a 'user_id' key in the session to
+        identify the logged-in user.
     """
     context = {}
-    if 'user_id' in req.session:
-        user_id = req.session.get('user_id')
-        user_qs = CustomUser.objects.filter(id=user_id).first()
-        total = Project.objects.filter(userprojectassociation__user_id=user_id)
-        completed_projects = Project.objects.filter(
-            userprojectassociation__user_id=user_id, status__exact='Completed'
-        )
-        in_progress_projects = Project.objects.filter(
-            userprojectassociation__user_id=user_id, status__exact='In Progress'
-        )
-
-        context = {
-            'user': user_qs,
-            'total': total,
-            'completed_projects': completed_projects,
-            'in_progress_projects': in_progress_projects,
-        }
+    if 'logged_in_user_id' in req.session:
+        user_id = req.session.get('logged_in_user_id')
+        context = get_user_project_data(user_id)
     return render(req, 'index.html', context)
+
+
+def get_user_project_data(user_id):
+    """
+    Fetches user-related project data.
+
+    Args:
+        user_id (int): The ID of the logged-in user.
+
+    Returns:
+        dict: Dictionary containing user-related project information.
+    """
+    user_qs = CustomUser.objects.filter(id=user_id).first()
+    total = Project.objects.filter(userprojectassociation__user_id=user_id)
+    completed_projects = Project.objects.filter(
+        userprojectassociation__user_id=user_id, status__exact='Completed'
+    )
+    in_progress_projects = Project.objects.filter(
+        userprojectassociation__user_id=user_id, status__exact='In Progress'
+    )
+
+    return {
+        'user': user_qs,
+        'total': total,
+        'completed_projects': completed_projects,
+        'in_progress_projects': in_progress_projects,
+    }
 
 
 @request.validator
 def project_list(req):
-    user_id = req.session.get('user_id')
-    user_qs = CustomUser.objects.get(id=user_id)
+    """
+    Renders the 'project_listing.html' template with a list of projects associated
+    with the logged-in user.
+
+    Args:
+        req (HttpRequest): The HTTP request object.
+
+    Returns:
+        HttpResponse: Rendered response containing the project listing for the user.
+
+    Example:
+        The function fetches the logged-in user's ID from the session, retrieves the user object,
+        and queries for projects associated with the user. The project data is then passed to the
+        'project_listing.html' template for rendering.
+
+    Note:
+        This function assumes the presence of a 'user_id' key in the session to
+        identify the logged-in user.
+
+    """
+    user_id = req.session.get('logged_in_user_id')
+    user_qs = get_object_or_404(CustomUser, id=user_id)
     projects = Project.objects.filter(userprojectassociation__user_id=user_id)
     context = {'projects_data': projects, 'user_qs': user_qs}
     return render(req, 'pages/projects/project_listing.html', context)
 
 
 @request.validator
-def bibliographic_charts(req):
-    context = {}
-    if req.method == 'POST':
-        uploaded_media = req.FILES.get('patient_data')
-        if uploaded_media:
-            try:
-                df = pd.read_excel(uploaded_media)
-                df['Assignee - Standardized'] = df['Assignee - Standardized'].str.lower()
-                top_assignees = df['Assignee - Standardized'].value_counts().head(10)
-                df['Year'] = pd.to_datetime(df['Earliest Patent Priority Date']).dt.year
-                legal_status_counts = df['Legal Status'].value_counts()
+def completed_project_list(req):
+    """
+    Renders the 'project_listing.html' template with a list of projects associated
+    with the logged-in user.
 
-                pending_count = legal_status_counts.get('PENDING', 0)
-                expired_count = legal_status_counts.get('EXPIRED', 0)
-                pct_count = legal_status_counts.get('PCT', 0)
-                granted_count = legal_status_counts.get('GRANTED', 0)
+    Args:
+        req (HttpRequest): The HTTP request object.
 
-                cited_patents_counts = df.groupby('Publication Number')['Cited Patents - Count'].sum()
-                top_cited_patents = cited_patents_counts.sort_values(ascending=False).head(10).reset_index()
+    Returns:
+        HttpResponse: Rendered response containing the project listing for the user.
 
-                citing_patents_count = df.groupby('Publication Number')['Citing Patents - Count'].sum()
-                top_citing_patents = citing_patents_count.sort_values(ascending=False).head(10).reset_index()
+    Example:
+        The function fetches the logged-in user's ID from the session, retrieves the user object,
+        and queries for projects associated with the user. The project data is then passed to the
+        'project_listing.html' template for rendering.
 
-                last_five_years = range(datetime.now().year - 4, datetime.now().year + 1)
-                filtered_data = df[df['Year'].isin(last_five_years)]
-                top_assignees_last_five_years = filtered_data['Assignee - Standardized'].value_counts().head(10)
-                top_assignees_last_five_years_list = top_assignees_last_five_years.reset_index().to_dict(
-                    orient='records')
+    Note:
+        This function assumes the presence of a 'user_id' key in the session to
+        identify the logged-in user.
 
-                top_assignees_list = top_assignees.reset_index().to_dict(orient='records')
-                top_cited_patents_dict = top_cited_patents.set_index('Publication Number')[
-                    'Cited Patents - Count'].to_dict()
-                top_citing_patents_dict = top_citing_patents.set_index('Publication Number')[
-                    'Citing Patents - Count'].to_dict()
+    """
+    user_id = req.session.get('logged_in_user_id')
+    user_qs = get_object_or_404(CustomUser, id=user_id)
+    projects = Project.objects.filter(userprojectassociation__user_id=user_id, status='Completed')
+    context = {'projects_data': projects, 'user_qs': user_qs}
+    return render(req, 'pages/projects/project_listing.html', context)
 
-                publication_dates = pd.to_datetime(df['Publication Dates'])
-                year_wise_count = Counter(publication_dates.dt.year)
 
-                # year_wise_exp_date
-                expected_exp_date = pd.to_datetime(df['Expected Expiry Dates'])
-                year_wise_exp_date = Counter(expected_exp_date.dt.year.dropna())
+@request.validator
+def in_progress_project_list(req):
+    """
+    Renders the 'project_listing.html' template with a list of projects associated
+    with the logged-in user.
 
-                df['Country Code'] = df['Publication Number'].str[:2]
+    Args:
+        req (HttpRequest): The HTTP request object.
 
-                # Count occurrences of each country code
-                country_code_counts = df['Country Code'].value_counts().to_dict()
+    Returns:
+        HttpResponse: Rendered response containing the project listing for the user.
 
-                # Include country code counts in the context
-                context['country_code_counts'] = country_code_counts
+    Example:
+        The function fetches the logged-in user's ID from the session, retrieves the user object,
+        and queries for projects associated with the user. The project data is then passed to the
+        'project_listing.html' template for rendering.
 
-                assignee_country_counts = {}
-                for _, row in df.iterrows():
-                    assignee = row['Assignee - Standardized']
-                    country_code = row['Country Code']
+    Note:
+        This function assumes the presence of a 'user_id' key in the session to
+        identify the logged-in user.
 
-                    # Create a dictionary for the assignee if not present
-                    if assignee not in assignee_country_counts:
-                        assignee_country_counts[assignee] = Counter()
-
-                    # Increment the count for the country code
-                    assignee_country_counts[assignee][country_code] += 1
-
-                # Include assignee_country_counts in the context
-                context['assignee_country_counts'] = {
-                    assignee: dict(counts) for assignee, counts in assignee_country_counts.items()
-                }
-
-                cpc_counts = Counter()
-                for _, row in df.iterrows():
-                    cpc_values = str(row['CPC']).replace(' ', '').split('|')
-                    for cpc_value in cpc_values:
-                        # Take the first four characters and increment the count
-                        cpc_code = cpc_value[:4]
-                        cpc_counts[cpc_code] += 1
-                context['cpc_counts'] = dict(cpc_counts)
-
-                ipc_counts = Counter()
-                for _, row in df.iterrows():
-                    ipc_values = str(row['IPC']).replace(' ', '').split('|')
-                    for ipc_value in ipc_values:
-                        # Take the first four characters and increment the count
-                        ipc_code = ipc_value[:4]
-                        ipc_counts[ipc_code] += 1
-                context['ipc_counts'] = dict(ipc_counts)
-
-                assignee_legal_status_counts = {}
-                for _, row in df.iterrows():
-                    assignee = row['Assignee - Standardized']
-                    legal_status = row['Legal Status']
-
-                    # Create a dictionary for the assignee if not present
-                    if assignee not in assignee_legal_status_counts:
-                        assignee_legal_status_counts[assignee] = Counter()
-
-                    # Increment the count for the legal status
-                    assignee_legal_status_counts[assignee][legal_status] += 1
-
-                # Include assignee_legal_status_counts in the context
-
-                cpc_assignee_counts = {}
-                for _, row in df.iterrows():
-                    cpc_values = str(row['CPC']).replace(' ', '').split('|')
-                    assignee = row['Assignee - Standardized']
-                    for cpc_value in cpc_values:
-                        # Take the first four characters of the CPC code
-                        cpc_code = cpc_value[:4]
-
-                        # Create a dictionary for the CPC code if not present
-                        if cpc_code not in cpc_assignee_counts:
-                            cpc_assignee_counts[cpc_code] = Counter()
-
-                        # Increment the count for the Assignee - Standardized
-                        cpc_assignee_counts[cpc_code][assignee] += 1
-
-                # Include cpc_assignee_counts in the context
-                context['cpc_assignee_counts'] = {
-                    cpc_code: dict(assignee_counts) for cpc_code, assignee_counts in cpc_assignee_counts.items()
-                }
-                # print("cpc_assignee_counts:", context['cpc_assignee_counts'])
-
-                # print("cpc_counts:", context['cpc_counts'])
-                # print("assignee_wise_jurisdiction:",context['assignee_country_counts'])
-                # print("country_code_counts:",context['country_code_counts'])
-
-                context = {
-                    'assignee_legal_status_counts': {
-                        assignee: dict(status_counts) for assignee, status_counts in
-                        assignee_legal_status_counts.items()
-                    },
-                    'ipc_counts': ipc_counts,
-                    'cpc_counts': cpc_counts,
-                    'top_assignees': top_assignees_list,
-                    'top_assignees_last_five_years': top_assignees_last_five_years_list,
-                    'legal_status_counts': {
-                        'PENDING': pending_count,
-                        'EXPIRED': expired_count,
-                        'PCT': pct_count,
-                        'GRANTED': granted_count
-                    },
-                    'top_cited_patents': top_cited_patents_dict,
-                    'top_citing_patents': top_citing_patents_dict,
-                    'year_wise_count': dict(year_wise_count),
-                    'year_wise_exp_date': dict(year_wise_exp_date)
-                }
-            except pd.errors.ParserError as e:
-                print("Error parsing Excel file:", str(e))
-    return render(req, 'pages/charts/bibliographic_charts.html', context)
+    """
+    user_id = req.session.get('logged_in_user_id')
+    user_qs = get_object_or_404(CustomUser, id=user_id)
+    projects = Project.objects.filter(userprojectassociation__user_id=user_id, status='In Progress')
+    context = {'projects_data': projects, 'user_qs': user_qs}
+    return render(req, 'pages/projects/project_listing.html', context)
 
 
 @request.validator
 def tech_charts(req):
     """
-    
+    logic for tech charts
     """
-    return render(req, 'tech_charts.html')
+    return render(req, 'pages/charts/technical_chart.html')
 
 
 @request.validator
-def logout():
+def competitor_charts(req):
+    fig1 = go.Figure(data=go.Heatmap(
+        z=[[1, None, 30, 50, 1], [20, 1, 60, 80, 30], [30, 60, 1, -10, 20]],
+        x=['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+        y=['Morning', 'Afternoon', 'Evening'],
+        hoverongaps=False,
+        colorscale='Blues'))
+
+    # Set height and width
+    fig1.update_layout(
+        height=350,
+        width=950,
+
+    )
+    div1 = fig1.to_html()
+    df = px.data.iris()
+    fig2 = px.scatter(df, x="sepal_width", y="sepal_length", color="species", size='petal_length', size_max=10)
+
+    # set bubble chart layout
+    fig2.update_layout(
+        title='Iris Dataset Bubble Chart',
+        width=950,
+        height=500,
+        hovermode='closest'
+    )
+    div2 = fig2.to_html(full_html=False)
+
+    y_saving = [1.3586, 2.2623000000000002, 4.9821999999999997, 6.5096999999999996,
+                7.4812000000000003, 7.5133000000000001, 15.2148, 17.520499999999998
+                ]
+    y_net_worth = [93453.919999999998, 81666.570000000007, 69889.619999999995,
+                   78381.529999999999, 141395.29999999999, 92969.020000000004,
+                   66090.179999999993, 122379.3]
+    x = ['Japan', 'United Kingdom', 'Canada', 'Netherlands',
+         'United States', 'Belgium', 'Sweden', 'Switzerland']
+
+    # Creating two subplots
+    fig = make_subplots(rows=1, cols=2, specs=[[{}, {}]], shared_xaxes=True,
+                        shared_yaxes=False, vertical_spacing=0.001)
+
+    fig.append_trace(go.Bar(
+        x=y_saving,
+        y=x,
+        marker=dict(
+            color='rgba(50, 171, 96, 0.6)',
+            line=dict(
+                color='rgba(50, 171, 96, 1.0)',
+                width=1),
+        ),
+        name='Household savings, percentage of household disposable income',
+        orientation='h',
+    ), 1, 1)
+
+    fig.append_trace(go.Scatter(
+        x=y_net_worth, y=x,
+        mode='lines+markers',
+        line_color='rgb(128, 0, 128)',
+        name='Household net worth, Million USD/capita',
+    ), 1, 2)
+
+    fig.update_layout(
+        title='Household savings & net worth for eight OECD countries',
+        yaxis=dict(
+            showgrid=False,
+            showline=False,
+            showticklabels=True,
+            domain=[0, 0.85],
+        ),
+        yaxis2=dict(
+            showgrid=False,
+            showline=True,
+            showticklabels=False,
+            linecolor='rgba(102, 102, 102, 0.8)',
+            linewidth=2,
+            domain=[0, 0.85],
+        ),
+        xaxis=dict(
+            zeroline=False,
+            showline=False,
+            showticklabels=True,
+            showgrid=True,
+            domain=[0, 0.42],
+        ),
+        xaxis2=dict(
+            zeroline=False,
+            showline=False,
+            showticklabels=True,
+            showgrid=True,
+            domain=[0.47, 1],
+            side='top',
+            dtick=25000,
+        ),
+        legend=dict(x=0.029, y=1.038, font_size=10),
+        margin=dict(l=100, r=20, t=70, b=70),
+        paper_bgcolor='rgb(248, 248, 255)',
+        plot_bgcolor='rgb(248, 248, 255)',
+    )
+    annotations = []
+    y_s = np.round(y_saving, decimals=2)
+    y_nw = np.rint(y_net_worth)
+    # Adding labels
+    for ydn, yd, xd in zip(y_nw, y_s, x):
+        # labeling the scatter savings
+        annotations.append(dict(xref='x2', yref='y2',
+                                y=xd, x=ydn - 20000,
+                                text='{:,}'.format(ydn) + 'M',
+                                font=dict(family='Arial', size=12,
+                                          color='rgb(128, 0, 128)'),
+                                showarrow=False))
+        # labeling the bar net worth
+        annotations.append(dict(xref='x1', yref='y1',
+                                y=xd, x=yd + 3,
+                                text=str(yd) + '%',
+                                font=dict(family='Arial', size=12,
+                                          color='rgb(50, 171, 96)'),
+                                showarrow=False))
+    # Source
+    annotations.append(dict(xref='paper', yref='paper',
+                            x=-0.2, y=-0.109,
+                            text='OECD "' +
+                                 '(2015), Household savings (indicator), ' +
+                                 'Household net worth (indicator). doi: ' +
+                                 '10.1787/cfc6f499-en (Accessed on 05 June 2015)',
+                            font=dict(family='Arial', size=10, color='rgb(150,150,150)'),
+                            showarrow=False))
+
+    fig.update_layout(annotations=annotations)
+    div3 = fig.to_html(full_html=False)
+    x = ['b', 'a', 'c', 'd']
+    fig4 = go.Figure(go.Bar(x=x, y=[2, 5, 1, 9], name='Montreal'))
+    fig4.add_trace(go.Bar(x=x, y=[1, 4, 9, 16], name='Ottawa'))
+    fig4.add_trace(go.Bar(x=x, y=[6, 8, 4.5, 8], name='Toronto'))
+    fig4.update_layout(barmode='stack', xaxis={'categoryorder': 'total descending'})
+    div4 = fig4.to_html(full_html=False)
+    df = px.data.gapminder().query("year == 2007").query("continent == 'Europe'")
+    df.loc[df['pop'] < 2.e6, 'country'] = 'Other countries'
+    fig5 = px.pie(df, values='pop', names='country', title='Population of European continent')
+    div5 = fig5.to_html(full_html=False)
+    df = px.data.gapminder().query("year==2007")
+    fig6 = px.choropleth(df, locations="iso_alpha",
+                         color="lifeExp",  # lifeExp is a column of gapminder
+                         hover_name="country",  # column to add to hover information
+                         color_continuous_scale=px.colors.sequential.Plasma)
+    div6 = fig6.to_html(full_html=False)
+    context = {'plot_div1': div1, 'plot_div2': div2, 'plot_div3': div3, 'plot_div4': div4, 'plot_div5': div5,
+               'plot_div6': div6}
+    return render(req, 'pages/charts/competitor_charts.html', context)
+
+
+def handle_nat(dt):
+    if pd.isna(dt):
+        return None
+    else:
+        return dt
+
+
+@request.validator
+def bibliographic_charts(req, chart_id):
+    """
+    Renders bibliographic charts based on the data provided in an uploaded Excel file.
+
+    Args:
+        req (HttpRequest): The HTTP request object.
+
+    Returns:
+        HttpResponse: Rendered response containing bibliographic charts.
+
+    Example:
+        The function reads an Excel file uploaded via POST, processes the data
+        to generate various charts,
+        and renders the 'bibliographic_charts.html' template with the generated data.
+
+    Note:
+        The function expects an Excel file with specific columns such as
+        'Assignee - Standardized',
+        'Earliest Patent Priority Date', 'Legal Status', 'Cited Patents - Count',
+         'Citing Patents - Count', etc.
+
+    """
+    context = {}
+    try:
+        process_excel_data(context, req=req)
+        user_instance = CustomUser.objects.get(id=req.session.get('logged_in_user_id'))
+        context['user_instance'] = user_instance
+        if req.method == 'POST':
+            uploaded_media = req.FILES.get('patient_data')
+            if uploaded_media:
+                try:
+                    process_excel_data(context, req=req)
+                    first_row_project_code = pd.read_excel(uploaded_media).at[0, 'Project – Code']
+                    user_id = user_instance.id
+                    file_content = uploaded_media.read()
+                    # celery task
+                    process_excel_data_task.delay(user_id, first_row_project_code, file_content)
+                except Exception as e:
+                    print(f"Error processing uploaded file: {str(e)}")
+                    return HttpResponseServerError("Error processing uploaded file. Please try again.")
+        return render(req, 'pages/charts/bibliographic_charts.html', context)
+    except Exception as e:
+        print(f"Unexpected error: {str(e)}")
+        return HttpResponseServerError("An unexpected error occurred. Please try again.")
+
+
+def process_excel_data(context, req):
+    """
+    Process the Excel data to generate various charts.
+
+    Args:
+        df (DataFrame): The DataFrame containing bibliographic data.
+        context (dict): The context dictionary to store chart data.
+
+    """
+    context.update({
+        'top_assignees': process_assignees(req=req),
+        'top_assignees_last_five_years': process_assignees_last_five_years(request=req),
+        'legal_status_counts': get_legal_status_count(req),
+        'top_cited_patents': get_top_cited_count(req),
+        'top_citing_patents': get_top_citing_count(req),
+        'year_wise_count': get_year_with_publication(req),
+        'year_wise_exp_date': get_year_with_exp_date(req),
+        'process_top_cited_patent': get_top_cited_count(req),
+        'get_country_code_count': get_country_code_count(req),
+        'get_country_code_counts_from_db': get_country_code_counts_from_db(req),
+        'get_cpc_counts_from_db': get_cpc_counts_from_db(req),
+        'get_ipc_counts': get_ipc_counts(req)
+    })
+
+    # assignee_legal_status_counts = {}
+    # cpc_assignee_counts = {}
+    #
+    # for _, row in df.iterrows():
+    #     assignee = row['Assignee - Standardized']
+    #     legal_status = row['Legal Status']
+    #     if assignee not in assignee_legal_status_counts:
+    #         assignee_legal_status_counts[assignee] = Counter()
+    #     assignee_legal_status_counts[assignee][legal_status] += 1
+    #
+    #     cpc_values = str(row['CPC']).replace(' ', '').split('|')
+    #     for cpc_value in cpc_values:
+    #         cpc_code = cpc_value[:4]
+    #
+    #         if cpc_code not in cpc_assignee_counts:
+    #             cpc_assignee_counts[cpc_code] = Counter()
+    #         cpc_assignee_counts[cpc_code][assignee] += 1
+    #
+    # context['assignee_legal_status_counts'] = {
+    #     assignee: dict(status_counts) for assignee, status_counts in
+    #     assignee_legal_status_counts.items()
+    # }
+    # context['cpc_assignee_counts'] = {
+    #     cpc_code: dict(assignee_counts) for cpc_code, assignee_counts in
+    #     cpc_assignee_counts.items()
+    # }
+
+
+def get_country_code_count(req):
+    patent_data_queryset = PatentData.objects.filter(user_id=req.session.get('logged_in_user_id'))
+    assignee_country_counts_from_db = {}
+    for patent_data in patent_data_queryset:
+        assignee = patent_data.assignee_standardized
+        publication_number = patent_data.publication_number
+        country_code = publication_number[:2]
+        if assignee not in assignee_country_counts_from_db:
+            assignee_country_counts_from_db[assignee] = Counter()
+        assignee_country_counts_from_db[assignee][country_code] += 1
+    return assignee_country_counts_from_db
+
+
+def get_ipc_counts(req):
+    patent_data_queryset = PatentData.objects.filter(user_id=req.session.get('logged_in_user_id'))
+    ipc_counts_from_db = Counter()
+    for patent_data in patent_data_queryset:
+        ipc_values = patent_data.ipc.split('|') if patent_data.ipc else []
+        for ipc_value in ipc_values:
+            ipc_code = ipc_value.strip()[:4]
+            ipc_counts_from_db[ipc_code] += 1
+    ipc_counts_dict = dict(ipc_counts_from_db)
+    return ipc_counts_dict
+
+
+def get_cpc_counts_from_db(req):
+    patent_data_queryset = PatentData.objects.filter(user_id=req.session.get('logged_in_user_id'))
+    cpc_counts_from_db = Counter()
+    for patent_data in patent_data_queryset:
+        cpc_values = patent_data.cpc.split('|') if patent_data.cpc else []
+        for cpc_value in cpc_values:
+            cpc_code = cpc_value.strip()[:4]
+            cpc_counts_from_db[cpc_code] += 1
+    cpc_counts_dict = dict(cpc_counts_from_db)
+    return cpc_counts_dict
+
+
+def get_country_code_counts_from_db(req):
+    patent_data_queryset = PatentData.objects.filter(user_id=req.session.get('logged_in_user_id'))
+    country_code_counts_from_db = Counter()
+    for patent_data in patent_data_queryset:
+        publication_number = patent_data.publication_number
+        country_code = publication_number[:2]
+        country_code_counts_from_db[country_code] += 1
+    country_code_counts_dict = dict(country_code_counts_from_db)
+    return country_code_counts_dict
+
+
+def get_legal_status_count(req):
+    patent_data_queryset = PatentData.objects.filter(user_id=req.session.get('logged_in_user_id'))
+    legal_status_counts = patent_data_queryset.values('legal_status').annotate(count=Count('legal_status'))
+    legal_status_counts_dict = {item['legal_status']: item['count'] for item in legal_status_counts}
+    all_legal_statuses = ['PENDING', 'EXPIRED', 'PCT', 'GRANTED']  # Add other statuses if needed
+    for legal_status in all_legal_statuses:
+        legal_status_counts_dict.setdefault(legal_status, 0)
+    return legal_status_counts_dict
+
+
+def get_top_cited_count(req):
+    cited_patents_dict = {}
+    user_id_to_filter = req.session.get('logged_in_user_id')
+    top_ten_cited_patents = PatentData.objects.filter(
+        user_id=user_id_to_filter
+    ).exclude(
+        cited_patents_count__isnull=True
+    ).order_by('-cited_patents_count')[:10]
+    for patent_data in top_ten_cited_patents:
+        cited_patents_dict[patent_data.publication_number] = patent_data.cited_patents_count
+    return cited_patents_dict
+
+
+def download_excel_file(request):
+    user_id_to_filter = request.session.get('logged_in_user_id')
+    top_ten_cited_patents = PatentData.objects.filter(
+        user_id=user_id_to_filter
+    ).exclude(
+        cited_patents_count__isnull=True
+    ).order_by('-cited_patents_count')[:10]
+
+    # Create a DataFrame from the top ten cited patents
+    data = {
+        'Project Code': [patent.project_code for patent in top_ten_cited_patents],
+        'Publication Number': [patent.publication_number for patent in top_ten_cited_patents],
+        'Assignee Standardized': [patent.assignee_standardized for patent in top_ten_cited_patents],
+        'Cited Patents Count': [patent.cited_patents_count for patent in top_ten_cited_patents],
+        'Legal Status': [patent.legal_status for patent in top_ten_cited_patents],
+        'Application Dates': [patent.application_dates for patent in top_ten_cited_patents],
+        'Publication Dates': [patent.publication_dates for patent in top_ten_cited_patents],
+        'Application Number': [patent.application_number for patent in top_ten_cited_patents],
+        'CPC Count': [patent.cpc for patent in top_ten_cited_patents],
+        'IPC Count': [patent.ipc for patent in top_ten_cited_patents],
+        'EFAN': [patent.e_fan for patent in top_ten_cited_patents],
+        # Add other fields as needed
+    }
+    df = pd.DataFrame(data)
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename=top_ten_cited_patents.xlsx'
+    df.to_excel(response, index=False, sheet_name='Top Ten Cited Patents')
+    return response
+
+
+def get_year_wise_excel(req):
+    user_id = req.session.get('logged_in_user_id')
+    year_counts = PatentData.objects.filter(user_id=user_id).annotate(
+        publication_year=ExtractYear('publication_dates')
+    ).values('publication_year').annotate(
+        count=Count('id')
+    ).order_by('-publication_year')
+    year_wise_count = {item['publication_year']: item['count'] for item in year_counts}
+    data = {
+        'Project Code': [patent.project_code for patent in year_wise_count],
+        'Publication Number': [patent.publication_number for patent in year_wise_count],
+        'Assignee Standardized': [patent.assignee_standardized for patent in year_wise_count],
+        'Cited Patents Count': [patent.cited_patents_count for patent in year_wise_count],
+        'Legal Status': [patent.legal_status for patent in year_wise_count],
+        'Application Dates': [patent.application_dates for patent in year_wise_count],
+        'Publication Dates': [patent.publication_dates for patent in year_wise_count],
+        'Application Number': [patent.application_number for patent in year_wise_count],
+        'CPC Count': [patent.cpc for patent in year_wise_count],
+        'IPC Count': [patent.ipc for patent in year_wise_count],
+        'EFAN': [patent.e_fan for patent in year_wise_count],
+        # Add other fields as needed
+    }
+    df = pd.DataFrame(data)
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename=top_ten_cited_patents.xlsx'
+    df.to_excel(response, index=False, sheet_name='Top Ten Cited Patents')
+    return response
+
+
+def get_top_citing_count(req):
+    citing_patents_dict = {}
+    user_id_to_filter = req.session.get('logged_in_user_id')
+    top_ten_citing_patents = PatentData.objects.filter(
+        user_id=user_id_to_filter
+    ).exclude(
+        citing_patents_count__isnull=True
+    ).order_by('-citing_patents_count')[:10]
+    for patent_data in top_ten_citing_patents:
+        citing_patents_dict[patent_data.publication_number] = patent_data.citing_patents_count
+    return citing_patents_dict
+
+
+def get_year_with_publication(req):
+    user_id = req.session.get('logged_in_user_id')
+    year_counts = PatentData.objects.filter(user_id=user_id).annotate(
+        publication_year=ExtractYear('publication_dates')
+    ).values('publication_year').annotate(
+        count=Count('id')
+    ).order_by('-publication_year')
+
+    year_wise_count = {item['publication_year']: item['count'] for item in year_counts}
+    return dict(year_wise_count)
+
+
+def get_year_with_exp_date(req):
+    user_id = req.session.get('logged_in_user_id')
+    year_counts = PatentData.objects.filter(user_id=user_id).annotate(
+        expected_expiry_date=ExtractYear('expected_expiry_dates')
+    ).values('expected_expiry_date').annotate(
+        count=Count('id')
+    )
+    year_wise_exp_date = {item['expected_expiry_date']: item['count'] for item in year_counts}
+
+    return dict(year_wise_exp_date)
+
+
+def process_assignees(req):
+    """
+    process_assignees
+    """
+    user_id = req.session.get('logged_in_user_id')
+    data = PatentData.objects.filter(user_id=user_id)  # Replace 'user_id' with your actual field name
+    data = data.values('assignee_standardized').annotate(count=Count('assignee_standardized')).order_by('-count')[:10]
+    result = [{'Assignee - Standardized': item['assignee_standardized'], 'count': item['count']} for item in data]
+    return result
+
+
+def process_assignees_last_five_years(request):
+    user_id = request.session.get('logged_in_user_id')
+    current_year = datetime.now().year
+    last_five_years_start = current_year - 5
+    top_assignees_last_five_years = (
+        PatentData.objects
+        .filter(user_id=user_id, application_dates__year__gte=last_five_years_start)
+        .values('assignee_standardized')
+        .annotate(count=Count('assignee_standardized'))
+        .order_by('-count')[:10]
+    )
+    top_assignees_last_five_years_list = list(top_assignees_last_five_years)
+    return top_assignees_last_five_years_list
+
+
+def process_legal_status(df):
+    """
+    process_legal_status
+    """
+    legal_status_counts = df['Legal Status'].value_counts()
+    pending_count = legal_status_counts.get('PENDING', 0)
+    expired_count = legal_status_counts.get('EXPIRED', 0)
+    pct_count = legal_status_counts.get('PCT', 0)
+    granted_count = legal_status_counts.get('GRANTED', 0)
+    return {
+        'PENDING': pending_count,
+        'EXPIRED': expired_count,
+        'PCT': pct_count,
+        'GRANTED': granted_count
+    }
+
+
+def process_top_cited_patent(df):
+    """
+    process_top_cited_patent
+    """
+    cited_patents_counts = df.groupby('Publication Number')['Cited Patents - Count'].sum()
+    top_cited_patents = cited_patents_counts.sort_values(ascending=False).head(10).reset_index()
+    return top_cited_patents.set_index('Publication Number')['Cited Patents - Count'].to_dict()
+
+
+@request.validator
+def logout(req):
+    """
+    Delete all sessions when user is logged out.
+    """
     sessions = Session.objects.filter(expire_date__gte=timezone.now())
     for session in sessions:
         session.delete()
@@ -353,12 +841,9 @@ def logout():
 
 @request.validator
 def user_profile(req):
-    user_id = req.session.get('user_id')
+    """
+    User Profile
+    """
+    user_id = req.session.get('logged_in_user_id')
     user_qs = CustomUser.objects.get(id=user_id)
     return render(req, 'pages/onboard/profile.html', {'iebs_user': user_qs})
-
-
-def base(req):
-    user_id = req.session.get('userId')
-    user_qs = CustomUser.objects.get(id=user_id)
-    return render(req, 'base.html', {'iebs_user': user_qs})
