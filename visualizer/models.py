@@ -221,7 +221,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 class PatentData(models.Model):
     user = models.ForeignKey('CustomUser', on_delete=models.CASCADE,
                              related_name='patent_user')
-    project = models.ForeignKey('Project', on_delete=models.CASCADE, related_name='patent_project')
+    project_code = models.CharField(max_length=50)
     publication_number = models.CharField(max_length=50)
     assignee_standardized = models.CharField(max_length=200)
     legal_status = models.CharField(max_length=50)
