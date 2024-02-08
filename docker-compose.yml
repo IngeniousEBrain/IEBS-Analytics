@@ -3,7 +3,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    command: bash -c "python manage.py makemigrations && python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+    command: bash -c "python manage.py makemigrations && python manage.py migrate && gunicorn -b 0.0.0.0:8000 IebsAnalytics.wsgi:application"
     container_name: visualizer
     volumes:
       - .:/visualizer
@@ -13,6 +13,15 @@ services:
       - .env
     depends_on:
       - postgres
+  nginx:
+    build: ./nginx
+    volumes:
+      - .:/visualizer
+
+    ports:
+      - "80:80"
+    depends_on:
+      - web
 
   postgres:
     image: postgres:latest
