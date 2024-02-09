@@ -59,8 +59,8 @@ DB_PORT='5432'
  docker-compose up --build
 ```
 ## usage
-python manage.py migrate
-python manage.py runserver
+- python manage.py migrate
+- python manage.py runserver
 
 # Contributing
 Fork the project.
