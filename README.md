@@ -27,7 +27,7 @@ Specify the dependencies and requirements needed to run the project. For example
 1. Clone the repository:
     ```bash
     git clone https://github.com/IngeniousEBrain/IEBS-Analytics.git
-    cd your-project
+    cd IEBS-Analytics
     ```
 
 2. Create a virtual environment on python 3.12 and activate it:
