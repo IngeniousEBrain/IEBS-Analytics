@@ -26,14 +26,14 @@ Specify the dependencies and requirements needed to run the project. For example
 ## Installation
 1. Clone the repository:
     ```bash
-    - git clone https://github.com/IngeniousEBrain/IEBS-Analytics.git
-    - cd IEBS-Analytics
+    git clone https://github.com/IngeniousEBrain/IEBS-Analytics.git
+    cd IEBS-Analytics
     ```
 
 2. Create a virtual environment on python 3.12 and activate it:
     ```bash
-    - python -m venv venv
-    - source venv/bin/activate  # On Windows, use: venv\Scripts\activate
+    python -m venv venv
+    source venv/bin/activate  # On Windows, use: venv\Scripts\activate
     ```
 
 3. Install dependencies:
@@ -58,9 +58,9 @@ DB_PORT='5432'
 ```
  docker-compose up --build
 ```
-# usage
-- python manage.py migrate
-- python manage.py runserver
+## usage
+python manage.py migrate
+python manage.py runserver
 
 # Contributing
 Fork the project.
