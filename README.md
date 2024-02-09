@@ -12,8 +12,8 @@ Brief project description and purpose.
 
 ## Requirements
 Specify the dependencies and requirements needed to run the project. For example:
-- Python 3.x
-- Django 3.x
+- Python 3.12
+- Django 5
 - Other dependencies...
 
 ## Installation
