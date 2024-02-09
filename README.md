@@ -15,7 +15,7 @@ This project involves developing a system to streamline patent data analysis and
 - [Configuration](#configuration)
 - [Usage](#usage)
 - [Contributing](#contributing)
-```- [License](#license)```
+
 
 ## Requirements
 Specify the dependencies and requirements needed to run the project. For example:
