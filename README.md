@@ -14,7 +14,7 @@ Brief project description and purpose.
 Specify the dependencies and requirements needed to run the project. For example:
 - Python 3.12
 - Django 5
-- Other dependencies...
+- Postgresql
 
 ## Installation
 1. Clone the repository:
@@ -35,8 +35,6 @@ Specify the dependencies and requirements needed to run the project. For example
     ```
 
 ## Configuration
-Describe any necessary configuration steps, such as setting up environment variables or configuring a database. For example, you might need to create a `.env` file with sensitive information.
-
 ```env
 SECRET_KEY=your_secret_key
 DEBUG=True
