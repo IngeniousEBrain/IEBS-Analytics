@@ -13,7 +13,6 @@ This project involves developing a system to streamline patent data analysis and
 - [Requirements](#requirements)
 - [Installation](#installation)
 - [Configuration](#configuration)
-- [Usage](#usage)
 - [Contributing](#contributing)
 
 
@@ -58,9 +57,6 @@ DB_PORT='5432'
 ```
  docker-compose up --build
 ```
-## usage
-- python manage.py migrate
-- python manage.py runserver
 
 # Contributing
 Fork the project.
