@@ -15,7 +15,7 @@ This project involves developing a system to streamline patent data analysis and
 - [Configuration](#configuration)
 - [Usage](#usage)
 - [Contributing](#contributing)
-- [License](#license)
+```- [License](#license)```
 
 ## Requirements
 Specify the dependencies and requirements needed to run the project. For example:
@@ -58,3 +58,14 @@ DB_PORT='5432'
 ```
  docker-compose up --build
 ```
+# usage
+python manage.py migrate
+python manage.py runserver
+
+# Contributing
+Fork the project.
+Create a new branch (git checkout -b feature/your-feature).
+Commit your changes (git commit -am 'Add new feature').
+Push to the branch (git push origin feature/your-feature).
+Create a new pull request.
+
