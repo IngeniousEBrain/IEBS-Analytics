@@ -21,7 +21,7 @@ This project involves developing a system to streamline patent data analysis and
 Specify the dependencies and requirements needed to run the project. For example:
 - Python 3.12
 - Django 5
-- Postgresql
+- Postgresql  
 
 ## Installation
 1. Clone the repository:
