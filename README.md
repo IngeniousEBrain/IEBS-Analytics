@@ -42,12 +42,17 @@ Specify the dependencies and requirements needed to run the project. For example
     ```
 
 ## Configuration
+ENVFILE FOR LOCALHOST:
 ```env
-SECRET_KEY=your_secret_key
-DEBUG=True
-DATABASE_NAME =
-DATABASE_PASSWORD =
-etc ..
+DEBUG=True/False
+SECRET_KEY=''
+DB_ENGINE='django.db.backends.postgresql'
+DB_NAME='iebs_analytics'
+DB_USER='postgres'
+DB_PASSWORD=''
+#DB_HOST=''
+DB_HOST='localhost'
+DB_PORT='5432'
 ```
 4. run docker build command
 ```
