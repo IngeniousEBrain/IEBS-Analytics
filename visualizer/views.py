@@ -535,7 +535,7 @@ def handle_nat(dt):
         return None
     else:
         return dt
-
+import math
 
 @request.validator
 def bibliographic_charts(req, chart_id):
@@ -569,11 +569,68 @@ def bibliographic_charts(req, chart_id):
             uploaded_media = req.FILES.get('patient_data')
             if uploaded_media:
                 try:
-                    first_row_project_code = pd.read_excel(uploaded_media).at[1, 'Project - Code']
+                    first_row_project_code = pd.read_excel(uploaded_media).iloc[3, 18]
                     user_id = user_instance.id
                     file_content = uploaded_media.read()
-                    # celery task
-                    process_excel_data_task.delay(user_id, first_row_project_code, file_content)
+                    # # celery task
+                    df = pd.read_excel(uploaded_media, engine='openpyxl')
+                    patent_data_rows = []
+                    user_instance = CustomUser.objects.get(id=user_id)
+                    first_row_project_code = first_row_project_code
+                    if PatentData.objects.filter(user_id=user_instance,
+                                                 project_code=first_row_project_code):
+                        PatentData.objects.filter(user_id=user_instance,
+                                                  project_code=first_row_project_code).delete()
+                        print('deletion done')
+                    for index, row in df.iterrows():
+                        # print(row['Priority Country'])
+                        application_date_str = row['Application Dates']
+                        publication_date_str = row['Publication Dates']
+                        expected_expiry_str = row['Expected Expiry Dates']
+                        earliest_patent_priority_str = row['Earliest Patent Priority Date']
+                        application_dates = pd.NaT if pd.isna(application_date_str) else pd.to_datetime(
+                            application_date_str, errors='coerce')
+                        publication_dates = pd.NaT if pd.isna(publication_date_str) else pd.to_datetime(
+                            publication_date_str, errors='coerce')
+                        expected_expiry_dates = pd.NaT if pd.isna(expected_expiry_str) else pd.to_datetime(
+                            expected_expiry_str, errors='coerce')
+                        earliest_patent_priority_date = pd.NaT if pd.isna(
+                            earliest_patent_priority_str) else pd.to_datetime(
+                            earliest_patent_priority_str, errors='coerce')
+                        remaining_life = None
+                        if not math.isnan(row['Remaining Life']):
+                            remaining_life = row['Remaining Life']
+                        citing_patents_count = None
+                        if not math.isnan(row['Citing Patents - Count']):
+                            citing_patents_count = row['Citing Patents - Count']
+                        cited_patents_count = None
+                        if not math.isnan(row['Cited Patents - Count']):
+                            cited_patents_count = row['Cited Patents - Count']
+                        patent_data_dict = {
+                            'user': user_instance,
+                            'application_dates': handle_nat(application_dates),
+                            'publication_dates': handle_nat(publication_dates),
+                            'expected_expiry_dates': handle_nat(expected_expiry_dates),
+                            'earliest_patent_priority_date': handle_nat(earliest_patent_priority_date),
+                            'publication_number': row['Publication Number'],
+                            'assignee_standardized': row['Assignee - Standardized'],
+                            'legal_status': row['Legal Status'],
+                            'remaining_life': remaining_life,
+                            'cited_patents_count': cited_patents_count,
+                            'citing_patents_count': citing_patents_count,
+                            'inventors': row['Inventors'],
+                            'application_number': row['Application Number'],
+                            'cpc': row['CPC'],
+                            'ipc': row['IPC'],
+                            'e_fan': row['EFAN'],
+                            'project_code': first_row_project_code,
+                            # 'priority_country': row['Priority Country']
+                        }
+                        patent_data_rows.append(patent_data_dict)
+                    PatentData.objects.bulk_create([
+                        PatentData(**data) for data in patent_data_rows
+                    ])
+                    # process_excel_data_task.delay(user_id, first_row_project_code, file_content)
                     process_excel_data(context, req=req)
                 except Exception as e:
                     print(f"Error processing uploaded file: {str(e)}")
