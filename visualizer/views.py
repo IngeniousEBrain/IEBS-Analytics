@@ -3,12 +3,14 @@ Views for the 'visualizer' app.
 """
 # Third-party imports
 from datetime import datetime
+import collections
 from collections import Counter
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import numpy as np
+from django.db.models.functions import Substr
 # Django imports
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.hashers import check_password
@@ -22,7 +24,7 @@ from django.db.models.functions import ExtractYear
 # Local imports
 from .models import CustomUser, Project, PatentData
 from .packages import request
-from django.db.models import Count, F, Sum
+from django.db.models import Count
 from .tasks import process_excel_data_task
 
 
@@ -42,10 +44,10 @@ def ie_analytics_home(req):
 def login(req):
     """
     Handle user login.
-    
+
     Parameters:
     - request (HttpRequest): The HTTP request object containing login data.
-    
+
     Returns:
     - JsonResponse: A JSON response indicating the login status.
     """
@@ -353,152 +355,177 @@ def tech_charts(req):
     return render(req, 'pages/charts/technical_chart.html')
 
 
+def calculate_luminance(color):
+    if isinstance(color, int):
+        color = (color, color, color)
+    if color is not None:
+        r, g, b = color
+        luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+        return luminance
+    else:
+        return 0.5
+
+
+def extract_assignee_partners(req):
+    assignee_partner_dict = {}
+    user = req.session.get('logged_in_user_id')
+    for patent_data in PatentData.objects.filter(user_id=user):
+        assignee_partners_str = patent_data.assignee_standardized
+        assignee, *partners = map(lambda x: x.strip().title(), assignee_partners_str.split('|'))
+        if assignee in assignee_partner_dict:
+            assignee_partner_dict[assignee].extend(p for p in partners if p)
+        else:
+            assignee_partner_dict[assignee] = [p for p in partners if p]
+    return assignee_partner_dict
+
+
+def get_top_assignees_by_year(req):
+    top_assignees = PatentData.objects.values('assignee_standardized').annotate(
+        count=Count('assignee_standardized')).order_by('-count')[:10]
+
+    result = collections.defaultdict(dict)
+    for assignee in top_assignees:
+        name = assignee['assignee_standardized']
+        result[name]
+
+        year_wise_count = PatentData.objects.filter(assignee_standardized=name).values(
+            'application_dates__year').annotate(count=Count('id'))
+        for data in year_wise_count:
+            year = data['application_dates__year']
+            count = data['count']
+            result[name][year] = count
+    return result
+
+
 @request.validator
 def competitor_charts(req):
+    data = PatentData.objects.filter(user_id=req.session.get('logged_in_user_id'))
+    data1 = data.values('assignee_standardized').annotate(count=Count('assignee_standardized')).order_by('-count')[:10]
+    result = []
+    for item in data1:
+        assignee_name = item['assignee_standardized']
+        partners_list = extract_assignee_partners(req).get(assignee_name.title(), [])
+        partner_count_dict = dict(Counter(partners_list))
+        result.append({
+            'assignee': assignee_name,
+            'partners': partner_count_dict,
+            'partner_count': sum(partner_count_dict.values())
+        })
+    assignees = [entry['assignee'].title() for entry in result]
+    partners = sorted(set(partner for entry in result for partner in entry['partners']))
+    partner_count_matrix = [
+        [entry['partners'].get(partner, None) for partner in partners] for entry in result
+    ]
+    text_colors = [['dark' if calculate_luminance(color) < 0.5 else 'light' for color in row] for row in
+                   partner_count_matrix]
     fig1 = go.Figure(data=go.Heatmap(
-        z=[[1, None, 30, 50, 1], [20, 1, 60, 80, 30], [30, 60, 1, -10, 20]],
-        x=['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
-        y=['Morning', 'Afternoon', 'Evening'],
-        hoverongaps=False,
-        colorscale='Blues'))
-
-    # Set height and width
+        z=partner_count_matrix,
+        x=partners,
+        y=assignees,
+        hoverinfo='none',
+        colorscale='PuBuGn',
+        colorbar=dict(title='Partner Count'),
+        text=[[f'<span style="color:{text_colors[i][j]}">{count}</span>' if count is not None else '' for j, count in
+               enumerate(row)] for i, row in enumerate(partner_count_matrix)],
+        texttemplate="%{text}",
+        textfont={"size": 14}
+    ))
     fig1.update_layout(
-        height=350,
+        title="Collaborations of competitors",
+        xaxis=dict(title='Partners'),
+        yaxis=dict(title='Assignees'),
+        height=600,
         width=950,
-
     )
     div1 = fig1.to_html()
-    df = px.data.iris()
-    fig2 = px.scatter(df, x="sepal_width", y="sepal_length", color="species", size='petal_length', size_max=10)
-
-    # set bubble chart layout
+    result_b = get_top_assignees_by_year(req)
+    # =====================================================================================
+    data = []
+    for assignee, yeardict in result_b.items():
+        for year, count in yeardict.items():
+            data.append({'Assignee': assignee.title(), 'Year': year, 'Count': count})
+    df = pd.DataFrame(data)
+    fig2 = px.scatter(df, x="Year", y="Assignee", size="Count",
+                      size_max=100, title='Patent Count Bubble Chart')
     fig2.update_layout(
-        title='Iris Dataset Bubble Chart',
-        width=950,
-        height=500,
-        hovermode='closest'
+        xaxis_title='Application Year',
+        yaxis_title='Assignee'
     )
     div2 = fig2.to_html(full_html=False)
+    # =====================================================================================
 
-    y_saving = [1.3586, 2.2623000000000002, 4.9821999999999997, 6.5096999999999996,
-                7.4812000000000003, 7.5133000000000001, 15.2148, 17.520499999999998
-                ]
-    y_net_worth = [93453.919999999998, 81666.570000000007, 69889.619999999995,
-                   78381.529999999999, 141395.29999999999, 92969.020000000004,
-                   66090.179999999993, 122379.3]
-    x = ['Japan', 'United Kingdom', 'Canada', 'Netherlands',
-         'United States', 'Belgium', 'Sweden', 'Switzerland']
-
-    # Creating two subplots
-    fig = make_subplots(rows=1, cols=2, specs=[[{}, {}]], shared_xaxes=True,
-                        shared_yaxes=False, vertical_spacing=0.001)
-
-    fig.append_trace(go.Bar(
-        x=y_saving,
-        y=x,
-        marker=dict(
-            color='rgba(50, 171, 96, 0.6)',
-            line=dict(
-                color='rgba(50, 171, 96, 1.0)',
-                width=1),
+    user_id = req.session.get('logged_in_user_id')
+    filtered_data = PatentData.objects.filter(user_id=user_id, citing_patents_count__isnull=False)
+    top_ten_highest_citing = filtered_data.order_by('-citing_patents_count')[:10]
+    top_ten_values = [val.citing_patents_count for val in top_ten_highest_citing]
+    assignee_names = [val.assignee_standardized.split('|')[0] for val in top_ten_highest_citing]
+    publication_numbers = [val.publication_number for val in top_ten_highest_citing]
+    cited_values = [val.cited_patents_count if val.cited_patents_count is not None else 1 for val in
+                    top_ten_highest_citing]
+    citation_index_values = [round(citing / cited, 2) for citing, cited in zip(top_ten_values, cited_values)]
+    y_labels = [f"{assignee} | {publication}" for assignee, publication in zip(assignee_names, publication_numbers)]
+    fig3 = make_subplots(rows=1, cols=2, shared_yaxes=True)
+    fig3.add_trace(
+        go.Bar(
+            x=top_ten_values,
+            y=y_labels,
+            text=top_ten_values,
+            orientation='h',
+            marker=dict(color=['aliceblue', 'cadetblue', 'deepskyblue', 'dodgerblue', 'lightblue', 'cornflowerblue',
+                               'midnightblue', 'mediumblue', 'blue']),
+            name=''
         ),
-        name='Household savings, percentage of household disposable income',
-        orientation='h',
-    ), 1, 1)
-
-    fig.append_trace(go.Scatter(
-        x=y_net_worth, y=x,
-        mode='lines+markers',
-        line_color='rgb(128, 0, 128)',
-        name='Household net worth, Million USD/capita',
-    ), 1, 2)
-
-    fig.update_layout(
-        title='Household savings & net worth for eight OECD countries',
-        yaxis=dict(
-            showgrid=False,
-            showline=False,
-            showticklabels=True,
-            domain=[0, 0.85],
-        ),
-        yaxis2=dict(
-            showgrid=False,
-            showline=True,
-            showticklabels=False,
-            linecolor='rgba(102, 102, 102, 0.8)',
-            linewidth=2,
-            domain=[0, 0.85],
-        ),
-        xaxis=dict(
-            zeroline=False,
-            showline=False,
-            showticklabels=True,
-            showgrid=True,
-            domain=[0, 0.42],
-        ),
-        xaxis2=dict(
-            zeroline=False,
-            showline=False,
-            showticklabels=True,
-            showgrid=True,
-            domain=[0.47, 1],
-            side='top',
-            dtick=25000,
-        ),
-        legend=dict(x=0.029, y=1.038, font_size=10),
-        margin=dict(l=100, r=20, t=70, b=70),
-        paper_bgcolor='rgb(248, 248, 255)',
-        plot_bgcolor='rgb(248, 248, 255)',
+        row=1, col=1
     )
-    annotations = []
-    y_s = np.round(y_saving, decimals=2)
-    y_nw = np.rint(y_net_worth)
-    # Adding labels
-    for ydn, yd, xd in zip(y_nw, y_s, x):
-        # labeling the scatter savings
-        annotations.append(dict(xref='x2', yref='y2',
-                                y=xd, x=ydn - 20000,
-                                text='{:,}'.format(ydn) + 'M',
-                                font=dict(family='Arial', size=12,
-                                          color='rgb(128, 0, 128)'),
-                                showarrow=False))
-        # labeling the bar net worth
-        annotations.append(dict(xref='x1', yref='y1',
-                                y=xd, x=yd + 3,
-                                text=str(yd) + '%',
-                                font=dict(family='Arial', size=12,
-                                          color='rgb(50, 171, 96)'),
-                                showarrow=False))
-    # Source
-    annotations.append(dict(xref='paper', yref='paper',
-                            x=-0.2, y=-0.109,
-                            text='OECD "' +
-                                 '(2015), Household savings (indicator), ' +
-                                 'Household net worth (indicator). doi: ' +
-                                 '10.1787/cfc6f499-en (Accessed on 05 June 2015)',
-                            font=dict(family='Arial', size=10, color='rgb(150,150,150)'),
-                            showarrow=False))
+    fig3.add_trace(
+        go.Bar(
+            x=citation_index_values,
+            y=y_labels,
+            text=citation_index_values,
+            orientation='h',
+            marker=dict(color=['aliceblue', 'cadetblue', 'deepskyblue', 'dodgerblue', 'lightblue', 'cornflowerblue',
+                               'midnightblue', 'mediumblue', 'blue']),
+            name=''
+        ),
+        row=1, col=2
+    )
+    fig3.update_layout(title_text='Parallel Horizontal Bar Charts')
+    div3 = fig3.to_html(full_html=False)
+    # =========================================================================
+    top_assignees = PatentData.objects.values('assignee_standardized').annotate(
+        count=Count('assignee_standardized')).order_by('-count')[:10]
+    top_assignee_ids = [a['assignee_standardized'] for a in top_assignees]
+    legal_status_counts = PatentData.objects.filter(assignee_standardized__in=top_assignee_ids).values(
+        'assignee_standardized', 'legal_status').annotate(count=Count('legal_status')).order_by('assignee_standardized')
+    result = {}
+    for ls in legal_status_counts:
+        assignee = ls['assignee_standardized']
+        status = ls['legal_status']
+        count = ls['count']
+        if assignee not in result:
+            result[assignee] = {}
+        result[assignee][status] = count
 
-    fig.update_layout(annotations=annotations)
-    div3 = fig.to_html(full_html=False)
-    x = ['b', 'a', 'c', 'd']
-    fig4 = go.Figure(go.Bar(x=x, y=[2, 5, 1, 9], name='Montreal'))
-    fig4.add_trace(go.Bar(x=x, y=[1, 4, 9, 16], name='Ottawa'))
-    fig4.add_trace(go.Bar(x=x, y=[6, 8, 4.5, 8], name='Toronto'))
+    assignee_names = list(result.keys())
+    status_types = list(set(status for status_dict in result.values() for status in status_dict.keys()))
+    fig4 = go.Figure()
+    for status in status_types:
+        status_counts = [assignee_data.get(status, 0) for assignee_data in result.values()]
+        fig4.add_trace(go.Bar(x=assignee_names, y=status_counts, name=status,
+                              text=status_counts, textposition='auto'))
     fig4.update_layout(barmode='stack', xaxis={'categoryorder': 'total descending'})
     div4 = fig4.to_html(full_html=False)
-    df = px.data.gapminder().query("year == 2007").query("continent == 'Europe'")
-    df.loc[df['pop'] < 2.e6, 'country'] = 'Other countries'
-    fig5 = px.pie(df, values='pop', names='country', title='Population of European continent')
-    div5 = fig5.to_html(full_html=False)
+    # ===========================================================================
+
+    patents = PatentData.objects.values('priority_country')
+    print("FBRB:::",patents)
     df = px.data.gapminder().query("year==2007")
     fig6 = px.choropleth(df, locations="iso_alpha",
-                         color="lifeExp",  # lifeExp is a column of gapminder
-                         hover_name="country",  # column to add to hover information
+                         color="lifeExp",
+                         hover_name="country",
                          color_continuous_scale=px.colors.sequential.Plasma)
     div6 = fig6.to_html(full_html=False)
-    context = {'plot_div1': div1, 'plot_div2': div2, 'plot_div3': div3, 'plot_div4': div4, 'plot_div5': div5,
+    context = {'plot_div1': div1, 'plot_div2': div2, 'plot_div3': div3, 'plot_div4': div4,
                'plot_div6': div6}
     return render(req, 'pages/charts/competitor_charts.html', context)
 
@@ -542,12 +569,12 @@ def bibliographic_charts(req, chart_id):
             uploaded_media = req.FILES.get('patient_data')
             if uploaded_media:
                 try:
-                    process_excel_data(context, req=req)
-                    first_row_project_code = pd.read_excel(uploaded_media).at[0, 'Project – Code']
+                    first_row_project_code = pd.read_excel(uploaded_media).at[1, 'Project - Code']
                     user_id = user_instance.id
                     file_content = uploaded_media.read()
                     # celery task
                     process_excel_data_task.delay(user_id, first_row_project_code, file_content)
+                    process_excel_data(context, req=req)
                 except Exception as e:
                     print(f"Error processing uploaded file: {str(e)}")
                     return HttpResponseServerError("Error processing uploaded file. Please try again.")
@@ -580,7 +607,7 @@ def process_excel_data(context, req):
         'get_cpc_counts_from_db': get_cpc_counts_from_db(req),
         'get_ipc_counts': get_ipc_counts(req)
     })
-
+    print(context)
     # assignee_legal_status_counts = {}
     # cpc_assignee_counts = {}
     #
@@ -687,8 +714,6 @@ def download_excel_file(request):
     ).exclude(
         cited_patents_count__isnull=True
     ).order_by('-cited_patents_count')[:10]
-
-    # Create a DataFrame from the top ten cited patents
     data = {
         'Project Code': [patent.project_code for patent in top_ten_cited_patents],
         'Publication Number': [patent.publication_number for patent in top_ten_cited_patents],
@@ -701,7 +726,6 @@ def download_excel_file(request):
         'CPC Count': [patent.cpc for patent in top_ten_cited_patents],
         'IPC Count': [patent.ipc for patent in top_ten_cited_patents],
         'EFAN': [patent.e_fan for patent in top_ten_cited_patents],
-        # Add other fields as needed
     }
     df = pd.DataFrame(data)
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
@@ -781,7 +805,7 @@ def process_assignees(req):
     process_assignees
     """
     user_id = req.session.get('logged_in_user_id')
-    data = PatentData.objects.filter(user_id=user_id)  # Replace 'user_id' with your actual field name
+    data = PatentData.objects.filter(user_id=user_id)
     data = data.values('assignee_standardized').annotate(count=Count('assignee_standardized')).order_by('-count')[:10]
     result = [{'Assignee - Standardized': item['assignee_standardized'], 'count': item['count']} for item in data]
     return result

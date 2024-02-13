@@ -4,11 +4,8 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>IEBS|Analytics</title>
-    <!-- Tell the browser to be responsive to screen width -->
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <!-- DataTables CSS -->
     <link rel="stylesheet" href="{% static 'plugins/datatables-bs4/css/dataTables.bootstrap4.min.css' %}">
-    <!-- Font Awesome -->
     <link rel="stylesheet" href="{% static 'plugins/fontawesome-free/css/all.min.css' %}">
     <!-- Ionicons -->
     <link rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
@@ -29,25 +26,41 @@
     <link rel="stylesheet" href="{% static 'plugins/summernote/summernote-bs4.css' %}">
     <!-- Google Font: Source Sans Pro -->
     <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700" rel="stylesheet">
+    <style>
+    .main-sidebar {
+      border-color: aqua;
+    }
+    p {
+      color: aqua;
+    }
+    .brand-text{
+        color: aqua;
+        font-weight: bold;
+    }
+    .info{
+      color: aqua;
+    }
+     .nav-sidebar .nav-link.active {
+      background-color: royalblue;
+      color: white;
+    }
+    </style>
 </head>
-
 <body class="hold-transition sidebar-mini layout-fixed">
 <div class="wrapper">
     <!-- Navbar -->
-<nav class="main-header navbar navbar-expand navbar-white navbar-light">
+    <nav class="main-header navbar navbar-expand navbar-white navbar-light">
 
-    <ul class="navbar-nav ml-auto">
-        <li class="nav-item">
-            <a href="{% url 'logout' %}" class="btn btn-danger">
-                <i class="fas fa-sign-out-alt"></i> Logout
-            </a>
-        </li>
-    </ul>
+        <ul class="navbar-nav ml-auto">
+            <li class="nav-item">
+                <a href="{% url 'logout' %}" class="btn btn-danger">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </li>
+        </ul>
 
-</nav>
-    <!-- /.navbar -->
-    <!-- Main Sidebar Container -->
-    <aside class="main-sidebar sidebar-dark-primary elevation-4">
+    </nav>
+    <aside class="main-sidebar sidebar-dark-primary elevation-4" style="border-right: 5px solid aqua;">
         <!-- Brand Logo -->
         <a href="#" class="brand-link">
             <img src="{% static 'dist/img/AdminLTELogo.png' %}" alt="AdminLTE Logo"
@@ -58,33 +71,31 @@
         <div class="sidebar">
             <!-- Sidebar user panel (optional) -->
             <div class="user-panel mt-3 pb-3 mb-3 d-flex">
-                <!--<div class="image">
-                  <img src="{% static 'dist/img/user2-160x160.jpg' %}" class="img-circle elevation-2" alt="User Image">
-                </div> -->
                 {% block info %}
                 <div class="info">
-                    <a href="{% url 'profile' %}" class="d-block">
-                        {{ request.session.user_name }}
+                    <a href="{% url 'profile' %}" class="d-block text-center" style="font-weight: bold;">
+                        {{ request.session.user_name|title }}
                     </a>
+
                 </div>
                 {% endblock %}
             </div>
             <!-- Sidebar Menu -->
+            <!-- Sidebar Menu -->
             <nav class="mt-2">
                 <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu"
                     data-accordion="false">
-                    <!-- Add icons to the links using the .nav-icon class
-                       with font-awesome or any other icon font library -->
-                    <li class="nav-item has-treeview menu-open">
+                    <!-- Add icons to the links using the .nav-icon class with font-awesome or any other icon font library -->
+                    <li class="nav-item has-treeview {% if '/index' in request.get_full_path or '/profile' in request.get_full_path or '/project-list' in request.get_full_path%} menu-open {% endif %}">
                         <a href="{% url 'index' %}"
-                           class="nav-link {% if '/index' in request.get_full_path or '/profile' in  request.get_full_path or '/project-list' in request.get_full_path%} active {% endif %}">
+                           class="nav-link {% if '/index' in request.get_full_path or '/profile' in request.get_full_path or '/project-list' in request.get_full_path%} active {% endif %}">
                             <i class="nav-icon fas fa-tachometer-alt"></i>
                             <p>
                                 Dashboard
                             </p>
                         </a>
                     </li>
-                    <li class="nav-item has-treeview">
+                    <li class="nav-item has-treeview {% if '/bibliographic_charts' in request.get_full_path or '/competitor_charts' in request.get_full_path or '/tech_charts' in request.get_full_path %} menu-open {% endif %}">
                         <a href="#"
                            class="nav-link {% if '/bibliographic_charts' in request.get_full_path or '/competitor_charts' in request.get_full_path or '/tech_charts' in request.get_full_path %} active {% endif %}">
                             <i class="nav-icon fas fa-chart-pie"></i>
@@ -120,6 +131,7 @@
                 </ul>
             </nav>
             <!-- /.sidebar-menu -->
+
         </div>
         <!-- /.sidebar -->
     </aside>
@@ -144,7 +156,6 @@
 {% block scripts %}
 <!-- jQuery -->
 <script src="{% static 'plugins/jquery/jquery.min.js' %}"></script>
-<!-- DataTables  & Plugins -->
 <script src="{% static 'plugins/datatables/jquery.dataTables.min.js' %}"></script>
 <script src="{% static 'plugins/datatables-bs4/js/dataTables.bootstrap4.min.js' %}"></script>
 <script src="{% static 'plugins/datatables-responsive/js/dataTables.responsive.min.js' %}"></script>

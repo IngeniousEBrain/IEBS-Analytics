@@ -3,21 +3,23 @@
 {% block head %}
 {% endblock %}
 {% block content %}
-<h1>Collaborations of competitors</h1>
+<!--<h1>Collaborations of competitors</h1>-->
 {{plot_div1|safe}}
-<h1>Overall patent filing</h1>
+<!--<h1>Overall patent filing</h1>-->
 {{plot_div2|safe}}
-<h1>Influence of Innovation</h1>
+<h6>Influence of Innovation</h6>
+
 {{plot_div3|safe}}
-<h1>Legal Status Distribution</h1>
+
+<h6>Legal Status Distribution</h6>
 {{plot_div4|safe}}
-<h1>Technology Landscape</h1>
-{{plot_div5|safe}}
-<h1>Priority Country Filing</h1>
+<!--<h1>Technology Landscape</h1>-->
+<!--{{plot_div5|safe}}-->
+<h6>Priority Country Filing</h6>
 {{plot_div6|safe}}
+
 {% endblock %}
 {% block scripts %}
 {{ block.super }}
 <!--script here-->
-
 {% endblock %}
