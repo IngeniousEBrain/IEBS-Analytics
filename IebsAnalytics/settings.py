@@ -77,7 +77,7 @@ TEMPLATES = [
 WSGI_APPLICATION = 'IebsAnalytics.wsgi.application'
 
 PASSWORD_HASHERS = [
-    'django.contrib.auth.hashers.Argon2PasswordHasher',  # Use Argon2 hasher
+    'django.contrib.auth.hashers.Argon2PasswordHasher',
     'django.contrib.auth.hashers.PBKDF2PasswordHasher',
 ]
 

@@ -3,12 +3,14 @@ Views for the 'visualizer' app.
 """
 # Third-party imports
 from datetime import datetime
+import collections
 from collections import Counter
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import numpy as np
+from django.db.models.functions import Substr
 # Django imports
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.hashers import check_password
@@ -22,7 +24,7 @@ from django.db.models.functions import ExtractYear
 # Local imports
 from .models import CustomUser, Project, PatentData
 from .packages import request
-from django.db.models import Count, F, Sum
+from django.db.models import Count
 from .tasks import process_excel_data_task
 
 
@@ -377,9 +379,6 @@ def extract_assignee_partners(req):
     return assignee_partner_dict
 
 
-import collections
-
-
 def get_top_assignees_by_year(req):
     top_assignees = PatentData.objects.values('assignee_standardized').annotate(
         count=Count('assignee_standardized')).order_by('-count')[:10]
@@ -395,17 +394,15 @@ def get_top_assignees_by_year(req):
             year = data['application_dates__year']
             count = data['count']
             result[name][year] = count
-
-    print(result)
     return result
 
 
 @request.validator
 def competitor_charts(req):
     data = PatentData.objects.filter(user_id=req.session.get('logged_in_user_id'))
-    data = data.values('assignee_standardized').annotate(count=Count('assignee_standardized')).order_by('-count')[:10]
+    data1 = data.values('assignee_standardized').annotate(count=Count('assignee_standardized')).order_by('-count')[:10]
     result = []
-    for item in data:
+    for item in data1:
         assignee_name = item['assignee_standardized']
         partners_list = extract_assignee_partners(req).get(assignee_name.title(), [])
         partner_count_dict = dict(Counter(partners_list))
@@ -447,13 +444,9 @@ def competitor_charts(req):
     for assignee, yeardict in result_b.items():
         for year, count in yeardict.items():
             data.append({'Assignee': assignee.title(), 'Year': year, 'Count': count})
-
     df = pd.DataFrame(data)
-    import plotly.subplots as sp
-    # Plot bubble chart
     fig2 = px.scatter(df, x="Year", y="Assignee", size="Count",
                       size_max=100, title='Patent Count Bubble Chart')
-
     fig2.update_layout(
         xaxis_title='Application Year',
         yaxis_title='Assignee'
@@ -462,70 +455,74 @@ def competitor_charts(req):
     # =====================================================================================
 
     user_id = req.session.get('logged_in_user_id')
-
-    # Filter out records with citing_patents_count not being None
     filtered_data = PatentData.objects.filter(user_id=user_id, citing_patents_count__isnull=False)
-
     top_ten_highest_citing = filtered_data.order_by('-citing_patents_count')[:10]
     top_ten_values = [val.citing_patents_count for val in top_ten_highest_citing]
     assignee_names = [val.assignee_standardized.split('|')[0] for val in top_ten_highest_citing]
+    publication_numbers = [val.publication_number for val in top_ten_highest_citing]
     cited_values = [val.cited_patents_count if val.cited_patents_count is not None else 1 for val in
                     top_ten_highest_citing]
-    citation_index_values = [citing / cited if cited != 0 else 1 for citing, cited in zip(top_ten_values, cited_values)]
-
-    fig = sp.make_subplots(rows=1, cols=2, subplot_titles=["Top Citing Count", "Citing Index"])
-
-    # Chart 1
-    fig.add_trace(
+    citation_index_values = [round(citing / cited, 2) for citing, cited in zip(top_ten_values, cited_values)]
+    y_labels = [f"{assignee} | {publication}" for assignee, publication in zip(assignee_names, publication_numbers)]
+    fig3 = make_subplots(rows=1, cols=2, shared_yaxes=True)
+    fig3.add_trace(
         go.Bar(
             x=top_ten_values,
-            y=assignee_names,
+            y=y_labels,
             text=top_ten_values,
-            orientation="h",
-            marker_color="blue",
+            orientation='h',
+            marker=dict(color=['aliceblue', 'cadetblue', 'deepskyblue', 'dodgerblue', 'lightblue', 'cornflowerblue',
+                               'midnightblue', 'mediumblue', 'blue']),
+            name=''
         ),
-        row=1,
-        col=1,
+        row=1, col=1
     )
-
-    # Chart 2
-    fig.add_trace(
+    fig3.add_trace(
         go.Bar(
             x=citation_index_values,
-            y=assignee_names,
+            y=y_labels,
             text=citation_index_values,
-            orientation="h",
-            marker_color="blue",
+            orientation='h',
+            marker=dict(color=['aliceblue', 'cadetblue', 'deepskyblue', 'dodgerblue', 'lightblue', 'cornflowerblue',
+                               'midnightblue', 'mediumblue', 'blue']),
+            name=''
         ),
-        row=1,
-        col=2,
+        row=1, col=2
     )
+    fig3.update_layout(title_text='Parallel Horizontal Bar Charts')
+    div3 = fig3.to_html(full_html=False)
+    # =========================================================================
+    top_assignees = PatentData.objects.values('assignee_standardized').annotate(
+        count=Count('assignee_standardized')).order_by('-count')[:10]
+    top_assignee_ids = [a['assignee_standardized'] for a in top_assignees]
+    legal_status_counts = PatentData.objects.filter(assignee_standardized__in=top_assignee_ids).values(
+        'assignee_standardized', 'legal_status').annotate(count=Count('legal_status')).order_by('assignee_standardized')
+    result = {}
+    for ls in legal_status_counts:
+        assignee = ls['assignee_standardized']
+        status = ls['legal_status']
+        count = ls['count']
+        if assignee not in result:
+            result[assignee] = {}
+        result[assignee][status] = count
 
-    # Update layout
-    fig.update_layout(
-        autosize=False,
-        width=950,  # Adjust the width as needed
-        height=600,  # Adjust the height as needed
-        yaxis2=dict(showticklabels=False),  # Hide y-axis labels for Chart 2
-    )
-
-    # Convert the plot to HTML
-    div3 = fig.to_html(full_html=False)
-    # ======================================================================================
-    x = ['b', 'a', 'c', 'd']
-    fig4 = go.Figure(go.Bar(x=x, y=[2, 5, 1, 9], name='Montreal'))
-    fig4.add_trace(go.Bar(x=x, y=[1, 4, 9, 16], name='Ottawa'))
-    fig4.add_trace(go.Bar(x=x, y=[6, 8, 4.5, 8], name='Toronto'))
+    assignee_names = list(result.keys())
+    status_types = list(set(status for status_dict in result.values() for status in status_dict.keys()))
+    fig4 = go.Figure()
+    for status in status_types:
+        status_counts = [assignee_data.get(status, 0) for assignee_data in result.values()]
+        fig4.add_trace(go.Bar(x=assignee_names, y=status_counts, name=status,
+                              text=status_counts, textposition='auto'))
     fig4.update_layout(barmode='stack', xaxis={'categoryorder': 'total descending'})
     div4 = fig4.to_html(full_html=False)
-    # df = px.data.gapminder().query("year == 2007").query("continent == 'Europe'")
-    # df.loc[df['pop'] < 2.e6, 'country'] = 'Other countries'
-    # fig5 = px.pie(df, values='pop', names='country', title='Population of European continent')
-    # div5 = fig5.to_html(full_html=False)
+    # ===========================================================================
+
+    patents = PatentData.objects.values('priority_country')
+    print("FBRB:::",patents)
     df = px.data.gapminder().query("year==2007")
     fig6 = px.choropleth(df, locations="iso_alpha",
-                         color="lifeExp",  # lifeExp is a column of gapminder
-                         hover_name="country",  # column to add to hover information
+                         color="lifeExp",
+                         hover_name="country",
                          color_continuous_scale=px.colors.sequential.Plasma)
     div6 = fig6.to_html(full_html=False)
     context = {'plot_div1': div1, 'plot_div2': div2, 'plot_div3': div3, 'plot_div4': div4,
@@ -572,12 +569,12 @@ def bibliographic_charts(req, chart_id):
             uploaded_media = req.FILES.get('patient_data')
             if uploaded_media:
                 try:
-                    process_excel_data(context, req=req)
-                    first_row_project_code = pd.read_excel(uploaded_media).at[0, 'Project – Code']
+                    first_row_project_code = pd.read_excel(uploaded_media).at[1, 'Project - Code']
                     user_id = user_instance.id
                     file_content = uploaded_media.read()
                     # celery task
                     process_excel_data_task.delay(user_id, first_row_project_code, file_content)
+                    process_excel_data(context, req=req)
                 except Exception as e:
                     print(f"Error processing uploaded file: {str(e)}")
                     return HttpResponseServerError("Error processing uploaded file. Please try again.")
@@ -610,7 +607,7 @@ def process_excel_data(context, req):
         'get_cpc_counts_from_db': get_cpc_counts_from_db(req),
         'get_ipc_counts': get_ipc_counts(req)
     })
-
+    print(context)
     # assignee_legal_status_counts = {}
     # cpc_assignee_counts = {}
     #
