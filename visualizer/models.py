@@ -238,7 +238,7 @@ class PatentData(models.Model):
     ipc = models.TextField()
     e_fan = models.CharField(max_length=100)
     priority_country = models.CharField(max_length=100,null=True, blank=True)
-    created_date = models.DateTimeField(auto_now_add=True)
+    created_date = models.DateTimeField(default=timezone.now, blank=True, null=True)
 
     def __str__(self):
         return f"{self.assignee_standardized} - {self.publication_number}"
