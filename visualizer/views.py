@@ -26,6 +26,7 @@ from .models import CustomUser, Project, PatentData
 from .packages import request
 from django.db.models import Count
 from .tasks import process_excel_data_task
+from django.views.decorators.csrf import csrf_exempt
 
 
 def ie_analytics_home(req):
@@ -41,6 +42,7 @@ def ie_analytics_home(req):
     return render(req, 'pages/onboard/login.html')
 
 
+@csrf_exempt
 def login(req):
     """
     Handle user login.
@@ -518,7 +520,7 @@ def competitor_charts(req):
     # ===========================================================================
 
     patents = PatentData.objects.values('priority_country')
-    print("FBRB:::",patents)
+    print("FBRB:::", patents)
     df = px.data.gapminder().query("year==2007")
     fig6 = px.choropleth(df, locations="iso_alpha",
                          color="lifeExp",
@@ -535,7 +537,10 @@ def handle_nat(dt):
         return None
     else:
         return dt
+
+
 import math
+
 
 @request.validator
 def bibliographic_charts(req, chart_id):
