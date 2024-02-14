@@ -209,7 +209,7 @@
             password: password
         },
         headers: {
-            'X-CSRFToken': getCookie('csrftoken') // Include CSRF token in headers
+            'X-CSRFToken': getCookie('csrftoken')
         },
         success: function(response) {
     if (response.status === 'success') {
