@@ -664,7 +664,6 @@ def process_excel_data(context, req):
         'get_cpc_counts_from_db': get_cpc_counts_from_db(req),
         'get_ipc_counts': get_ipc_counts(req)
     })
-    print(context)
     # assignee_legal_status_counts = {}
     # cpc_assignee_counts = {}
     #
