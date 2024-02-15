@@ -19,5 +19,6 @@ urlpatterns = [
     path('tech_charts', views.tech_charts, name='tech_charts'),
     path('competitor_charts', views.competitor_charts, name='competitor_charts'),
     path('download_excel_file/', views.download_excel_file, name='download_excel_file'),
+    path('download_citing_excel_file/', views.download_citing_excel_file, name='download_citing_excel_file'),
     path('get_year_wise_excel/', views.get_year_wise_excel, name='get_year_wise_excel'),
 ]
