@@ -9,7 +9,6 @@ https://docs.djangoproject.com/en/5.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
 """
-
 from pathlib import Path
 import os
 from dotenv import load_dotenv
@@ -19,9 +18,6 @@ load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv('SECRET_KEY')
@@ -55,9 +51,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
-
 ROOT_URLCONF = 'IebsAnalytics.urls'
-
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -76,6 +70,16 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'IebsAnalytics.wsgi.application'
 
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://127.0.0.1:6379/1",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
+    }
+}
+
 PASSWORD_HASHERS = [
     'django.contrib.auth.hashers.Argon2PasswordHasher',
     'django.contrib.auth.hashers.PBKDF2PasswordHasher',
@@ -83,29 +87,26 @@ PASSWORD_HASHERS = [
 
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
-CSRF_COOKIE_SECURE = False
+CSRF_COOKIE_SECURE = True
 
 DATABASES = {
     'default': {
         'ENGINE': os.getenv('DB_ENGINE'),
-        'NAME':  os.getenv('DB_NAME'),
+        'NAME': os.getenv('DB_NAME'),
         'USER': os.getenv('DB_USER'),
-        'PASSWORD':  os.getenv('DB_PASSWORD'),
-        'HOST':  os.getenv('DB_HOST'),
-        'PORT':  os.getenv('DB_PORT'),
+        'PASSWORD': os.getenv('DB_PASSWORD'),
+        'HOST': os.getenv('DB_HOST'),
+        'PORT': os.getenv('DB_PORT'),
     }
 }
 
 # Celery settings
 
 CELERY_BROKER_URL = 'amqp://localhost'
-
 CELERY_RESULT_BACKEND = 'rpc://'
-
 CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
@@ -142,11 +143,6 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 
 USE_TZ = True
-
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.0/howto/static-files/
-
-STATIC_URL = 'static/'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field

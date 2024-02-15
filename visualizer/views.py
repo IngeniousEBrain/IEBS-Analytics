@@ -27,6 +27,7 @@ from .packages import request
 from django.db.models import Count
 from .tasks import process_excel_data_task
 from django.views.decorators.csrf import csrf_exempt
+import math
 
 
 def ie_analytics_home(req):
@@ -389,7 +390,6 @@ def get_top_assignees_by_year(req):
     for assignee in top_assignees:
         name = assignee['assignee_standardized']
         result[name]
-
         year_wise_count = PatentData.objects.filter(assignee_standardized=name).values(
             'application_dates__year').annotate(count=Count('id'))
         for data in year_wise_count:
@@ -491,7 +491,7 @@ def competitor_charts(req):
         ),
         row=1, col=2
     )
-    fig3.update_layout(title_text='Parallel Horizontal Bar Charts')
+    fig3.update_layout(title_text='Top Citing Patents & Citation Index')
     div3 = fig3.to_html(full_html=False)
     # =========================================================================
     top_assignees = PatentData.objects.values('assignee_standardized').annotate(
@@ -520,7 +520,6 @@ def competitor_charts(req):
     # ===========================================================================
 
     patents = PatentData.objects.values('priority_country')
-    print("FBRB:::", patents)
     df = px.data.gapminder().query("year==2007")
     fig6 = px.choropleth(df, locations="iso_alpha",
                          color="lifeExp",
@@ -537,9 +536,6 @@ def handle_nat(dt):
         return None
     else:
         return dt
-
-
-import math
 
 
 @request.validator
@@ -586,7 +582,6 @@ def bibliographic_charts(req, chart_id):
                                                  project_code=first_row_project_code):
                         PatentData.objects.filter(user_id=user_instance,
                                                   project_code=first_row_project_code).delete()
-                        print('deletion done')
                     for index, row in df.iterrows():
                         # print(row['Priority Country'])
                         application_date_str = row['Application Dates']
@@ -776,7 +771,34 @@ def download_excel_file(request):
         cited_patents_count__isnull=True
     ).order_by('-cited_patents_count')[:10]
     data = {
-        'Project Code': [patent.project_code for patent in top_ten_cited_patents],
+        # 'Project Code': [patent.project_code for patent in top_ten_cited_patents],
+        'Publication Number': [patent.publication_number for patent in top_ten_cited_patents],
+        'Assignee Standardized': [patent.assignee_standardized for patent in top_ten_cited_patents],
+        'Cited Patents Count': [patent.cited_patents_count for patent in top_ten_cited_patents],
+        'Legal Status': [patent.legal_status for patent in top_ten_cited_patents],
+        'Application Dates': [patent.application_dates for patent in top_ten_cited_patents],
+        'Publication Dates': [patent.publication_dates for patent in top_ten_cited_patents],
+        'Application Number': [patent.application_number for patent in top_ten_cited_patents],
+        'CPC Count': [patent.cpc for patent in top_ten_cited_patents],
+        'IPC Count': [patent.ipc for patent in top_ten_cited_patents],
+        'EFAN': [patent.e_fan for patent in top_ten_cited_patents],
+    }
+    df = pd.DataFrame(data)
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename=top_ten_cited_patents.xlsx'
+    df.to_excel(response, index=False, sheet_name='Top Ten Cited Patents')
+    return response
+
+
+def download_citing_excel_file(request):
+    user_id_to_filter = request.session.get('logged_in_user_id')
+    top_ten_cited_patents = PatentData.objects.filter(
+        user_id=user_id_to_filter
+    ).exclude(
+        citing_patents_count__isnull=True
+    ).order_by('-citing_patents_count')[:10]
+    data = {
+        # 'Project Code': [patent.project_code for patent in top_ten_cited_patents],
         'Publication Number': [patent.publication_number for patent in top_ten_cited_patents],
         'Assignee Standardized': [patent.assignee_standardized for patent in top_ten_cited_patents],
         'Cited Patents Count': [patent.cited_patents_count for patent in top_ten_cited_patents],
@@ -803,19 +825,19 @@ def get_year_wise_excel(req):
         count=Count('id')
     ).order_by('-publication_year')
     year_wise_count = {item['publication_year']: item['count'] for item in year_counts}
+
     data = {
-        'Project Code': [patent.project_code for patent in year_wise_count],
-        'Publication Number': [patent.publication_number for patent in year_wise_count],
-        'Assignee Standardized': [patent.assignee_standardized for patent in year_wise_count],
-        'Cited Patents Count': [patent.cited_patents_count for patent in year_wise_count],
-        'Legal Status': [patent.legal_status for patent in year_wise_count],
-        'Application Dates': [patent.application_dates for patent in year_wise_count],
-        'Publication Dates': [patent.publication_dates for patent in year_wise_count],
-        'Application Number': [patent.application_number for patent in year_wise_count],
-        'CPC Count': [patent.cpc for patent in year_wise_count],
-        'IPC Count': [patent.ipc for patent in year_wise_count],
-        'EFAN': [patent.e_fan for patent in year_wise_count],
-        # Add other fields as needed
+        # 'Project Code': [patent.project_code for patent in year_wise_count],
+        'Publication Number': [patent.publication_number for patent in year_counts],
+        'Assignee Standardized': [patent.assignee_standardized for patent in year_counts],
+        'Cited Patents Count': [patent.cited_patents_count for patent in year_counts],
+        'Legal Status': [patent.legal_status for patent in year_counts],
+        'Application Dates': [patent.application_dates for patent in year_counts],
+        'Publication Dates': [patent.publication_dates for patent in year_counts],
+        'Application Number': [patent.application_number for patent in year_counts],
+        'CPC Count': [patent.cpc for patent in year_counts],
+        'IPC Count': [patent.ipc for patent in year_counts],
+        'EFAN': [patent.e_fan for patent in year_counts],
     }
     df = pd.DataFrame(data)
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
@@ -844,7 +866,6 @@ def get_year_with_publication(req):
     ).values('publication_year').annotate(
         count=Count('id')
     ).order_by('-publication_year')
-
     year_wise_count = {item['publication_year']: item['count'] for item in year_counts}
     return dict(year_wise_count)
 
@@ -853,11 +874,8 @@ def get_year_with_exp_date(req):
     user_id = req.session.get('logged_in_user_id')
     year_counts = PatentData.objects.filter(user_id=user_id).annotate(
         expected_expiry_date=ExtractYear('expected_expiry_dates')
-    ).values('expected_expiry_date').annotate(
-        count=Count('id')
-    )
+    ).values('expected_expiry_date').annotate(count=Count('id'))
     year_wise_exp_date = {item['expected_expiry_date']: item['count'] for item in year_counts}
-
     return dict(year_wise_exp_date)
 
 

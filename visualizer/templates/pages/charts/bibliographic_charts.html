@@ -45,25 +45,7 @@
                 <div class="container-fluid">
                     <div class="row">
                         <div class="col-md-6">
-                            <!-- AREA CHART -->
-                            <div class="card card-info">
-                                <div class="card-header">
-                                    <h3 class="card-title">Publication Trend</h3>
-                                    <div class="card-tools">
-                                        <button type="button" class="btn btn-tool" data-card-widget="collapse">
-                                            <i class="fas fa-minus"></i>
-                                        </button>
-                                        <button type="button" class="btn btn-tool" data-card-widget="remove"><i
-                                                class="fas fa-times"></i></button>
-                                    </div>
-                                </div>
-                                <div class="card-body">
-                                    <div class="chart">
-                                        <canvas id="areaChart" style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
-                                    </div>
-                                </div>
-                                <!-- /.card-body -->
-                            </div>
+
                             <!-- /.card -->
                             <!-- DONUT CHART -->
                             <div class="card card-info">
@@ -78,7 +60,8 @@
                                     </div>
                                 </div>
                                 <div class="card-body">
-                                    <canvas id="donutChart" style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
+                                    <canvas id="donutChart"
+                                            style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
                                 </div>
                             </div>
                             <!-- /.card -->
@@ -95,7 +78,8 @@
                                     </div>
                                 </div>
                                 <div class="card-body">
-                                    <canvas id="pieChart" style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
+                                    <canvas id="pieChart"
+                                            style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
                                 </div>
                                 <!-- /.card-body -->
                             </div>
@@ -116,11 +100,62 @@
                                     </div>
                                 </div>
                                 <div class="card-body">
-                                    <canvas id="donut_cited_Chart" style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
+                                    <canvas id="donut_cited_Chart"
+                                            style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
                                 </div>
                             </div>
                             <!-- /.card -->
-                            <!-- BAR CHART -->
+
+                            <!-- /.card -->
+
+                            <!-- /.card -->
+                            <!-- LINE CHART -->
+                            <div class="card card-info ">
+                                <div class="card-header">
+                                    <h3 class="card-title">Top Innovative Jurisdiction</h3>
+                                    <div class="card-tools">
+                                        <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                            <i class="fas fa-minus"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-tool" data-card-widget="remove"><i
+                                                class="fas fa-times"></i></button>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="chart linechart">
+                                        <canvas id="lineChart"
+                                                style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
+                                    </div>
+                                </div>
+                                <!-- /.card-body -->
+                            </div>
+                            <!-- /.card -->
+                        </div>
+                        <!-- /.col (RIGHT) -->
+                    </div>
+                    <!-- /.row -->
+
+                       <!-- AREA CHART -->
+                            <div class="card card-info">
+                                <div class="card-header">
+                                    <h3 class="card-title">Publication Trend</h3>
+                                    <div class="card-tools">
+                                        <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                            <i class="fas fa-minus"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-tool" data-card-widget="remove"><i
+                                                class="fas fa-times"></i></button>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="chart">
+                                        <canvas id="areaChart"
+                                                style="width:100%;max-width:100%;height:350px"></canvas>
+                                    </div>
+                                </div>
+                                <!-- /.card-body -->
+                            </div>
+                       <!-- BAR CHART -->
                             <div class="card card-info">
                                 <div class="card-header">
                                     <h3 class="card-title">Top Assignee</h3>
@@ -134,67 +169,82 @@
                                 </div>
                                 <div class="card-body">
                                     <div class="chart">
-                                        <canvas id="barChart" style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
+                                        <canvas id="barChart"
+                                                style="width:100%;max-width:100%;height:350px"></canvas>
                                     </div>
                                 </div>
                                 <!-- /.card-body -->
                             </div>
-                            <!-- /.card -->
-                            <!-- STACKED BAR CHART -->
-                            <div class="card card-info">
-                                <div class="card-header">
-                                    <h3 class="card-title">Recent Active Assignee</h3>
-                                    <div class="card-tools">
-                                        <button type="button" class="btn btn-tool" data-card-widget="collapse">
-                                            <i class="fas fa-minus"></i>
-                                        </button>
-                                        <button type="button" class="btn btn-tool" data-card-widget="remove"><i
-                                                class="fas fa-times"></i></button>
-                                    </div>
-                                </div>
-                                <div class="card-body">
-                                    <div class="chart">
-                                        <canvas id="stackedBarChart" style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
-                                    </div>
-                                </div>
-                                <!-- /.card-body -->
+                    <!-- STACKED BAR CHART -->
+                    <div class="card card-info">
+                        <div class="card-header">
+                            <h3 class="card-title">Recent Active Assignee</h3>
+                            <div class="card-tools">
+                                <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                    <i class="fas fa-minus"></i>
+                                </button>
+                                <button type="button" class="btn btn-tool" data-card-widget="remove"><i
+                                        class="fas fa-times"></i></button>
                             </div>
-                            <!-- /.card -->
-                            <!-- LINE CHART -->
-                            <div class="card card-info">
-                                <div class="card-header">
-                                    <h3 class="card-title">Top Innovative Jurisdiction</h3>
-                                    <div class="card-tools">
-                                        <button type="button" class="btn btn-tool" data-card-widget="collapse">
-                                            <i class="fas fa-minus"></i>
-                                        </button>
-                                        <button type="button" class="btn btn-tool" data-card-widget="remove"><i
-                                                class="fas fa-times"></i></button>
-                                    </div>
-                                </div>
-                                <div class="card-body">
-                                    <div class="chart">
-                                        <canvas id="lineChart" style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
-                                    </div>
-                                </div>
-                                <!-- /.card-body -->
-                            </div>
-                            <!-- /.card -->
                         </div>
-                        <!-- /.col (RIGHT) -->
+                        <div class="card-body">
+                            <div class="chart">
+                                <canvas id="stackedBarChart" style="width:100%;max-width:100%;height:350px"></canvas>
+                            </div>
+                        </div>
+                        <!-- /.card-body -->
                     </div>
-                    <!-- /.row -->
+                    <!--                    Expected Expiry Date-->
+                    <div class="card card-info">
+                        <div class="card-header">
+                            <h3 class="card-title">Expected Expiry Date</h3>
+                            <div class="card-tools">
+                                <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                    <i class="fas fa-minus"></i>
+                                </button>
+                                <button type="button" class="btn btn-tool" data-card-widget="remove"><i
+                                        class="fas fa-times"></i></button>
+                            </div>
+                        </div>
 
-                    <h5>Expected Expiry Date</h5>
-                    <canvas id="myChart" style="width:100%;max-width:100%;height:15%;"></canvas>
+                        <div class="card-body">
+                            <canvas id="myChart" style="width:100%;max-width:100%;height:350px;"></canvas>
+                        </div>
+                    </div>
 
-                    <h5>TOP IPC</h5>
-                    <canvas id="horizontal-stacker-bar-chart"
-                            style="width:100%;max-width:100%;height:15%;"></canvas>
+                    <div class="card card-info">
+                        <div class="card-header">
+                            <h3 class="card-title">Top IPC</h3>
+                            <div class="card-tools">
+                                <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                    <i class="fas fa-minus"></i>
+                                </button>
+                                <button type="button" class="btn btn-tool" data-card-widget="remove"><i
+                                        class="fas fa-times"></i></button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="horizontal-stacker-bar-chart" style="width:100%;max-width:100%;height:350px;">
+                            </canvas>
+                        </div>
+                    </div>
 
-                    <h5>TOP CPC</h5>
-                    <canvas id="horizontal-stacker-bar-chart_cpc"
-                            style="width:100%;max-width:100%;height:15%;"></canvas>
+                    <div class="card card-info">
+                        <div class="card-header">
+                            <h3 class="card-title">Top IPC</h3>
+                            <div class="card-tools">
+                                <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                    <i class="fas fa-minus"></i>
+                                </button>
+                                <button type="button" class="btn btn-tool" data-card-widget="remove"><i
+                                        class="fas fa-times"></i></button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="horizontal-stacker-bar-chart_cpc"
+                                    style="width:100%;max-width:100%;height:350px;"></canvas>
+                        </div>
+                    </div>
                 </div>
             </section>
         </div>
@@ -208,17 +258,17 @@
 {% block scripts %}
 {{ block.super }}
 <script>
-var user_id = {{user_instance.id}};
-var yearWiseExpDate = {{ year_wise_exp_date | safe }};
-var year_wise_count = {{ year_wise_count | safe }};
-var topCitedPatentsDict_cited = {{ top_cited_patents | safe }};
-var topCitingPatentsDict = {{ top_citing_patents | safe }};
-var legalStatusCounts = {{ legal_status_counts | safe }};
-var topAssigneesData = {{ top_assignees | safe }};
-var topAssigneesDataStacked = {{ top_assignees_last_five_years | safe }};
-var country_code_counts = {{get_country_code_counts_from_db | safe}};
-var get_cpc_counts_from_db = {{get_cpc_counts_from_db | safe}};
-var get_ipc_counts = {{get_ipc_counts | safe}};
+    var user_id = {{user_instance.id}};
+    var yearWiseExpDate = {{ year_wise_exp_date | safe }};
+    var year_wise_count = {{ year_wise_count | safe }};
+    var topCitedPatentsDict_cited = {{ top_cited_patents | safe }};
+    var topCitingPatentsDict = {{ top_citing_patents | safe }};
+    var legalStatusCounts = {{ legal_status_counts | safe }};
+    var topAssigneesData = {{ top_assignees | safe }};
+    var topAssigneesDataStacked = {{ top_assignees_last_five_years | safe }};
+    var country_code_counts = {{get_country_code_counts_from_db | safe}};
+    var get_cpc_counts_from_db = {{get_cpc_counts_from_db | safe}};
+    var get_ipc_counts = {{get_ipc_counts | safe}};
 </script>
 <script src="/static/custom_js_chart/custom_chart.js"></script>
 {% endblock %}
