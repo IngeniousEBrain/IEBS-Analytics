@@ -21,4 +21,8 @@ urlpatterns = [
     path('download_excel_file/', views.download_excel_file, name='download_excel_file'),
     path('download_citing_excel_file/', views.download_citing_excel_file, name='download_citing_excel_file'),
     path('get_year_wise_excel/', views.get_year_wise_excel, name='get_year_wise_excel'),
+    path('download-demo-excel/', views.download_demo_excel, name='download_demo_excel'),
+    path('download_excel/', views.download_excel_view, name='download_excel'),
+    path('fetch_data/', views.fetch_data_view, name='fetch_data'),
+
 ]

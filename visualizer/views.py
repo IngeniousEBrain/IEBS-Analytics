@@ -10,7 +10,8 @@ import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import numpy as np
-from django.db.models.functions import Substr
+from io import BytesIO
+
 # Django imports
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.hashers import check_password
@@ -20,6 +21,7 @@ from django.contrib.sessions.models import Session
 from django.utils import timezone
 from django.http import HttpResponse
 from django.http import HttpResponseServerError
+from django.db.models import Q
 from django.db.models.functions import ExtractYear
 # Local imports
 from .models import CustomUser, Project, PatentData
@@ -28,6 +30,7 @@ from django.db.models import Count
 from .tasks import process_excel_data_task
 from django.views.decorators.csrf import csrf_exempt
 import math
+from openpyxl import Workbook
 
 
 def ie_analytics_home(req):
@@ -538,6 +541,91 @@ def handle_nat(dt):
         return dt
 
 
+def download_demo_excel():
+    # Create a new workbook and add a worksheet.
+    wb = Workbook()
+    ws = wb.active
+
+    # Add data to the worksheet (replace this with your actual data).
+    header_row = ["S. No.", "Publication Number", "Assignee - Standardized", "Legal Status", "Expected Expiry Dates",
+                  "Remaining Life", "Cited Patents - Count", "Citing Patents - Count", "Inventors",
+                  "Earliest Patent Priority Date", "Application Dates", "Publication Dates", "Application Number",
+                  "CPC", "IPC", "EFAN", "Priority Country", "Assignee - Standardized", "Project–Code"]
+    ws.append(header_row)
+
+    # Save the workbook to a response.
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename=demo_excel_file.xlsx'
+    wb.save(response)
+
+    return response
+
+
+def download_excel_view(req):
+    status = req.GET.get('status')
+    patents = PatentData.objects.filter(legal_status=status)
+    data = {
+        'Publication Number': list(patents.values_list('publication_number', flat=True)),
+        'Assignee Standardized': list(patents.values_list('assignee_standardized', flat=True)),
+        'Legal Status': list(patents.values_list('legal_status', flat=True)),
+        'Expected Expiry Date': list(patents.values_list('expected_expiry_dates', flat=True)),
+        'Remaining Life': list(patents.values_list('remaining_life', flat=True)),
+        'Cited Patent': list(patents.values_list('cited_patents_count', flat=True)),
+        'Citing Patent': list(patents.values_list('citing_patents_count', flat=True)),
+        'Inventors': list(patents.values_list('inventors', flat=True)),
+        'Earliest Priority Date': list(patents.values_list('earliest_patent_priority_date', flat=True)),
+        'Application Date': list(patents.values_list('application_dates', flat=True)),
+        'Publication Date': list(patents.values_list('publication_dates', flat=True)),
+        'CPC': list(patents.values_list('cpc', flat=True)),
+        'IPC': list(patents.values_list('ipc', flat=True)),
+        'E_FAN': list(patents.values_list('e_fan', flat=True)),
+        'Priority Country': list(patents.values_list('priority_country', flat=True)),
+    }
+    df = pd.DataFrame(data)
+    output = BytesIO()
+    writer = pd.ExcelWriter(output, engine='xlsxwriter')
+    df.to_excel(writer, sheet_name='Sheet1', index=False)
+    writer._save()
+    output.seek(0)
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'attachment; filename={status}_data.xlsx'
+    response.write(output.getvalue())
+    return response
+
+
+def fetch_data_view(request):
+    # Retrieve the status from the query parameters
+    status = request.GET.get('status')
+
+    # Filter the queryset based on the provided status
+    patents = PatentData.objects.filter(legal_status=status)
+
+    # Create a list of dictionaries containing the data
+    data = [
+        {
+            'publication_number': patent.publication_number,
+            'assignee_standardized': patent.assignee_standardized,
+            'legal_status': patent.legal_status,
+            'expected_expiry_dates': patent.expected_expiry_dates,
+            'remaining_life': patent.remaining_life,
+            'cited_patents_count': patent.cited_patents_count,
+            'citing_patents_count': patent.citing_patents_count,
+            'inventors': patent.inventors,
+            'earliest_patent_priority_date': patent.earliest_patent_priority_date,
+            'application_dates': patent.application_dates,
+            'publication_dates': patent.publication_dates,
+            'cpc': patent.cpc,
+            'ipc': patent.ipc,
+            'e_fan': patent.e_fan,
+            'priority_country': patent.priority_country,
+        }
+        for patent in patents
+    ]
+
+    # Return the data as JSON response
+    return JsonResponse(data, safe=False)
+
+
 @request.validator
 def bibliographic_charts(req, chart_id):
     """
@@ -573,7 +661,8 @@ def bibliographic_charts(req, chart_id):
                     first_row_project_code = pd.read_excel(uploaded_media).iloc[3, 18]
                     user_id = user_instance.id
                     file_content = uploaded_media.read()
-                    # # celery task
+                    # celery task
+                    # process_excel_data_task.delay(user_id, first_row_project_code, file_content)
                     df = pd.read_excel(uploaded_media, engine='openpyxl')
                     patent_data_rows = []
                     user_instance = CustomUser.objects.get(id=user_id)
@@ -630,7 +719,6 @@ def bibliographic_charts(req, chart_id):
                     PatentData.objects.bulk_create([
                         PatentData(**data) for data in patent_data_rows
                     ])
-                    # process_excel_data_task.delay(user_id, first_row_project_code, file_content)
                     process_excel_data(context, req=req)
                 except Exception as e:
                     print(f"Error processing uploaded file: {str(e)}")
@@ -650,8 +738,25 @@ def process_excel_data(context, req):
         context (dict): The context dictionary to store chart data.
 
     """
+
+
+    user_id = req.session.get('logged_in_user_id')
+    data = PatentData.objects.filter(user_id=user_id)
+    data = data.values('assignee_standardized').annotate(count=Count('assignee_standardized')).order_by('-count')[:10]
+    # top recent assignees
+    current_year = datetime.now().year
+    last_five_years_start = current_year - 5
+    top_assignees_last_five_years = (
+        PatentData.objects
+        .filter(user_id=user_id, application_dates__year__gte=last_five_years_start)
+        .values('assignee_standardized')
+        .annotate(count=Count('assignee_standardized'))
+        .order_by('-count')[:10]
+    )
     context.update({
+        'recent_assignees_last_five_years': top_assignees_last_five_years,
         'top_assignees': process_assignees(req=req),
+        'top_assignees_dict': data,
         'top_assignees_last_five_years': process_assignees_last_five_years(request=req),
         'legal_status_counts': get_legal_status_count(req),
         'top_cited_patents': get_top_cited_count(req),
@@ -708,12 +813,15 @@ def get_country_code_count(req):
 def get_ipc_counts(req):
     patent_data_queryset = PatentData.objects.filter(user_id=req.session.get('logged_in_user_id'))
     ipc_counts_from_db = Counter()
+
     for patent_data in patent_data_queryset:
         ipc_values = patent_data.ipc.split('|') if patent_data.ipc else []
         for ipc_value in ipc_values:
             ipc_code = ipc_value.strip()[:4]
             ipc_counts_from_db[ipc_code] += 1
-    ipc_counts_dict = dict(ipc_counts_from_db)
+    ipc_counts_dict_ws = dict(ipc_counts_from_db)
+    sorted_ipc_counts = dict(sorted(ipc_counts_dict_ws.items(), key=lambda item: item[1], reverse=True))
+    ipc_counts_dict = dict(list(sorted_ipc_counts.items())[:10])
     return ipc_counts_dict
 
 
@@ -725,7 +833,9 @@ def get_cpc_counts_from_db(req):
         for cpc_value in cpc_values:
             cpc_code = cpc_value.strip()[:4]
             cpc_counts_from_db[cpc_code] += 1
-    cpc_counts_dict = dict(cpc_counts_from_db)
+    cpc_counts_dict_ws = dict(cpc_counts_from_db)
+    sorted_cpc_counts = dict(sorted(cpc_counts_dict_ws.items(), key=lambda item: item[1], reverse=True))
+    cpc_counts_dict = dict(list(sorted_cpc_counts.items())[:10])
     return cpc_counts_dict
 
 
@@ -748,19 +858,6 @@ def get_legal_status_count(req):
     for legal_status in all_legal_statuses:
         legal_status_counts_dict.setdefault(legal_status, 0)
     return legal_status_counts_dict
-
-
-def get_top_cited_count(req):
-    cited_patents_dict = {}
-    user_id_to_filter = req.session.get('logged_in_user_id')
-    top_ten_cited_patents = PatentData.objects.filter(
-        user_id=user_id_to_filter
-    ).exclude(
-        cited_patents_count__isnull=True
-    ).order_by('-cited_patents_count')[:10]
-    for patent_data in top_ten_cited_patents:
-        cited_patents_dict[patent_data.publication_number] = patent_data.cited_patents_count
-    return cited_patents_dict
 
 
 def download_excel_file(request):
@@ -855,8 +952,32 @@ def get_top_citing_count(req):
         citing_patents_count__isnull=True
     ).order_by('-citing_patents_count')[:10]
     for patent_data in top_ten_citing_patents:
-        citing_patents_dict[patent_data.publication_number] = patent_data.citing_patents_count
+        citing_patents_dict[patent_data.publication_number] = {
+            "count": patent_data.citing_patents_count,
+            "assignee": patent_data.assignee_standardized
+        }
+
     return citing_patents_dict
+
+
+def get_top_cited_count(req):
+    cited_patents_dict = {}
+    user_id_to_filter = req.session.get('logged_in_user_id')
+    top_ten_cited_patents = PatentData.objects.filter(
+        user_id=user_id_to_filter
+    ).exclude(
+        cited_patents_count__isnull=True
+    ).order_by('-cited_patents_count')[:10]
+
+    for patent_data in top_ten_cited_patents:
+        cited_patents_dict[patent_data.publication_number] = {
+            "count": patent_data.cited_patents_count,
+            "assignee": patent_data.assignee_standardized
+        }
+
+    # for patent_data in top_ten_cited_patents:
+    #     cited_patents_dict[patent_data.publication_number] = patent_data.cited_patents_count
+    return cited_patents_dict
 
 
 def get_year_with_publication(req):
@@ -872,10 +993,18 @@ def get_year_with_publication(req):
 
 def get_year_with_exp_date(req):
     user_id = req.session.get('logged_in_user_id')
-    year_counts = PatentData.objects.filter(user_id=user_id).annotate(
+
+    # Exclude entries where expected_expiry_dates is explicitly set to None
+    year_counts = PatentData.objects.filter(
+        Q(expected_expiry_dates__isnull=False) | Q(expected_expiry_dates__isnull=True),
+        expected_expiry_dates__isnull=False,  # Exclude entries with expected_expiry_dates set to None
+        user_id=user_id
+    ).annotate(
         expected_expiry_date=ExtractYear('expected_expiry_dates')
     ).values('expected_expiry_date').annotate(count=Count('id'))
+
     year_wise_exp_date = {item['expected_expiry_date']: item['count'] for item in year_counts}
+
     return dict(year_wise_exp_date)
 
 
@@ -886,6 +1015,7 @@ def process_assignees(req):
     user_id = req.session.get('logged_in_user_id')
     data = PatentData.objects.filter(user_id=user_id)
     data = data.values('assignee_standardized').annotate(count=Count('assignee_standardized')).order_by('-count')[:10]
+
     result = [{'Assignee - Standardized': item['assignee_standardized'], 'count': item['count']} for item in data]
     return result
 
