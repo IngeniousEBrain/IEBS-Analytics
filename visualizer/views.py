@@ -786,28 +786,34 @@ def download_top_assignee_exl(request, assignee):
     top_ten_assignees = PatentData.objects.filter(
         assignee_standardized=assignee, user_id=user_id_to_filter
     )
-    for patent_data in top_ten_assignees:
-        data = {
-            'Publication Number': patent_data.publication_number,
-            'Assignee': patent_data.assignee_standardized,
-            'Legal Status': patent_data.legal_status,
-            'Cited Patents Count': patent_data.cited_patents_count,
-            'Citing Patents Count': patent_data.citing_patents_count,
-            'Inventors': patent_data.inventors,
-            'Earliest Patent Priority Date': patent_data.earliest_patent_priority_date,
-            'Application Date': patent_data.application_dates,
-            'Publication Date': patent_data.publication_dates,
-            'Application Number': patent_data.application_number,
-            'CPC': patent_data.cpc,
-            'IPC': patent_data.ipc,
-            'E-Fan': patent_data.e_fan,
+    if request.GET.get('display'):
+        context = {
+            'top_ten_assignees_view': top_ten_assignees,
         }
-        data_list.append(data)
-    df = pd.DataFrame(data_list)
-    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = f'attachment; filename={assignee}_data.xlsx'
-    df.to_excel(response, index=False)
-    return response
+        return render(request, 'pages/charts/top_ten_ipc.html', context)
+    else:
+        for patent_data in top_ten_assignees:
+            data = {
+                'Publication Number': patent_data.publication_number,
+                'Assignee': patent_data.assignee_standardized,
+                'Legal Status': patent_data.legal_status,
+                'Cited Patents Count': patent_data.cited_patents_count,
+                'Citing Patents Count': patent_data.citing_patents_count,
+                'Inventors': patent_data.inventors,
+                'Earliest Patent Priority Date': patent_data.earliest_patent_priority_date,
+                'Application Date': patent_data.application_dates,
+                'Publication Date': patent_data.publication_dates,
+                'Application Number': patent_data.application_number,
+                'CPC': patent_data.cpc,
+                'IPC': patent_data.ipc,
+                'E-Fan': patent_data.e_fan,
+            }
+            data_list.append(data)
+        df = pd.DataFrame(data_list)
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = f'attachment; filename={assignee}_data.xlsx'
+        df.to_excel(response, index=False)
+        return response
 
 
 def download_recent_assignee_exl(request, assignee):
@@ -964,26 +970,32 @@ def top_ten_ass_exl(request):
     for dictq in data:
         ass_list.append(dictq['assignee_standardized'])
     top_ten_ass = PatentData.objects.filter(assignee_standardized__in=ass_list).order_by('assignee_standardized')
-    data = {
-        # 'Project Code': [patent.project_code for patent in top_ten_ass],
-        'Publication Number': [patent.publication_number for patent in top_ten_ass],
-        'Assignee Standardized': [patent.assignee_standardized for patent in top_ten_ass],
-        'Cited Patents Count': [patent.cited_patents_count for patent in top_ten_ass],
-        'Legal Status': [patent.legal_status for patent in top_ten_ass],
-        'Inventors': [patent.inventors for patent in top_ten_ass],
-        'Earliest Priority Date': [patent.earliest_patent_priority_date for patent in top_ten_ass],
-        'Application Dates': [patent.application_dates for patent in top_ten_ass],
-        'Publication Dates': [patent.publication_dates for patent in top_ten_ass],
-        'Application Number': [patent.application_number for patent in top_ten_ass],
-        'CPC Count': [patent.cpc for patent in top_ten_ass],
-        'IPC Count': [patent.ipc for patent in top_ten_ass],
-        'E-FAN': [patent.e_fan for patent in top_ten_ass],
-    }
-    df = pd.DataFrame(data)
-    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = 'attachment; filename=top_ten_cited_patents.xlsx'
-    df.to_excel(response, index=False, sheet_name='Top Ten Cited Patents')
-    return response
+    if request.GET.get('display'):
+        context = {
+            'top_ten_ass_view': top_ten_ass,
+        }
+        return render(request, 'pages/charts/top_ten_ipc.html', context)
+    else:
+        data = {
+            # 'Project Code': [patent.project_code for patent in top_ten_ass],
+            'Publication Number': [patent.publication_number for patent in top_ten_ass],
+            'Assignee Standardized': [patent.assignee_standardized for patent in top_ten_ass],
+            'Cited Patents Count': [patent.cited_patents_count for patent in top_ten_ass],
+            'Legal Status': [patent.legal_status for patent in top_ten_ass],
+            'Inventors': [patent.inventors for patent in top_ten_ass],
+            'Earliest Priority Date': [patent.earliest_patent_priority_date for patent in top_ten_ass],
+            'Application Dates': [patent.application_dates for patent in top_ten_ass],
+            'Publication Dates': [patent.publication_dates for patent in top_ten_ass],
+            'Application Number': [patent.application_number for patent in top_ten_ass],
+            'CPC Count': [patent.cpc for patent in top_ten_ass],
+            'IPC Count': [patent.ipc for patent in top_ten_ass],
+            'E-FAN': [patent.e_fan for patent in top_ten_ass],
+        }
+        df = pd.DataFrame(data)
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename=top_ten_cited_patents.xlsx'
+        df.to_excel(response, index=False, sheet_name='Top Ten Cited Patents')
+        return response
 
 
 def top_ten_cpc_exl(req):

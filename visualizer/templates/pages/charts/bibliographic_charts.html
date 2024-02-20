@@ -407,7 +407,7 @@
                                                 <td class="text-center small">
                                                     <div class="d-flex justify-content-center">
                                                         <button class="btn btn-secondary btn-xs mx-1"
-                                                                onclick="view_ind_CitingPatent()"><i class="fa fa-eye"
+                                                                onclick="ViewTopAssignee('{{ item.assignee_standardized }}')"><i class="fa fa-eye"
                                                                                                      aria-hidden="true"></i>
                                                         </button>
                                                         <button class="btn btn-primary btn-xs mx-1"
@@ -423,8 +423,8 @@
                                         </table>
                                     </div>
                                     <div class="text-center mt-2">
-                                        <button class="btn btn-secondary btn-xs">View</button>
-                                        <button class="btn btn-primary btn-xs" onclick="DownloadTopAssigneeExl()">
+                                        <button class="btn btn-secondary btn-xs" onclick="ViewTopTenAssignee()">View</button>
+                                        <button class="btn btn-primary btn-xs" onclick="DownloadTopTenAssigneeExl()">
                                             Download
                                         </button>
                                     </div>
@@ -713,14 +713,14 @@
     var get_cpc_counts_from_db = {{get_cpc_counts_from_db | safe}};
     var get_ipc_counts = {{get_ipc_counts | safe}};
 
-
-
+<!--=====================================-->
+function ViewTopAssignee(assignee) {
+    var url = `/download_top_assignee_exl/${assignee}/?display=1`;
+    window.open(url, '_blank');
+}
 <!--=====================================-->
 function viewPublicationTend(year) {
-    // Specify the URL of your Django view and add the 'display' parameter
     var url = `/download_publication_exl/${year}/?display=1`;
-
-    // Open a new tab or window
     window.open(url, '_blank');
 }
 <!--=====================================-->
@@ -776,6 +776,14 @@ function indIpcDataView(ipc) {
 function ViewCitingFile() {
     // Specify the URL of your Django view and add the 'display' parameter
     var url = '/download_citing_excel_file/?display=1';
+
+    // Open a new tab or window
+    window.open(url, '_blank');
+}
+<!--=====================================-->
+function ViewTopTenAssignee() {
+    // Specify the URL of your Django view and add the 'display' parameter
+    var url = '/top_ten_ass_exl/?display=1';
 
     // Open a new tab or window
     window.open(url, '_blank');
@@ -1169,7 +1177,7 @@ function download_citedExcelFile() {
     .catch(error => console.error('Error:', error));
 }
 <!--=====================================-->
-function DownloadTopAssigneeExl() {
+function DownloadTopTenAssigneeExl() {
     var user_id = window.user_id;
     fetch("/top_ten_ass_exl/", {
         method: 'GET',
