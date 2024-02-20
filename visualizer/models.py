@@ -6,7 +6,9 @@ from django.db import models
 from django.utils import timezone
 from django.db.models.signals import pre_save
 from django.dispatch import receiver
+from ckeditor.fields import RichTextField
 import logging
+
 
 logger = logging.getLogger(__name__)
 
@@ -95,7 +97,8 @@ class Project(models.Model):
 
     code = models.CharField(max_length=100, unique=True, blank=True, editable=False)
     name = models.CharField(max_length=255)
-    description = models.TextField()
+    description = RichTextField()
+    scope = RichTextField()
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=IN_PROGRESS)
     created_date = models.DateTimeField(default=timezone.now)
     updated_date = models.DateTimeField(auto_now=True)
