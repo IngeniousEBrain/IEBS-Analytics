@@ -43,6 +43,9 @@
     {% if top_ten_ass_view %}
     <title>Top Ten Assignees View</title>
     {% endif %}
+    {% if top_recent_ass_view %}
+    <title>Top Recent Assignees View</title>
+    {% endif %}
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -129,7 +132,13 @@
 <h1>Assignees View</h1>
 {% endif %}
 {% if top_ten_ass_view %}
-<h1>Top Ten Assignees View</h1>
+<h1>Top Assignees View</h1>
+{% endif %}
+{% if top_recent_ass_view %}
+<h1>Top Ten Recent Assignees View</h1>
+{% endif %}
+{% if top_recent_assignees_view %}
+<h1>Top Recent Assignees View</h1>
 {% endif %}
 
 <!-- Display your data in the HTML template -->
@@ -176,10 +185,52 @@
     </tr>
     {% endfor %}
     {% endif %}
+{% if top_recent_ass_view %}
+    {% for patent in top_recent_ass_view %}
+    <tr>
+        <td>{{ patent.publication_number }}</td>
+        <td>{{ patent.assignee_standardized }}</td>
+        <td>{{ patent.legal_status }}</td>
+        <td>{{ patent.expected_expiry_dates }}</td>
+        <td>{{ patent.remaining_life }}</td>
+        <td>{{ patent.cited_patents_count }}</td>
+        <td>{{ patent.citing_patents_count }}</td>
+        <td>{{ patent.inventors }}</td>
+        <td>{{ patent.earliest_patent_priority_date }}</td>
+        <td>{{ patent.application_dates }}</td>
+        <td>{{ patent.publication_dates }}</td>
+        <td>{{ patent.application_number }}</td>
+        <td>{{ patent.cpc }}</td>
+        <td>{{ patent.ipc }}</td>
+        <td>{{ patent.e_fan }}</td>
+    </tr>
+    {% endfor %}
+    {% endif %}
 
 
 {% if innovators %}
     {% for patent in innovators %}
+    <tr>
+        <td>{{ patent.publication_number }}</td>
+        <td>{{ patent.assignee_standardized }}</td>
+        <td>{{ patent.legal_status }}</td>
+        <td>{{ patent.expected_expiry_dates }}</td>
+        <td>{{ patent.remaining_life }}</td>
+        <td>{{ patent.cited_patents_count }}</td>
+        <td>{{ patent.citing_patents_count }}</td>
+        <td>{{ patent.inventors }}</td>
+        <td>{{ patent.earliest_patent_priority_date }}</td>
+        <td>{{ patent.application_dates }}</td>
+        <td>{{ patent.publication_dates }}</td>
+        <td>{{ patent.application_number }}</td>
+        <td>{{ patent.cpc }}</td>
+        <td>{{ patent.ipc }}</td>
+        <td>{{ patent.e_fan }}</td>
+    </tr>
+    {% endfor %}
+    {% endif %}
+    {% if top_recent_assignees_view %}
+    {% for patent in top_recent_assignees_view %}
     <tr>
         <td>{{ patent.publication_number }}</td>
         <td>{{ patent.assignee_standardized }}</td>

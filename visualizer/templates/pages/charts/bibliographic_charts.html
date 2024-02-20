@@ -467,6 +467,7 @@
                                             </tr>
                                             </thead>
                                             <tbody>
+
                                             {% for item in recent_assignees_last_five_years %}
                                             <tr>
                                                 <td class="text-center small">{{ item.assignee_standardized }}</td>
@@ -474,7 +475,7 @@
                                                 <td class="text-center small">
                                                     <div class="d-flex justify-content-center">
                                                         <button class="btn btn-secondary btn-xs mx-1"
-                                                                onclick="view_ind_CitingPatent()"><i
+                                                                onclick="ViewTopRecentAssignee('{{item.assignee_standardized}}')"><i
                                                                 class="fa fa-eye" aria-hidden="true"></i>
                                                         </button>
                                                         <button class="btn btn-primary btn-xs mx-1"
@@ -485,11 +486,12 @@
                                                 </td>
                                             </tr>
                                             {% endfor %}
+
                                             </tbody>
                                         </table>
                                     </div>
                                     <div class="text-center mt-2">
-                                        <button class="btn btn-secondary btn-xs">View</button>
+                                        <button class="btn btn-secondary btn-xs" onclick="ViewRecentAssignee()">View</button>
                                         <button class="btn btn-primary btn-xs"
                                                 onclick="DownloadTopRecentAssigneeExl()">Download
                                         </button>
@@ -713,6 +715,19 @@
     var get_cpc_counts_from_db = {{get_cpc_counts_from_db | safe}};
     var get_ipc_counts = {{get_ipc_counts | safe}};
 
+<!--=====================================-->
+function ViewTopRecentAssignee(assignee) {
+    var url = `/download_recent_assignee_exl/${assignee}/?display=1`;
+    window.open(url, '_blank');
+}
+<!--=====================================-->
+function ViewRecentAssignee() {
+    // Specify the URL of your Django view and add the 'display' parameter
+    var url = '/top_ten_recent_ass_exl/?display=1';
+
+    // Open a new tab or window
+    window.open(url, '_blank');
+}
 <!--=====================================-->
 function ViewTopAssignee(assignee) {
     var url = `/download_top_assignee_exl/${assignee}/?display=1`;
