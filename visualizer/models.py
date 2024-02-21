@@ -98,7 +98,7 @@ class Project(models.Model):
     code = models.CharField(max_length=100, unique=True, blank=True, editable=False)
     name = models.CharField(max_length=255)
     description = RichTextField()
-    # scope = RichTextField()
+    scope = RichTextField(default=" ")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=IN_PROGRESS)
     created_date = models.DateTimeField(default=timezone.now)
     updated_date = models.DateTimeField(auto_now=True)
