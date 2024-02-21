@@ -441,22 +441,22 @@ def competitor_charts(req):
         width=950,
     )
     div1 = fig1.to_html()
+    # ==================================BUBBLE===================================================
     result_b = get_top_assignees_by_year(req)
-    # =====================================================================================
     data = []
     for assignee, yeardict in result_b.items():
         for year, count in yeardict.items():
             data.append({'Assignee': assignee.title(), 'Year': year, 'Count': count})
     df = pd.DataFrame(data)
-    fig2 = px.scatter(df, x="Year", y="Assignee", size="Count",
-                      size_max=100, title='Patent Count Bubble Chart')
+    fig2 = px.scatter(df, x="Year", y="Assignee", size="Count", size_max=30, title='Patent Count Bubble Chart')
     fig2.update_layout(
         xaxis_title='Application Year',
         yaxis_title='Assignee'
     )
+    fig2.update_xaxes(type='category')  # Add this line to explicitly set x-axis type
+
     div2 = fig2.to_html(full_html=False)
     # =====================================================================================
-
     user_id = req.session.get('logged_in_user_id')
     filtered_data = PatentData.objects.filter(user_id=user_id, citing_patents_count__isnull=False)
     top_ten_highest_citing = filtered_data.order_by('-citing_patents_count')[:10]
@@ -1026,7 +1026,6 @@ def top_ten_cpc_exl(req):
     if req.GET.get('display'):
         context = {
             'top_ten_cpc': top_ten_cpc,
-            # Add more context variables if needed
         }
         return render(req, 'pages/charts/top_ten_ipc.html', context)
     else:
@@ -1067,19 +1066,15 @@ def top_ten_ipc_exl(req):
     ipc_counts_dict = dict(list(sorted_ipc_counts.items())[:10])
     ipc_keys_list = list(ipc_counts_dict.keys())
     top_ten_ipc = PatentData.objects.filter(cpc__in=ipc_keys_list)
-
-    # Check if 'display' query parameter is present
     if req.GET.get('display'):
         context = {
             'top_ten_ipc': top_ten_ipc,
-            # Add more context variables if needed
         }
         return render(req, 'pages/charts/top_ten_ipc.html', context)
     else:
         data = {
             'Publication Number': [patent.publication_number for patent in top_ten_ipc],
             'Assignee Standardized': [patent.assignee_standardized for patent in top_ten_ipc],
-            # Add more fields as needed
         }
         df = pd.DataFrame(data)
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
@@ -1603,3 +1598,7 @@ def user_profile(req):
     user_id = req.session.get('logged_in_user_id')
     user_qs = CustomUser.objects.get(id=user_id)
     return render(req, 'pages/onboard/profile.html', {'iebs_user': user_qs})
+
+
+
+
