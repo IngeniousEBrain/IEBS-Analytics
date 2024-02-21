@@ -26,6 +26,7 @@
     <link rel="stylesheet" href="{% static 'plugins/summernote/summernote-bs4.css' %}">
     <!-- Google Font: Source Sans Pro -->
     <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700" rel="stylesheet">
+    <script src="https://cdn.ckeditor.com/ckeditor5/44.0.0/classic/ckeditor.js"></script>
     <style>
     .main-sidebar {
       border-color: aqua;
@@ -174,7 +175,7 @@
     $(function () {
      $("#example1").DataTable({
        "responsive": true, "lengthChange": false, "autoWidth": false,
-       "buttons": ["copy", "csv", "excel", "pdf", "print"]
+<!--       "buttons": ["copy", "csv", "excel", "pdf", "print"]-->
      }).buttons().container().appendTo('#example1_wrapper .col-md-6:eq(0)');
      $('#example2').DataTable({
        "paging": true,

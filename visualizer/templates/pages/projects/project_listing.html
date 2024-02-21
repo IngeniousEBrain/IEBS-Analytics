@@ -3,6 +3,7 @@
 {% block head %}
 {% endblock %}
 {% block content %}
+{% load custom_filters %}
 <section class="content-header">
     <div class="container-fluid">
         <div class="row mb-2">
@@ -36,7 +37,40 @@
                             <tr>
                                 <td>{{ project.code }}</td>
                                 <td>{{ project.name }}</td>
-                                <td>{{ project.description }}</td>
+                                <td>
+                                    {{ project.description|safe|slice_with_words:150|safe }}
+                                    {% if project.description|length > 150 %}
+                                    <a href="#" data-toggle="modal" data-target="#seeMoreModal{{ project.id }}">See
+                                        more</a>
+
+                                    <!-- Modal Trigger -->
+                                    <div class="modal fade" id="seeMoreModal{{ project.id }}" tabindex="-1"
+                                         role="dialog" aria-labelledby="seeMoreModalLabel" aria-hidden="true">
+                                        <div class="modal-dialog" role="document">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title" id="seeMoreModalLabel">Project
+                                                        Description</h5>
+                                                    <button type="button" class="close" data-dismiss="modal"
+                                                            aria-label="Close">
+                                                        <span aria-hidden="true">&times;</span>
+                                                    </button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    {{ project.description|safe }}
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary"
+                                                            data-dismiss="modal">Close
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                </td>
+
+
                                 <td>{{ project.status }}</td>
                                 <td>
                                     <i class="fas fa-edit" style="color: rgb(87, 151, 87);"></i>
@@ -70,6 +104,28 @@
     </div>
     <!-- /.container-fluid -->
 </section>
+
+<!-- Modal -->
+<div class="modal fade" id="seeMoreModal{{ project.id }}" tabindex="-1" role="dialog"
+     aria-labelledby="seeMoreModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="seeMoreModalLabel">Project Description</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                {{ project.description }}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- /.content -->
 {% endblock %}
 <!-- Control Sidebar -->
