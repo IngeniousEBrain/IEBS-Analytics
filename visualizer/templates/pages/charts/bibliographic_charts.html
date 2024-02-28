@@ -714,6 +714,11 @@
     var get_ipc_counts = {{get_ipc_counts | safe}};
 
 <!--=====================================-->
+function viewLegalStatusFile(status) {
+    var url = `/download_legal_status_exl/${status}/?display=1`;
+    window.open(url, '_blank');
+}
+<!--=====================================-->
 function ViewTopRecentAssignee(assignee) {
     var url = `/download_recent_assignee_exl/${assignee}/?display=1`;
     window.open(url, '_blank');
