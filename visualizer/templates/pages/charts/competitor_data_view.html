@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+<head>
+    {% if patent_data %}
+    <title>Collaboration Of Competitors View</title>
+    {% endif %}
+    {% if partner_app_date_qs %}
+    <title>Overall Patent Filing</title>
+    {% endif %}
+    {% if ass_pub_date_qs %}
+    <title>Influence Of Innovation</title>
+    {% endif %}
+    {% if ass_legal_status_qs %}
+    <title>Legal Status Distribution</title>
+    {% endif %}
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        table {
+            width: 100%;
+            max-width: 800px;
+            border-collapse: collapse;
+            margin: 0 auto;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 5px;
+            text-align: left;
+            font-size: 10px;
+        }
+
+        th {
+            background-color: #333;
+            color: #fff;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+
+        tr:hover {
+            background-color: #e6e6e6;
+        }
+    </style>
+</head>
+<body>
+{% if patent_data %}
+<h1>Collaboration Of Competitors View</h1>
+{% endif %}
+{% if partner_app_date_qs %}
+<h1>Overall Patent Filing</h1>
+{% endif %}
+{% if ass_pub_date_qs %}
+<h1>Influence Of Innovation</h1>
+{% endif %}
+{% if ass_legal_status_qs %}
+<h1>Legal Status Distribution</h1>
+{% endif %}
+{% if ass_partner %}
+<h1>Collaboration Of Competitors View</h1>
+{% endif %}
+<!-- Display your data in the HTML template -->
+<table>
+    <thead>
+    <tr>
+        <!-- Add more table headers as needed -->
+        <th>Publication Number</th>
+        <th>Assignee Standardized</th>
+        <th>Legal Status</th>
+        <th>Expected Exp</th>
+        <th>Remaining Life</th>
+        <th>Cited Patents</th>
+        <th>Citing Patents</th>
+        <th>Inventors</th>
+        <th>Earliest Patent Priority Date</th>
+        <th>Application Date</th>
+        <th>Publication Date</th>
+        <th>Application Number</th>
+        <th>CPC</th>
+        <th>IPC</th>
+        <th>E-FAN</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% if patent_data %}
+    {% for combo, patents in patent_data.items %}
+    {% for patent in patents %}
+    <tr>
+        <td>{{ patent.fields.publication_number }}</td>
+        <td>{{ patent.fields.assignee_standardized }}</td>
+        <td>{{ patent.fields.legal_status }}</td>
+        <td>{{ patent.fields.expected_expiry_dates }}</td>
+        <td>{{ patent.fields.remaining_life }}</td>
+        <td>{{ patent.fields.cited_patents_count }}</td>
+        <td>{{ patent.fields.citing_patents_count }}</td>
+        <td>{{ patent.fields.inventors }}</td>
+        <td>{{ patent.fields.earliest_patent_priority_date }}</td>
+        <td>{{ patent.fields.application_dates }}</td>
+        <td>{{ patent.fields.publication_dates }}</td>
+        <td>{{ patent.fields.application_number }}</td>
+        <td>{{ patent.fields.cpc }}</td>
+        <td>{{ patent.fields.ipc }}</td>
+        <td>{{ patent.fields.e_fan }}</td>
+    </tr>
+    {% endfor %}
+    {% endfor %}
+    {% endif %}
+
+
+    {% if partner_app_date_qs %}
+    {% for patent_data in partner_app_date_qs %}
+        <tr>
+            <td>{{ patent_data.fields.publication_number }}</td>
+            <td>{{ patent_data.fields.assignee_standardized }}</td>
+            <td>{{ patent_data.fields.legal_status }}</td>
+            <td>{{ patent_data.fields.expected_expiry_dates|default:"" }}</td>
+            <td>{{ patent_data.fields.remaining_life|default:"" }}</td>
+            <td>{{ patent_data.fields.cited_patents_count|default:"" }}</td>
+            <td>{{ patent_data.fields.citing_patents_count|default:"" }}</td>
+            <td>{{ patent_data.fields.inventors|default:"" }}</td>
+            <td>{{ patent_data.fields.earliest_patent_priority_date|default:"" }}</td>
+            <td>{{ patent_data.fields.application_dates|default:"" }}</td>
+            <td>{{ patent_data.fields.publication_dates|default:"" }}</td>
+            <td>{{ patent_data.fields.application_number|default:"" }}</td>
+            <td>{{ patent_data.fields.cpc|default:"" }}</td>
+            <td>{{ patent_data.fields.ipc|default:"" }}</td>
+            <td>{{ patent_data.fields.e_fan|default:"" }}</td>
+        </tr>
+    {% endfor %}
+{% endif %}
+
+    {% if top_ten_highest_citing_qs %}
+    {% for patent_data in top_ten_highest_citing_qs %}
+          <tr>
+            <td>{{ patent_data.fields.publication_number }}</td>
+            <td>{{ patent_data.fields.assignee_standardized }}</td>
+            <td>{{ patent_data.fields.legal_status }}</td>
+            <td>{{ patent_data.fields.expected_expiry_dates|default:"" }}</td>
+            <td>{{ patent_data.fields.remaining_life|default:"" }}</td>
+            <td>{{ patent_data.fields.cited_patents_count|default:"" }}</td>
+            <td>{{ patent_data.fields.citing_patents_count|default:"" }}</td>
+            <td>{{ patent_data.fields.inventors|default:"" }}</td>
+            <td>{{ patent_data.fields.earliest_patent_priority_date|default:"" }}</td>
+            <td>{{ patent_data.fields.application_dates|default:"" }}</td>
+            <td>{{ patent_data.fields.publication_dates|default:"" }}</td>
+            <td>{{ patent_data.fields.application_number|default:"" }}</td>
+            <td>{{ patent_data.fields.cpc|default:"" }}</td>
+            <td>{{ patent_data.fields.ipc|default:"" }}</td>
+            <td>{{ patent_data.fields.e_fan|default:"" }}</td>
+        </tr>
+
+    {% endfor %}
+{% endif %}
+
+    {% if ass_pub_date_qs %}
+    {% for patent_data in ass_pub_date_qs %}
+        <tr>
+            <td>{{ patent_data.fields.publication_number }}</td>
+            <td>{{ patent_data.fields.assignee_standardized }}</td>
+            <td>{{ patent_data.fields.legal_status }}</td>
+            <td>{{ patent_data.fields.expected_expiry_dates|default:"" }}</td>
+            <td>{{ patent_data.fields.remaining_life|default:"" }}</td>
+            <td>{{ patent_data.fields.cited_patents_count|default:"" }}</td>
+            <td>{{ patent_data.fields.citing_patents_count|default:"" }}</td>
+            <td>{{ patent_data.fields.inventors|default:"" }}</td>
+            <td>{{ patent_data.fields.earliest_patent_priority_date|default:"" }}</td>
+            <td>{{ patent_data.fields.application_dates|default:"" }}</td>
+            <td>{{ patent_data.fields.publication_dates|default:"" }}</td>
+            <td>{{ patent_data.fields.application_number|default:"" }}</td>
+            <td>{{ patent_data.fields.cpc|default:"" }}</td>
+            <td>{{ patent_data.fields.ipc|default:"" }}</td>
+            <td>{{ patent_data.fields.e_fan|default:"" }}</td>
+        </tr>
+    {% endfor %}
+{% endif %}
+
+    {% if ass_legal_status_qs %}
+    {% for patent_data in ass_legal_status_qs %}
+        <tr>
+            <td>{{ patent_data.fields.publication_number }}</td>
+            <td>{{ patent_data.fields.assignee_standardized }}</td>
+            <td>{{ patent_data.fields.legal_status }}</td>
+            <td>{{ patent_data.fields.expected_expiry_dates|default:"" }}</td>
+            <td>{{ patent_data.fields.remaining_life|default:"" }}</td>
+            <td>{{ patent_data.fields.cited_patents_count|default:"" }}</td>
+            <td>{{ patent_data.fields.citing_patents_count|default:"" }}</td>
+            <td>{{ patent_data.fields.inventors|default:"" }}</td>
+            <td>{{ patent_data.fields.earliest_patent_priority_date|default:"" }}</td>
+            <td>{{ patent_data.fields.application_dates|default:"" }}</td>
+            <td>{{ patent_data.fields.publication_dates|default:"" }}</td>
+            <td>{{ patent_data.fields.application_number|default:"" }}</td>
+            <td>{{ patent_data.fields.cpc|default:"" }}</td>
+            <td>{{ patent_data.fields.ipc|default:"" }}</td>
+            <td>{{ patent_data.fields.e_fan|default:"" }}</td>
+        </tr>
+    {% endfor %}
+{% endif %}
+
+    </tbody>
+
+</table>
+</body>
+</html>
