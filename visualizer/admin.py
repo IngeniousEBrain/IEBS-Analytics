@@ -80,7 +80,7 @@ class UserProjectAdmin(admin.ModelAdmin):
     """
     list_display = ('user',)
     list_filter = ('user', 'projects')
-    search_fields = ('user', 'projects')
+    search_fields = ('projects', 'projects')
 
 
 # Unregister default Group and User models from admin

@@ -3,23 +3,512 @@
 {% block head %}
 {% endblock %}
 {% block content %}
-<!--<h1>Collaborations of competitors</h1>-->
-{{plot_div1|safe}}
-<!--<h1>Overall patent filing</h1>-->
-{{plot_div2|safe}}
-<h6>Influence of Innovation</h6>
+<!--<h6>Collaborations of competitors</h6>-->
+<div class="table-container">
+    {{ plot_div1|safe }}
+</div>
+<div class="col-md-12">
+    <div style="max-height: 300px; overflow-y: auto;">
+        <table class="table table-sm table-bordered">
+            <thead style="background-color: #808080">
+            <tr>
+                <th class="text-center small">Assignee</th>
+                <th class="text-center small">Partners</th>
+                <th class="text-center small">Count</th>
+                <th class="text-center small">Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+             {% for row in result %}
+            {% if row.partners %}
+                {% for partner, count in row.partners.items %}
+                    <tr>
+                        <td class="text-center small">{{ row.assignee }}</td>
+                        <td class="text-center small">{{ partner }}</td>
+                        <td class="text-center small">{{ count }}</td>
+                        <td class="text-center small">
+                            <div class="action-buttons">
+                                <button class="btn btn-secondary btn-xs" onclick="PartnerDataView('{{ row.assignee }}', {{ row.partners|safe }}, 'display')">
+                                    <i class="fa fa-eye" aria-hidden="true"></i>
+                                </button>
+                                <button class="btn btn-primary btn-xs" onclick="PartnerDataView('{{ row.assignee }}', {{ row.partners|safe }}, 'file')">
+                                    <i class="fas fa-file-download" aria-hidden="true"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            {% else %}
+                <tr>
+                    <td class="text-center small">{{ row.assignee }}</td>
+                    <td class="text-center small"></td>
+                    <td class="text-center small"></td>
+                    <td class="text-center small">
+                        <div class="action-buttons">
+                            <button class="btn btn-secondary btn-xs" onclick="PartnerDataView('{{ row.assignee }}', {{ row.partners|safe }}, 'display')">
+                                <i class="fa fa-eye" aria-hidden="true"></i>
+                            </button>
+                            <button class="btn btn-primary btn-xs" onclick="PartnerDataView('{{ row.assignee }}', {{ row.partners|safe }}, 'file')">
+                                <i class="fas fa-file-download" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            {% endif %}
+        {% endfor %}
+            </tbody>
+        </table>
+    </div>
+<!--    <div class="text-center mt-2">-->
+<!--        <button class="btn btn-secondary btn-xs" onclick="AllPartnerDataView('allDisplay')">View</button>-->
+<!--        <button class="btn btn-primary btn-xs" onclick="AllPartnerDataView('allFile')">Download</button>-->
+<!--    </div>-->
+</div>
 
-{{plot_div3|safe}}
 
-<h6>Legal Status Distribution</h6>
-{{plot_div4|safe}}
+<!--<h6>Overall patent filing</h6>-->
+<div style="width: 70%;">
+    {{plot_div2|safe}}
+</div>
+<div class="col-md-12">
+    <div style="max-height: 300px; overflow-y: auto;">
+        <table class="table table-sm table-bordered">
+            <thead style="background-color: #808080">
+            <tr>
+                <th class="text-center small">Assignee</th>
+                <th class="text-center small">Year</th>
+                <th class="text-center small">Count</th>
+                <th class="text-center small">Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for row in data %}
+            <tr>
+                <td class="text-center small">{{ row.Assignee }}</td>
+                <td class="text-center small">{{row.Year}}</td>
+                <td class="text-center small">{{ row.Count }}</td>
+                <td class="text-center small">
+                    <div class="action-buttons">
+                        <button class="btn btn-secondary btn-xs" onclick="view_application_year('{{ row.Assignee }}', '{{ row.Year }}', 'display')">
+                            <i class="fa fa-eye" aria-hidden="true"></i>
+                        </button>
+                        <button class="btn btn-primary btn-xs" onclick="view_application_year('{{ row.Assignee }}', '{{ row.Year }}', 'file')">
+                            <i class="fas fa-file-download" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+<!--<h6>Influence of Innovation</h6>-->
+
+<div style="width: 70%;">
+    {{ plot_div3|safe }}
+</div>
+<div class="col-md-12">
+    <div style="max-height: 300px; overflow-y: auto;">
+        <table class="table table-sm table-bordered">
+            <thead style="background-color: #808080">
+            <tr>
+                <th class="text-center small">Assignee</th>
+                <th class="text-center small">Publication number</th>
+                <th class="text-center small">Citing Count</th>
+                <th class="text-center small">Citation Index</th>
+                <th class="text-center small">Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for row in table_data %}
+            <tr>
+                <td class="text-center small">{{ row.assignee }}</td>
+                <td class="text-center small">
+                    {{ row.publication_number }}
+                </td>
+                <td class="text-center small">{{ row.citing_count }}</td>
+                <td class="text-center small">{{ row.citing_index }}</td>
+                <td class="text-center small">
+                    <div class="action-buttons">
+                        <button class="btn btn-secondary btn-xs"
+                                onclick="ViewAssPubYear('{{ row.assignee }}', '{{ row.publication_number }}', 'display')">
+                            <i class="fa fa-eye" aria-hidden="true"></i>
+                        </button>
+                        <button class="btn btn-primary btn-xs" onclick="ViewAssPubYear('{{ row.assignee }}', '{{ row.publication_number }}', 'file')">
+                            <i class="fas fa-file-download" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="text-center mt-2">
+        <button class="btn btn-secondary btn-xs" onclick="ViewAllCitedFile('allCitedDisplay')">View</button>
+        <button class="btn btn-primary btn-xs"
+                onclick="ViewAllCitedFile('allCitedFile')">Download
+        </button>
+    </div>
+</div>
+
+<!--<h6>Legal Status Distribution</h6>-->
+<div style="width: 70%;">
+    {{ plot_div4|safe }}
+</div>
+<div class="col-md-12">
+    <div style="max-height: 300px; overflow-y: auto;">
+        <table class="table table-sm table-bordered">
+            <thead style="background-color: #808080">
+            <tr>
+                <th class="text-center small">Assignee Standardized</th>
+                <th class="text-center small">Legal Status</th>
+                <th class="text-center small">Count</th>
+                <th class="text-center small">Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+                {% for row in legal_status_counts %}
+                    <tr>
+                        <td class="text-center small">{{ row.assignee_standardized }}</td>
+                        <td class="text-center small">{{ row.legal_status }}</td>
+                        <td class="text-center small">{{ row.count }}</td>
+                        <td class="text-center small">
+                            <div class="action-buttons">
+                                <button class="btn btn-secondary btn-xs"
+                                        onclick="LegalStatusView('{{ row.assignee_standardized }}', '{{ row.legal_status }}', 'display')">
+                                    <i class="fa fa-eye" aria-hidden="true"></i>
+                                </button>
+                                <button class="btn btn-primary btn-xs"
+                                        onclick="LegalStatusView('{{ row.assignee_standardized }}', '{{ row.legal_status }}', 'file')">
+                                    <i class="fas fa-file-download" aria-hidden="true"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
 <!--<h1>Technology Landscape</h1>-->
 <!--{{plot_div5|safe}}-->
-<h6>Priority Country Filing</h6>
-{{plot_div6|safe}}
-
+<!--<h6>Priority Country Filing</h6>-->
+<!--{{plot_div6|safe}}-->
+<!--<div class="col-md-12">-->
+<!--    <div style="max-height: 300px; overflow-y: auto;">-->
+<!--        <table class="table table-sm table-bordered">-->
+<!--            <thead style="background-color: #808080">-->
+<!--            <tr>-->
+<!--                <th class="text-center small">Assignee</th>-->
+<!--                <th class="text-center small">Partners</th>-->
+<!--                <th class="text-center small">Count</th>-->
+<!--                <th class="text-center small">Actions</th>-->
+<!--            </tr>-->
+<!--            </thead>-->
+<!--            <tbody>-->
+<!--            {% for row in result %}-->
+<!--            <tr>-->
+<!--                <td class="text-center small">{{ row.assignee }}</td>-->
+<!--                <td class="text-center small">-->
+<!--                    {% for partner, count in row.partners.items %}-->
+<!--                    {{ partner }}<br>-->
+<!--                    {% endfor %}-->
+<!--                </td>-->
+<!--                <td class="text-center small">{{ row.partner_count }}</td>-->
+<!--                <td class="text-center small">-->
+<!--                    <div class="action-buttons">-->
+<!--                        <button class="btn btn-secondary btn-xs" onclick="indCpcDataView({{ row.assignee }})">-->
+<!--                            <i class="fa fa-eye" aria-hidden="true"></i>-->
+<!--                        </button>-->
+<!--                        <button class="btn btn-primary btn-xs" onclick="downloadIndCpc({{ row.assignee }})">-->
+<!--                            <i class="fas fa-file-download" aria-hidden="true"></i>-->
+<!--                        </button>-->
+<!--                    </div>-->
+<!--                </td>-->
+<!--            </tr>-->
+<!--            {% endfor %}-->
+<!--            </tbody>-->
+<!--        </table>-->
+<!--    </div>-->
+<!--    <div class="text-center mt-2">-->
+<!--        <button class="btn btn-secondary btn-xs" onclick="ViewCitedFile()">View</button>-->
+<!--        <button class="btn btn-primary btn-xs"-->
+<!--                onclick="download_citedExcelFile()">Download-->
+<!--        </button>-->
+<!--    </div>-->
+<!--</div>-->
 {% endblock %}
+<aside class="control-sidebar control-sidebar-dark"></aside>
 {% block scripts %}
+<script>
+     // =============== for All first assignee - partner table========================
+function ViewAllCitedFile(type) {
+    var data = {
+        type: type
+    };
+    fetch('/competitor_colab_view/', {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data)
+})
+.then(response => {
+    // Check if the response was successful (status 2xx)
+    console.log('Response from server:', response);
+    if (response.ok) {
+        if (type === 'allCitedDisplay') {
+            window.open(response.url, '_blank');
+        } else {
+            return response.blob(); // Assuming the server responds with a file
+        }
+    } else {
+        // Handle error responses if needed
+        throw new Error('Server responded with an error');
+    }
+})
+.then(blob => {
+    // Create the link, download, and remove it in a single action using a closure:
+    (function(blob) {
+        var link = document.createElement('a');
+        link.href = window.URL.createObjectURL(blob);
+        link.download = 'Influence Of Innovation.xlsx';
+        link.click();
+        document.body.removeChild(link);
+    })(blob);
+})
+.catch(error => {
+    console.error('Error:', error);
+});
+}
+// =============== for All first assignee - partner table========================
+function AllPartnerDataView(type) {
+    var data = {
+        type: type
+    };
+    fetch('/competitor_colab_view/', {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data)
+})
+.then(response => {
+    // Check if the response was successful (status 2xx)
+    console.log('Response from server:', response);
+    if (response.ok) {
+        if (type === 'allDisplay') {
+            window.open(response.url, '_blank');
+        } else {
+            return response.blob(); // Assuming the server responds with a file
+        }
+    } else {
+        // Handle error responses if needed
+        throw new Error('Server responded with an error');
+    }
+})
+.then(blob => {
+    // Create the link, download, and remove it in a single action using a closure:
+    (function(blob) {
+        var link = document.createElement('a');
+        link.href = window.URL.createObjectURL(blob);
+        link.download = 'Top Ten IPC.xlsx';
+        link.click();
+        document.body.removeChild(link);
+    })(blob);
+})
+.catch(error => {
+    console.error('Error:', error);
+});
+}
+
+    // =============== for first assignee - partner table========================
+        function PartnerDataView(assignee, partners, type) {
+            console.log('Clicked:', assignee, partners);
+            // Convert partners from object to JSON string and encode it
+            var partnersJson = encodeURIComponent(JSON.stringify(partners));
+            // Prepare the data to be sent in the request body
+            var data = {
+                assignee: assignee,
+                partners: partnersJson,
+                type: type
+            };
+            fetch('/competitor_colab_view/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => {
+        // Check if the response was successful (status 2xx)
+        console.log('Response from server:', response);
+        if (response.ok) {
+            if (type === 'display') {
+                window.open(response.url, '_blank');
+            } else {
+                return response.blob(); // Assuming the server responds with a file
+            }
+        } else {
+            // Handle error responses if needed
+            throw new Error('Server responded with an error');
+        }
+    })
+    .then(blob => {
+        // Create the link, download, and remove it in a single action using a closure:
+        (function(blob) {
+            var link = document.createElement('a');
+            link.href = window.URL.createObjectURL(blob);
+            link.download = 'Collaboration of Competitor.xlsx';
+            link.click();
+            document.body.removeChild(link);
+        })(blob);
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    });
+}
+
+        // ===================for second application year table================
+          function view_application_year(assignee, year, type) {
+          console.log('Clicked:', assignee, year);
+
+          // Prepare the data to be sent in the request body
+          var data = {
+              assignee: assignee,
+              year: year,
+              type: type
+          };
+
+          fetch('/competitor_colab_view/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => {
+        // Check if the response was successful (status 2xx)
+        console.log('Response from server:', response);
+        if (response.ok) {
+            if (type === 'display') {
+                window.open(response.url, '_blank');
+            } else {
+                return response.blob(); // Assuming the server responds with a file
+            }
+        } else {
+            // Handle error responses if needed
+            throw new Error('Server responded with an error');
+        }
+    })
+    .then(blob => {
+        // Create the link, download, and remove it in a single action using a closure:
+        (function(blob) {
+            var link = document.createElement('a');
+            link.href = window.URL.createObjectURL(blob);
+            link.download = 'Overall Patent Filing.xlsx';
+            link.click();
+            document.body.removeChild(link);
+        })(blob);
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    });
+}
+        //====================ViewAssPubYear==========
+         function ViewAssPubYear(assignee, publication, type) {
+      // Prepare the data to be sent in the request body
+      var data = {
+          assignee: assignee,
+          publication: publication,
+          type: type
+      };
+
+      fetch('/competitor_colab_view/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => {
+        // Check if the response was successful (status 2xx)
+        console.log('Response from server:', response);
+        if (response.ok) {
+            if (type === 'display') {
+                window.open(response.url, '_blank');
+            } else {
+                return response.blob(); // Assuming the server responds with a file
+            }
+        } else {
+            // Handle error responses if needed
+            throw new Error('Server responded with an error');
+        }
+    })
+    .then(blob => {
+        // Create the link, download, and remove it in a single action using a closure:
+        (function(blob) {
+            var link = document.createElement('a');
+            link.href = window.URL.createObjectURL(blob);
+            link.download = 'Influence Of Innovation.xlsx';
+            link.click();
+            document.body.removeChild(link);
+        })(blob);
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    });
+}
+
+    //====================LegalStatusView==========
+          function LegalStatusView(assignee_standardized, legal_status, type) {
+          // Prepare the data to be sent in the request body
+          var data = {
+              assignee_standardized: assignee_standardized,
+              legal_status: legal_status,
+              type:type
+          };
+
+         fetch('/competitor_colab_view/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => {
+        // Check if the response was successful (status 2xx)
+        console.log('Response from server:', response);
+        if (response.ok) {
+            if (type === 'display') {
+                window.open(response.url, '_blank');
+            } else {
+                return response.blob(); // Assuming the server responds with a file
+            }
+        } else {
+            // Handle error responses if needed
+            throw new Error('Server responded with an error');
+        }
+    })
+    .then(blob => {
+        // Create the link, download, and remove it in a single action using a closure:
+        (function(blob) {
+            var link = document.createElement('a');
+            link.href = window.URL.createObjectURL(blob);
+            link.download = 'Legal Status Distribution.xlsx';
+            link.click();
+            document.body.removeChild(link);
+        })(blob);
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    });
+}
+
+</script>
 {{ block.super }}
-<!--script here-->
 {% endblock %}

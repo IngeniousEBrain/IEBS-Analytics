@@ -9,7 +9,6 @@ from django.dispatch import receiver
 from ckeditor.fields import RichTextField
 import logging
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -117,23 +116,17 @@ class Project(models.Model):
 @receiver(pre_save, sender=Project)
 def generate_project_code(sender, instance, **kwargs):
     if instance._state.adding:
-        # First time creation
         current_year = timezone.now().year
         financial_year_start_month = 4
-
         if timezone.now().month < financial_year_start_month:
             current_year -= 1
-
         last_project = Project.objects.last()
-
         if last_project:
             counter = int(last_project.code[-4:])
             next_counter = counter + 1
         else:
             next_counter = 1
-
         instance.code = f"IEBS2023{str(next_counter).zfill(4)}"
-
     else:
         if instance.code:
             return
@@ -156,7 +149,6 @@ class UserProjectAssociation(models.Model):
         __str__(): String representation of the UserProjectAssociation instance.
 
     """
-
     user = models.ForeignKey('CustomUser', on_delete=models.CASCADE,
                              related_name='project_associations')
     projects = models.ManyToManyField(Project)
@@ -240,7 +232,7 @@ class PatentData(models.Model):
     cpc = models.TextField()
     ipc = models.TextField()
     e_fan = models.CharField(max_length=100)
-    priority_country = models.CharField(max_length=100,null=True, blank=True)
+    priority_country = models.CharField(max_length=100, null=True, blank=True)
     created_date = models.DateTimeField(default=timezone.now, blank=True, null=True)
 
     def __str__(self):

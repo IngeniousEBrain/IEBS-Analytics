@@ -34,12 +34,15 @@ urlpatterns = [
     path('individual_cpc_exl/<str:cpc>/', views.individual_cpc_exl, name='individual_cpc_exl'),
     path('individual_ipc_exl/<str:ipc>/', views.individual_ipc_exl, name='individual_ipc_exl'),
     path('download_innovative_exl/<str:country>/', views.download_innovative_exl, name='download_innovative_exl'),
-    path('download_top_assignee_exl/<str:assignee>/', views.download_top_assignee_exl, name='download_top_assignee_exl'),
-    path('download_recent_assignee_exl/<str:assignee>/', views.download_recent_assignee_exl, name='download_recent_assignee_exl'),
+    path('download_top_assignee_exl/<str:assignee>/', views.download_top_assignee_exl,
+         name='download_top_assignee_exl'),
+    path('download_recent_assignee_exl/<str:assignee>/', views.download_recent_assignee_exl,
+         name='download_recent_assignee_exl'),
     path('download_legal_status_exl/<str:status>/', views.download_legal_status_exl, name='download_legal_status_exl'),
     path('download_publication_exl/<str:year>/', views.download_publication_exl, name='download_publication_exl'),
     path('download_exp_exl/<str:year>/', views.download_exp_exl, name='download_exp_exl'),
     path('download_excel/', views.download_excel_view, name='download_excel'),
     path('fetch_data/', views.fetch_data_view, name='fetch_data'),
-
+    # ==========================competitve chart data===========================================
+    path('competitor_colab_view/', views.competitor_colab_view, name='competitor_colab_view'),
 ]

@@ -1,6 +1,7 @@
 """
 Views for the 'visualizer' app.
 """
+import json
 # Third-party imports
 from datetime import datetime
 import collections
@@ -11,6 +12,9 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import numpy as np
 from io import BytesIO
+from urllib.parse import unquote
+from django.core.serializers import serialize
+from django.urls import reverse
 
 # Django imports
 from django.shortcuts import render, redirect, get_object_or_404
@@ -353,14 +357,6 @@ def in_progress_project_list(req):
     return render(req, 'pages/projects/project_listing.html', context)
 
 
-@request.validator
-def tech_charts(req):
-    """
-    logic for tech charts
-    """
-    return render(req, 'pages/charts/technical_chart.html')
-
-
 def calculate_luminance(color):
     if isinstance(color, int):
         color = (color, color, color)
@@ -401,6 +397,374 @@ def get_top_assignees_by_year(req):
 
 
 @request.validator
+def tech_charts(req):
+    """
+    logic for tech charts
+    """
+    data_pie = [1, 8, 1, 1, 7]
+    labels_pie = ['TISSUE ANALYSIS', 'Herbiside LOCALIZATION', 'BIOMAKER ANALYSIS', 'CELL CLASSIFICATION',
+                  'SPECIAL NONTAG']
+    colors_pie = ['#084594', '#2171b5', '#4292c6', '#6baed6', '#9ecae1']
+    data_donut = [5, 4, 3, 2, 1]
+    labels_donut = ['Category A', 'Category B', 'Category C', 'Category D', 'Category E']
+    colors_donut = ['#084594', '#2171b5', '#4292c6', '#6baed6', '#9ecae1']
+    pie_trace = go.Pie(labels=labels_pie, values=data_pie, marker=dict(colors=colors_pie))
+    donut_trace = go.Pie(labels=labels_donut, values=data_donut, hole=0.4, marker=dict(colors=colors_donut))
+
+    fig_combined = make_subplots(
+        rows=1, cols=2, subplot_titles=['Pie Chart', 'Donut Chart'],
+        specs=[[{'type': 'domain'}, {'type': 'domain'}]]
+    )
+    fig_combined.add_trace(pie_trace, row=1, col=1)
+    fig_combined.add_trace(donut_trace, row=1, col=2)
+    fig_combined.update_layout(
+        title='Pie and Donut Charts Side by Side',
+        height=500,
+        width=950
+    )
+    div_combined = fig_combined.to_html()
+    # =================================
+    pie_data = [5, 4, 3, 2, 1, 5, 4, 9]
+    pie_labels = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
+    # Extended color list
+    pie_colors = ['#3498db', '#E4EBF7', '#2ecc71', '#E4EBF7', '#e74c3c', '#95a5a6', '#f1c40f', '#bdc3c7']
+    # Bar chart data
+    bar_data = [10, 8, 6, 4, 2]
+    bar_labels = ['Category 1', 'Category 2', 'Category 3', 'Category 4', 'Category 5']
+    bar_colors = ['#084594', '#2171b5', '#4292c6', '#6baed6', '#9ecae1']
+    pie = go.Pie(
+        labels=pie_labels,
+        values=pie_data,
+        marker_colors=pie_colors
+    )
+    # Create horizontal bar chart
+    bar = go.Bar(
+        y=bar_labels,
+        x=bar_data,
+        orientation='h',
+        marker_color=bar_colors
+    )
+
+    # Create subplots
+    fig = make_subplots(
+        rows=1, cols=2,
+        specs=[[{'type': 'domain'}, {'type': 'xy'}]])
+
+    # Add traces
+    fig.add_trace(pie, row=1, col=1)
+    fig.add_trace(bar, row=1, col=2)
+
+    # Update layout
+    fig.update_layout(
+        title="Combined Chart",
+        width=950,
+        height=600
+    )
+
+    div2 = fig.to_html()
+    # =================================
+    data = np.random.rand(13, 13)
+
+    # Define the color scale (blue and white shades)
+    colorscale = [[0, 'white'], [1, 'skyblue']]
+
+    # Create the heatmap
+    heatmap = go.Figure(data=go.Heatmap(
+        z=data,
+        colorscale=colorscale,
+    ))
+
+    # Set the layout parameters
+    heatmap.update_layout(
+        width=950,
+        height=400,
+        margin=dict(l=0, r=0, b=0, t=0),
+    )
+
+    # Show the plot
+    div3 = heatmap.to_html()
+    # ================================
+    context = {'plot_div1': div_combined, 'div2': div2, 'div3': div3}
+    return render(req, 'pages/charts/technical_chart.html', context)
+
+
+# ===========================data view and download==============
+@csrf_exempt
+def get_q_object(assignee, partner):
+    return Q(assignee_standardized__icontains=assignee) & Q(assignee_standardized__icontains=partner)
+
+
+@csrf_exempt
+def competitor_colab_view(request):
+    try:
+        if request.method == 'POST':
+            if 'patent_data' in request.session:
+                del request.session['patent_data']
+            if 'partner_app_date_qs' in request.session:
+                del request.session['partner_app_date_qs']
+            if 'ass_pub_date_qs' in request.session:
+                del request.session['ass_pub_date_qs']
+            if 'ass_legal_status_qs' in request.session:
+                del request.session['ass_legal_status_qs']
+            if 'top_ten_highest_citing_qs' in request.session:
+                del request.session['top_ten_highest_citing_qs']
+            # if 'partner_ass_date_qs' in request.session:
+            #     del request.session['partner_ass_date_qs']
+            data = json.loads(request.body)
+            if data.get('assignee_standardized') and data.get('legal_status'):
+                assignee_list = [data.get('assignee_standardized')]
+                lega_status = PatentData.objects.filter(assignee_standardized__in=assignee_list,
+                                                            legal_status=data.get('legal_status'))
+                if data.get('type') == 'display':
+                    ass_legal_status_qs = serialize('json', lega_status)
+                    context = {'ass_legal_status_qs': json.loads(ass_legal_status_qs)}
+                    request.session['ass_legal_status_qs'] = json.loads(ass_legal_status_qs)
+                    return JsonResponse(
+                        {'success': True, 'data': context, 'redirect_url': reverse('competitor_colab_view'),'type': 'display'})
+                data_list = []
+                if data.get('type') == 'file':
+                    for patent_data in lega_status:
+                        data = {
+                            'Publication Number': patent_data.publication_number,
+                            'Assignee': patent_data.assignee_standardized,
+                            'Legal Status': patent_data.legal_status,
+                            'Cited Patents Count': patent_data.cited_patents_count,
+                            'Citing Patents Count': patent_data.citing_patents_count,
+                            'Inventors': patent_data.inventors,
+                            'Earliest Patent Priority Date': patent_data.earliest_patent_priority_date,
+                            'Application Date': patent_data.application_dates,
+                            'Publication Date': patent_data.publication_dates,
+                            'Application Number': patent_data.application_number,
+                            'CPC': patent_data.cpc,
+                            'IPC': patent_data.ipc,
+                            'E-Fan': patent_data.e_fan,
+                        }
+                        data_list.append(data)
+                    df = pd.DataFrame(data_list)
+                    response = HttpResponse(
+                        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+                    response['Content-Disposition'] = 'attachment; filename=Assignee_Partner.xlsx'
+                    df.to_excel(response, index=False)
+                    return response
+            elif data.get('assignee') and data.get('publication'):
+                year_wise_count = PatentData.objects.filter(assignee_standardized__icontains=data.get('assignee'),
+                                                            publication_number=data.get('publication'))
+                if data.get('type') == 'display':
+                    ass_pub_date_qs = serialize('json', year_wise_count)
+                    context = {'ass_pub_date_qs': json.loads(ass_pub_date_qs)}
+                    request.session['ass_pub_date_qs'] = json.loads(ass_pub_date_qs)
+                    return JsonResponse(
+                        {'success': True, 'data': context, 'redirect_url': reverse('competitor_colab_view'),'type': 'display'})
+                data_list = []
+                if data.get('type') == 'file':
+                    for patent_data in year_wise_count:
+                        data = {
+                            'Publication Number': patent_data.publication_number,
+                            'Assignee': patent_data.assignee_standardized,
+                            'Legal Status': patent_data.legal_status,
+                            'Cited Patents Count': patent_data.cited_patents_count,
+                            'Citing Patents Count': patent_data.citing_patents_count,
+                            'Inventors': patent_data.inventors,
+                            'Earliest Patent Priority Date': patent_data.earliest_patent_priority_date,
+                            'Application Date': patent_data.application_dates,
+                            'Publication Date': patent_data.publication_dates,
+                            'Application Number': patent_data.application_number,
+                            'CPC': patent_data.cpc,
+                            'IPC': patent_data.ipc,
+                            'E-Fan': patent_data.e_fan,
+                        }
+                        data_list.append(data)
+                    df = pd.DataFrame(data_list)
+                    response = HttpResponse(
+                        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+                    response['Content-Disposition'] = 'attachment; filename=Assignee_Partner.xlsx'
+                    df.to_excel(response, index=False)
+                    return response
+
+            elif data.get('assignee') and data.get('year'):
+                year_wise_count = PatentData.objects.filter(assignee_standardized__icontains=data.get('assignee'),
+                                                            application_dates__year=data.get('year'))
+                if data.get('type') == 'display':
+                    partner_app_date_qs = serialize('json', year_wise_count)
+                    context = {'partner_app_date_qs': json.loads(partner_app_date_qs)}
+                    request.session['partner_app_date_qs'] = json.loads(partner_app_date_qs)
+                    return JsonResponse(
+                        {'success': True, 'data': context, 'redirect_url': reverse('competitor_colab_view'),'type': 'display'})
+                data_list = []
+                if data.get('type') == 'file':
+                    for patent_data in year_wise_count:
+                        data = {
+                            'Publication Number': patent_data.publication_number,
+                            'Assignee': patent_data.assignee_standardized,
+                            'Legal Status': patent_data.legal_status,
+                            'Cited Patents Count': patent_data.cited_patents_count,
+                            'Citing Patents Count': patent_data.citing_patents_count,
+                            'Inventors': patent_data.inventors,
+                            'Earliest Patent Priority Date': patent_data.earliest_patent_priority_date,
+                            'Application Date': patent_data.application_dates,
+                            'Publication Date': patent_data.publication_dates,
+                            'Application Number': patent_data.application_number,
+                            'CPC': patent_data.cpc,
+                            'IPC': patent_data.ipc,
+                            'E-Fan': patent_data.e_fan,
+                        }
+                        data_list.append(data)
+                    df = pd.DataFrame(data_list)
+                    response = HttpResponse(
+                        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+                    response['Content-Disposition'] = 'attachment; filename=Assignee_Partner.xlsx'
+                    df.to_excel(response, index=False)
+                    return response
+            elif data.get('type') == 'allCitedDisplay':
+                user_id = request.session.get('logged_in_user_id')
+                filtered_data = PatentData.objects.filter(user_id=user_id, citing_patents_count__isnull=False)
+                top_ten_highest_citing = filtered_data.order_by('-citing_patents_count')[:10]
+                top_ten_highest_citing_qs = serialize('json', top_ten_highest_citing)
+                context = {'top_ten_highest_citing_qs': json.loads(top_ten_highest_citing_qs)}
+                request.session['top_ten_highest_citing_qs'] = json.loads(top_ten_highest_citing_qs)
+                return JsonResponse({'success': True, 'data': context, 'redirect_url': reverse('competitor_colab_view'),
+                                     'type': 'display'})
+            elif data.get('type') == 'allCitedFile':
+                user_id = request.session.get('logged_in_user_id')
+                filtered_data = PatentData.objects.filter(user_id=user_id, citing_patents_count__isnull=False)
+                top_ten_highest_citing = filtered_data.order_by('-citing_patents_count')[:10]
+                data_list = []
+                for patent_data in top_ten_highest_citing:
+                    data = {
+                        'Publication Number': patent_data.publication_number,
+                        'Assignee': patent_data.assignee_standardized,
+                        'Legal Status': patent_data.legal_status,
+                        'Cited Patents Count': patent_data.cited_patents_count,
+                        'Citing Patents Count': patent_data.citing_patents_count,
+                        'Inventors': patent_data.inventors,
+                        'Earliest Patent Priority Date': patent_data.earliest_patent_priority_date,
+                        'Application Date': patent_data.application_dates,
+                        'Publication Date': patent_data.publication_dates,
+                        'Application Number': patent_data.application_number,
+                        'CPC': patent_data.cpc,
+                        'IPC': patent_data.ipc,
+                        'E-Fan': patent_data.e_fan,
+                    }
+                    data_list.append(data)
+                df = pd.DataFrame(data_list)
+                response = HttpResponse(
+                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+                response['Content-Disposition'] = 'attachment; filename=Assignee_Partner.xlsx'
+                df.to_excel(response, index=False)
+                return response
+
+            # elif data.get('type') == 'allDisplay':
+            #         print("allDisplay")
+            #         data = PatentData.objects.filter(user_id=request.session.get('logged_in_user_id'))
+            #         data1 = data.values('assignee_standardized').annotate(
+            #             count=Count('assignee_standardized')).order_by(
+            #             '-count')[:10]
+            #         for item in data1:
+            #             assignee_name = item['assignee_standardized']
+            #             partners_list = extract_assignee_partners(request).get(assignee_name.title(), [])
+            #             patents = PatentData.objects.filter(Q(assignee_standardized__in=assignee_name))
+            #
+            #             acontext = {'partner_ass_date_qs': list(patents)}
+            #             print(acontext)
+            #         patent_data = {}
+            #
+            #         # if data.get('type') == 'display':
+            #         #     for partner in partners_list:
+            #         #         q_obj = get_q_object(assignee, partner)
+            #         #         patents = PatentData.objects.filter(q_obj)
+            #         #         # Convert QuerySet to a list of dictionaries
+            #         #         patents_data = serialize('json', patents)
+            #         #         patents_list = json.loads(patents_data)
+            #         #         patent_data[f"{assignee}_{partner}"] = patents_list
+            #         #     context = {'patent_data': patent_data}
+            #         #     request.session['patent_data'] = patent_data
+            #         #     return JsonResponse(
+            #         #         {'success': True, 'data': context, 'redirect_url': reverse('competitor_colab_view'),
+            #         #          'type': 'display'})
+
+            # elif data.get('type') == 'allFile':
+            #     pass
+            elif data.get('assignee') and data.get('partners'):
+                assignee = data.get('assignee')
+                partners_encoded = data.get('partners')
+                partners_decoded = unquote(partners_encoded)
+                partners_dict = json.loads(partners_decoded)
+                partners_list = list(partners_dict)
+                patent_data = {}
+
+                if data.get('type') == 'display':
+                    for partner in partners_list:
+                        q_obj = get_q_object(assignee, partner)
+                        patents = PatentData.objects.filter(q_obj)
+                        # Convert QuerySet to a list of dictionaries
+                        patents_data = serialize('json', patents)
+                        patents_list = json.loads(patents_data)
+                        patent_data[f"{assignee}_{partner}"] = patents_list
+                    context = {'patent_data': patent_data}
+                    request.session['patent_data'] = patent_data
+                    return JsonResponse(
+                        {'success': True, 'data': context, 'redirect_url': reverse('competitor_colab_view'),
+                         'type': 'display'})
+                data_list = []
+                if data.get('type') == 'file':
+                    for partner in partners_list:
+                        q_obj = get_q_object(assignee, partner)
+                        patents = PatentData.objects.filter(q_obj)
+                        for patent_data in patents:
+                            data = {
+                                'Publication Number': patent_data.publication_number,
+                                'Assignee': patent_data.assignee_standardized,
+                                'Legal Status': patent_data.legal_status,
+                                'Cited Patents Count': patent_data.cited_patents_count,
+                                'Citing Patents Count': patent_data.citing_patents_count,
+                                'Inventors': patent_data.inventors,
+                                'Earliest Patent Priority Date': patent_data.earliest_patent_priority_date,
+                                'Application Date': patent_data.application_dates,
+                                'Publication Date': patent_data.publication_dates,
+                                'Application Number': patent_data.application_number,
+                                'CPC': patent_data.cpc,
+                                'IPC': patent_data.ipc,
+                                'E-Fan': patent_data.e_fan,
+                            }
+                            data_list.append(data)
+                        df = pd.DataFrame(data_list)
+                        response = HttpResponse(
+                            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+                        response['Content-Disposition'] = 'attachment; filename=Assignee_Partner.xlsx'
+                        df.to_excel(response, index=False)
+                        return response
+
+        else:
+
+            if request.session.get('patent_data'):
+                context = request.session.get('patent_data', {})
+                return render(request, 'pages/charts/competitor_data_view.html', {'patent_data': context})
+            elif request.session.get('partner_app_date_qs'):
+                context = request.session.get('partner_app_date_qs', {})
+                return render(request, 'pages/charts/competitor_data_view.html', {'partner_app_date_qs': context})
+            elif request.session.get('ass_pub_date_qs'):
+                context = request.session.get('ass_pub_date_qs', {})
+                return render(request, 'pages/charts/competitor_data_view.html', {'ass_pub_date_qs': context})
+            elif request.session.get('ass_legal_status_qs'):
+                context = request.session.get('ass_legal_status_qs', {})
+                return render(request, 'pages/charts/competitor_data_view.html', {'ass_legal_status_qs': context})
+
+            elif request.session.get('top_ten_highest_citing_qs'):
+                context = request.session.get('top_ten_highest_citing_qs', {})
+                return render(request, 'pages/charts/competitor_data_view.html', {'top_ten_highest_citing_qs': context})
+
+
+            # elif request.session.get('partner_ass_date_qs'):
+            #     context = request.session.get('partner_ass_date_qs', {})
+            #     return render(request, 'pages/charts/competitor_data_view.html', {'partner_ass_date_qs': context})
+    except Exception as e:
+        print(f"Error in competitor_colab_view: {e}")
+        return JsonResponse({'error': 'Internal Server Error'}, status=500)
+
+
+# ===========================data view and download==============
+
+@request.validator
 def competitor_charts(req):
     data = PatentData.objects.filter(user_id=req.session.get('logged_in_user_id'))
     data1 = data.values('assignee_standardized').annotate(count=Count('assignee_standardized')).order_by('-count')[:10]
@@ -414,6 +778,8 @@ def competitor_charts(req):
             'partners': partner_count_dict,
             'partner_count': sum(partner_count_dict.values())
         })
+    res = result
+    req.session['res'] = res
     assignees = [entry['assignee'].title() for entry in result]
     partners = sorted(set(partner for entry in result for partner in entry['partners']))
     partner_count_matrix = [
@@ -434,11 +800,11 @@ def competitor_charts(req):
         textfont={"size": 14}
     ))
     fig1.update_layout(
-        title="Collaborations of competitors",
+        title='Collaborations of competitors',
         xaxis=dict(title='Partners'),
         yaxis=dict(title='Assignees'),
-        height=600,
-        width=950,
+        height=500,
+        width=995,
     )
     div1 = fig1.to_html()
     # ==================================BUBBLE===================================================
@@ -448,15 +814,24 @@ def competitor_charts(req):
         for year, count in yeardict.items():
             data.append({'Assignee': assignee.title(), 'Year': year, 'Count': count})
     df = pd.DataFrame(data)
-    fig2 = px.scatter(df, x="Year", y="Assignee", size="Count", size_max=30, title='Patent Count Bubble Chart')
+    fig2 = px.scatter(
+        df,
+        x="Year",
+        y="Assignee",
+        size="Count",
+        size_max=20,
+        height=500,
+        width=995,
+    )
     fig2.update_layout(
+        title='Overall patent filing',
         xaxis_title='Application Year',
         yaxis_title='Assignee'
     )
-    fig2.update_xaxes(type='category')  # Add this line to explicitly set x-axis type
-
+    fig2.update_xaxes(type='category')
+    fig2.update_traces(marker=dict(line=dict(width=0.5, color='DarkSlateGray')))
     div2 = fig2.to_html(full_html=False)
-    # =====================================================================================
+    # ===================================BAR CHART=========================================
     user_id = req.session.get('logged_in_user_id')
     filtered_data = PatentData.objects.filter(user_id=user_id, citing_patents_count__isnull=False)
     top_ten_highest_citing = filtered_data.order_by('-citing_patents_count')[:10]
@@ -467,7 +842,22 @@ def competitor_charts(req):
                     top_ten_highest_citing]
     citation_index_values = [round(citing / cited, 2) for citing, cited in zip(top_ten_values, cited_values)]
     y_labels = [f"{assignee} | {publication}" for assignee, publication in zip(assignee_names, publication_numbers)]
-    fig3 = make_subplots(rows=1, cols=2, shared_yaxes=True)
+    table_data = []
+
+    for val in top_ten_highest_citing:
+        assignee_name = val.assignee_standardized.split('|')[0]
+        publication_number = val.publication_number
+        citing_count = val.citing_patents_count
+        cited_count = val.cited_patents_count if val.cited_patents_count is not None else 1
+        citation_index = round(citing_count / cited_count, 2)
+        row_dict = {
+            'assignee': assignee_name,
+            'publication_number': publication_number,
+            'citing_count': citing_count,
+            'citing_index': citation_index
+        }
+        table_data.append(row_dict)
+    fig3 = make_subplots(rows=1, cols=2, shared_yaxes=True, subplot_titles=['Top Citing Patents', 'Citation Index'])
     fig3.add_trace(
         go.Bar(
             x=top_ten_values,
@@ -492,7 +882,14 @@ def competitor_charts(req):
         ),
         row=1, col=2
     )
-    fig3.update_layout(title_text='Top Citing Patents & Citation Index')
+    fig3.update_layout(
+        title="Influence of Innovation",
+        height=400,
+        width=995,
+        margin=dict(t=50, b=30, r=10, l=10),  # Adjust margins
+        showlegend=False  # Remove legend to save space
+    )
+    fig3.update_layout(updatemenus=[])
     div3 = fig3.to_html(full_html=False)
     # =========================================================================
     top_assignees = PatentData.objects.values('assignee_standardized').annotate(
@@ -500,6 +897,7 @@ def competitor_charts(req):
     top_assignee_ids = [a['assignee_standardized'] for a in top_assignees]
     legal_status_counts = PatentData.objects.filter(assignee_standardized__in=top_assignee_ids).values(
         'assignee_standardized', 'legal_status').annotate(count=Count('legal_status')).order_by('assignee_standardized')
+
     result = {}
     for ls in legal_status_counts:
         assignee = ls['assignee_standardized']
@@ -508,25 +906,41 @@ def competitor_charts(req):
         if assignee not in result:
             result[assignee] = {}
         result[assignee][status] = count
-
     assignee_names = list(result.keys())
     status_types = list(set(status for status_dict in result.values() for status in status_dict.keys()))
+
     fig4 = go.Figure()
     for status in status_types:
         status_counts = [assignee_data.get(status, 0) for assignee_data in result.values()]
         fig4.add_trace(go.Bar(x=assignee_names, y=status_counts, name=status,
                               text=status_counts, textposition='auto'))
-    fig4.update_layout(barmode='stack', xaxis={'categoryorder': 'total descending'})
+    fig4.update_layout(
+        title='Legal Status Distribution',
+        barmode='stack',
+        xaxis={'categoryorder': 'total descending'},
+        height=600,
+        width=990
+    )
+
     div4 = fig4.to_html(full_html=False)
     # ===========================================================================
+
     df = px.data.gapminder().query("year==2007")
     fig6 = px.choropleth(df, locations="iso_alpha",
                          color="lifeExp",
                          hover_name="country",
                          color_continuous_scale=px.colors.sequential.Plasma)
+
+    # Set the height and width of the choropleth map
+    fig6.update_layout(
+        height=600,
+        width=995
+    )
+
     div6 = fig6.to_html(full_html=False)
     context = {'plot_div1': div1, 'plot_div2': div2, 'plot_div3': div3, 'plot_div4': div4,
-               'plot_div6': div6}
+               'plot_div6': div6, 'data1': data1, 'result': res, 'data': data,
+               'table_data': table_data, 'legal_status_counts': legal_status_counts}
     return render(req, 'pages/charts/competitor_charts.html', context)
 
 
@@ -1598,7 +2012,3 @@ def user_profile(req):
     user_id = req.session.get('logged_in_user_id')
     user_qs = CustomUser.objects.get(id=user_id)
     return render(req, 'pages/onboard/profile.html', {'iebs_user': user_qs})
-
-
-
-

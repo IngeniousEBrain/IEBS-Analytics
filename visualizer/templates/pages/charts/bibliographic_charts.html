@@ -400,25 +400,24 @@
                                             </tr>
                                             </thead>
                                             <tbody>
-                                            {% for item in top_assignees_dict %}
-                                            <tr>
-                                                <td class="text-center small">{{ item.assignee_standardized }}</td>
-                                                <td class="text-center small">{{ item.count }}</td>
-                                                <td class="text-center small">
-                                                    <div class="d-flex justify-content-center">
-                                                        <button class="btn btn-secondary btn-xs mx-1"
-                                                                onclick="ViewTopAssignee('{{ item.assignee_standardized }}')"><i class="fa fa-eye"
-                                                                                                     aria-hidden="true"></i>
-                                                        </button>
-                                                        <button class="btn btn-primary btn-xs mx-1"
-                                                                onclick="DownloadTopAssigneeExl('{{ item.assignee_standardized }}')">
-                                                            <i
-                                                                    class="fas fa-file-download" aria-hidden="true"></i>
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                            {% endfor %}
+                                                {% for item in top_assignees_dict %}
+                                                <tr>
+                                                    <td class="text-center small">{{ item.assignee_standardized }}</td>
+                                                    <td class="text-center small">{{ item.count }}</td>
+                                                    <td class="text-center small">
+                                                        <div class="d-flex justify-content-center">
+                                                            <button class="btn btn-secondary btn-xs mx-1"
+                                                                    onclick="ViewTopAssignee('{{ item.assignee_standardized }}')"><i class="fa fa-eye"
+                                                                                                         aria-hidden="true"></i>
+                                                            </button>
+                                                            <button class="btn btn-primary btn-xs mx-1"
+                                                                    onclick="DownloadTopAssigneeExl('{{ item.assignee_standardized }}')">
+                                                                <i class="fas fa-file-download" aria-hidden="true"></i>
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
                                             </tbody>
                                         </table>
                                     </div>
@@ -486,7 +485,6 @@
                                                 </td>
                                             </tr>
                                             {% endfor %}
-
                                             </tbody>
                                         </table>
                                     </div>
