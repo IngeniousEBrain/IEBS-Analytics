@@ -28,7 +28,7 @@ from django.http import HttpResponseServerError
 from django.db.models import Q
 from django.db.models.functions import ExtractYear
 # Local imports
-from .models import CustomUser, Project, PatentData
+from .models import CustomUser, Project, PatentData, UserProjectAssociation
 from .packages import request
 from django.db.models import Count
 from .tasks import process_excel_data_task
@@ -299,6 +299,31 @@ def project_list(req):
     return render(req, 'pages/projects/project_listing.html', context)
 
 
+def delete_project(request):
+    if request.method == 'POST':
+        project_id = request.POST.get('project_id')
+        user_id = request.session.get('logged_in_user_id')
+        try:
+            user_associations = UserProjectAssociation.objects.filter(user_id=user_id)
+            project_to_deallocate = Project.objects.get(id=project_id)
+            for user_association in user_associations:
+                user_association.projects.remove(project_to_deallocate)
+            return JsonResponse({'status': 'success'})
+        except UserProjectAssociation.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'User association not found'})
+        except Project.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Project not found'})
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'})
+
+@request.validator
+def edit_project(request, project_id):
+    project = get_object_or_404(Project, id=project_id)
+    context = {'project': project}
+    if request.method == 'POST':
+        pass
+    return render(request, 'pages/projects/project_edit.html', context)
+
+
 @request.validator
 def completed_project_list(req):
     """
@@ -514,13 +539,14 @@ def competitor_colab_view(request):
             if data.get('assignee_standardized') and data.get('legal_status'):
                 assignee_list = [data.get('assignee_standardized')]
                 lega_status = PatentData.objects.filter(assignee_standardized__in=assignee_list,
-                                                            legal_status=data.get('legal_status'))
+                                                        legal_status=data.get('legal_status'))
                 if data.get('type') == 'display':
                     ass_legal_status_qs = serialize('json', lega_status)
                     context = {'ass_legal_status_qs': json.loads(ass_legal_status_qs)}
                     request.session['ass_legal_status_qs'] = json.loads(ass_legal_status_qs)
                     return JsonResponse(
-                        {'success': True, 'data': context, 'redirect_url': reverse('competitor_colab_view'),'type': 'display'})
+                        {'success': True, 'data': context, 'redirect_url': reverse('competitor_colab_view'),
+                         'type': 'display'})
                 data_list = []
                 if data.get('type') == 'file':
                     for patent_data in lega_status:
@@ -554,7 +580,8 @@ def competitor_colab_view(request):
                     context = {'ass_pub_date_qs': json.loads(ass_pub_date_qs)}
                     request.session['ass_pub_date_qs'] = json.loads(ass_pub_date_qs)
                     return JsonResponse(
-                        {'success': True, 'data': context, 'redirect_url': reverse('competitor_colab_view'),'type': 'display'})
+                        {'success': True, 'data': context, 'redirect_url': reverse('competitor_colab_view'),
+                         'type': 'display'})
                 data_list = []
                 if data.get('type') == 'file':
                     for patent_data in year_wise_count:
@@ -589,7 +616,8 @@ def competitor_colab_view(request):
                     context = {'partner_app_date_qs': json.loads(partner_app_date_qs)}
                     request.session['partner_app_date_qs'] = json.loads(partner_app_date_qs)
                     return JsonResponse(
-                        {'success': True, 'data': context, 'redirect_url': reverse('competitor_colab_view'),'type': 'display'})
+                        {'success': True, 'data': context, 'redirect_url': reverse('competitor_colab_view'),
+                         'type': 'display'})
                 data_list = []
                 if data.get('type') == 'file':
                     for patent_data in year_wise_count:
@@ -752,7 +780,6 @@ def competitor_colab_view(request):
             elif request.session.get('top_ten_highest_citing_qs'):
                 context = request.session.get('top_ten_highest_citing_qs', {})
                 return render(request, 'pages/charts/competitor_data_view.html', {'top_ten_highest_citing_qs': context})
-
 
             # elif request.session.get('partner_ass_date_qs'):
             #     context = request.session.get('partner_ass_date_qs', {})
