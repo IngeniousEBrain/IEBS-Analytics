@@ -65,25 +65,23 @@
     </nav>
     <aside class="main-sidebar sidebar-dark-primary elevation-4" style="border-right: 5px solid aqua;">
         <!-- Brand Logo -->
-        <a href="#" class="brand-link">
-            <img src="{% static 'dist/img/AdminLTELogo.png' %}" alt="AdminLTE Logo"
-                 class="brand-image img-circle elevation-3" style="opacity: .8">
-            <span class="brand-text font-weight-light">IEBS Analytics</span>
+        <a href="https://www.iebrain.com/" target="_blank" class="brand-link">
+            <img  src="{% static 'img/e_logo.svg' %}" alt="I-EB Logo"
+                 class="brand-image img-circle elevation-0" style="opacity: .8">
+            <span class="brand-text font-weight-light">IE-Brain Analytics</span>
         </a>
         <!-- Sidebar -->
         <div class="sidebar">
             <!-- Sidebar user panel (optional) -->
             <div class="user-panel mt-3 pb-3 mb-3 d-flex">
                 {% block info %}
-                <div class="info">
-                    <a href="{% url 'profile' %}" class="d-block text-center" style="font-weight: bold;">
+                <div class="info text-center" style="margin-left:5%">
+                    <a href="{% url 'profile' %}" class="d-block " style="font-weight: bold;">
                         {{ request.session.user_name|title }}
                     </a>
-
                 </div>
                 {% endblock %}
             </div>
-            <!-- Sidebar Menu -->
             <!-- Sidebar Menu -->
             <nav class="mt-2">
                 <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu"
@@ -134,7 +132,6 @@
                 </ul>
             </nav>
             <!-- /.sidebar-menu -->
-
         </div>
         <!-- /.sidebar -->
     </aside>

@@ -2039,3 +2039,6 @@ def user_profile(req):
     user_id = req.session.get('logged_in_user_id')
     user_qs = CustomUser.objects.get(id=user_id)
     return render(req, 'pages/onboard/profile.html', {'iebs_user': user_qs})
+
+
+

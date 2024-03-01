@@ -73,8 +73,8 @@
                                     {% endif %}
                                 </td>
                                 <td>
-                                    {{ project.scope|safe|slice_with_words:100|safe }}
-                                    {% if project.description|length > 100 %}
+                                    {{ project.scope|safe|slice_with_words:150|safe }}
+                                    {% if project.description|length > 150 %}
                                     <a href="#" data-toggle="modal"
                                        data-target="#seeMorescopeModal{{ project.id }}">See more</a>
                                     <!-- Modal Trigger -->
@@ -120,7 +120,6 @@
                                     <i class="fas fa-edit" style="color: rgb(87, 151, 87);" title="Edit Project"></i>
                                     </a>
                                     <a href="{% url 'bibliographic_charts' chart_id=project.id %}">
-
                                         <i class="fas fa-chart-bar" aria-hidden="true" title="Projects Analytics"></i>
                                     </a>
 <!--                                    <i class="fa fa-eye" aria-hidden="true" title="Project Details"-->
