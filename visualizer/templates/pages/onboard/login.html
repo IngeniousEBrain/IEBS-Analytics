@@ -126,11 +126,9 @@
 <body class="hold-transition login-page">
 <div class="login-box">
 
-    <img id="logo" src="{% static 'img/ielogo.png' %}" height="120px"
-         style="margin-left: 32%; margin-top: -8%; margin-bottom: -8%;">
-
+    <img id="logo" src="{% static 'img/inginious_logo.png' %}">
     <div class="login-logo">
-        <a href="#"><b>IEBS </b>Analytics</a>
+        <a href="https://www.iebrain.com/" target="_blank"><b>IE-Brain Analytics</b></a>
     </div>
     <!-- /.login-logo -->
     <div class="card">
@@ -224,6 +222,12 @@
         }
     });
   });
+  // Check if Enter key is pressed
+  $(document).keypress(function(e) {
+            if (e.which === 13) {
+                $('#login-btn').click(); // Trigger click event of login button
+            }
+        });
   });
 
 </script>
