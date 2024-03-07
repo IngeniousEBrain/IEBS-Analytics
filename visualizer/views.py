@@ -315,6 +315,7 @@ def delete_project(request):
             return JsonResponse({'status': 'error', 'message': 'Project not found'})
     return JsonResponse({'status': 'error', 'message': 'Invalid request method'})
 
+
 @request.validator
 def edit_project(request, project_id):
     project = get_object_or_404(Project, id=project_id)
@@ -407,12 +408,12 @@ def extract_assignee_partners(req):
 
 
 def get_top_assignees_by_year(req):
-    top_assignees = PatentData.objects.values('assignee_standardized').annotate(
+    top_assignees = PatentData.objects.filter(user_id = req.session.get('logged_in_user_id')).values('assignee_standardized').annotate(
         count=Count('assignee_standardized')).order_by('-count')[:10]
     result = collections.defaultdict(dict)
     for assignee in top_assignees:
         name = assignee['assignee_standardized']
-        year_wise_count = PatentData.objects.filter(assignee_standardized=name).values(
+        year_wise_count = PatentData.objects.filter(assignee_standardized=name,user_id = req.session.get('logged_in_user_id')).values(
             'application_dates__year').annotate(count=Count('id'))
         for data in year_wise_count:
             year = data['application_dates__year']
@@ -539,7 +540,7 @@ def competitor_colab_view(request):
             if data.get('assignee_standardized') and data.get('legal_status'):
                 assignee_list = [data.get('assignee_standardized')]
                 lega_status = PatentData.objects.filter(assignee_standardized__in=assignee_list,
-                                                        legal_status=data.get('legal_status'))
+                                                        legal_status=data.get('legal_status'),user_id = req.session.get('logged_in_user_id'))
                 if data.get('type') == 'display':
                     ass_legal_status_qs = serialize('json', lega_status)
                     context = {'ass_legal_status_qs': json.loads(ass_legal_status_qs)}
@@ -574,7 +575,7 @@ def competitor_colab_view(request):
                     return response
             elif data.get('assignee') and data.get('publication'):
                 year_wise_count = PatentData.objects.filter(assignee_standardized__icontains=data.get('assignee'),
-                                                            publication_number=data.get('publication'))
+                                                            publication_number=data.get('publication'),user_id = req.session.get('logged_in_user_id'))
                 if data.get('type') == 'display':
                     ass_pub_date_qs = serialize('json', year_wise_count)
                     context = {'ass_pub_date_qs': json.loads(ass_pub_date_qs)}
@@ -610,7 +611,7 @@ def competitor_colab_view(request):
 
             elif data.get('assignee') and data.get('year'):
                 year_wise_count = PatentData.objects.filter(assignee_standardized__icontains=data.get('assignee'),
-                                                            application_dates__year=data.get('year'))
+                                                            application_dates__year=data.get('year'),user_id = req.session.get('logged_in_user_id'))
                 if data.get('type') == 'display':
                     partner_app_date_qs = serialize('json', year_wise_count)
                     context = {'partner_app_date_qs': json.loads(partner_app_date_qs)}
@@ -723,7 +724,7 @@ def competitor_colab_view(request):
                 if data.get('type') == 'display':
                     for partner in partners_list:
                         q_obj = get_q_object(assignee, partner)
-                        patents = PatentData.objects.filter(q_obj)
+                        patents = PatentData.objects.filter(q_obj,user_id = req.session.get('logged_in_user_id'))
                         # Convert QuerySet to a list of dictionaries
                         patents_data = serialize('json', patents)
                         patents_list = json.loads(patents_data)
@@ -737,7 +738,7 @@ def competitor_colab_view(request):
                 if data.get('type') == 'file':
                     for partner in partners_list:
                         q_obj = get_q_object(assignee, partner)
-                        patents = PatentData.objects.filter(q_obj)
+                        patents = PatentData.objects.filter(q_obj,user_id = req.session.get('logged_in_user_id'))
                         for patent_data in patents:
                             data = {
                                 'Publication Number': patent_data.publication_number,
@@ -763,7 +764,6 @@ def competitor_colab_view(request):
                         return response
 
         else:
-
             if request.session.get('patent_data'):
                 context = request.session.get('patent_data', {})
                 return render(request, 'pages/charts/competitor_data_view.html', {'patent_data': context})
@@ -860,7 +860,7 @@ def competitor_charts(req):
     div2 = fig2.to_html(full_html=False)
     # ===================================BAR CHART=========================================
     user_id = req.session.get('logged_in_user_id')
-    filtered_data = PatentData.objects.filter(user_id=user_id, citing_patents_count__isnull=False)
+    filtered_data = PatentData.objects.filter(user_id = req.session.get('logged_in_user_id'), citing_patents_count__isnull=False)
     top_ten_highest_citing = filtered_data.order_by('-citing_patents_count')[:10]
     top_ten_values = [val.citing_patents_count for val in top_ten_highest_citing]
     assignee_names = [val.assignee_standardized.split('|')[0] for val in top_ten_highest_citing]
@@ -919,7 +919,7 @@ def competitor_charts(req):
     fig3.update_layout(updatemenus=[])
     div3 = fig3.to_html(full_html=False)
     # =========================================================================
-    top_assignees = PatentData.objects.values('assignee_standardized').annotate(
+    top_assignees = PatentData.objects.filter(user_id = req.session.get('logged_in_user_id')).values('assignee_standardized').annotate(
         count=Count('assignee_standardized')).order_by('-count')[:10]
     top_assignee_ids = [a['assignee_standardized'] for a in top_assignees]
     legal_status_counts = PatentData.objects.filter(assignee_standardized__in=top_assignee_ids).values(
@@ -1350,8 +1350,8 @@ def download_citedExl(request):
     ).exclude(
         citing_patents_count__isnull=True
     ).order_by('-cited_patents_count')[:10]
+
     data = {
-        # 'Project Code': [patent.project_code for patent in top_ten_cited_patents],
         'Publication Number': [patent.publication_number for patent in top_ten_cited_patents],
         'Assignee Standardized': [patent.assignee_standardized for patent in top_ten_cited_patents],
         'Cited Patents Count': [patent.cited_patents_count for patent in top_ten_cited_patents],
@@ -1365,10 +1365,29 @@ def download_citedExl(request):
         'IPC Count': [patent.ipc for patent in top_ten_cited_patents],
         'E-FAN': [patent.e_fan for patent in top_ten_cited_patents],
     }
+
     df = pd.DataFrame(data)
+
+    # Create an HttpResponse object
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     response['Content-Disposition'] = 'attachment; filename=top_ten_cited_patents.xlsx'
-    df.to_excel(response, index=False, sheet_name='Top Ten Cited Patents')
+
+    # Create a Pandas Excel writer using XlsxWriter as the engine
+    with pd.ExcelWriter(response, engine='xlsxwriter') as writer:
+        # Convert the dataframe to an XlsxWriter Excel object
+        df.to_excel(writer, index=False, sheet_name='Top Ten Cited Patents')
+
+        # Get the xlsxwriter workbook and worksheet objects
+        workbook = writer.book
+        worksheet = writer.sheets['Top Ten Cited Patents']
+
+        # Set the column widths
+        for i, col in enumerate(df.columns):
+            max_len = max(df[col].astype(str).apply(len).max(), len(col))
+            worksheet.set_column(i, i, max_len)
+
+    response['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+
     return response
 
 
@@ -1422,7 +1441,7 @@ def top_ten_ass_exl(request):
     ass_list = []
     for dictq in data:
         ass_list.append(dictq['assignee_standardized'])
-    top_ten_ass = PatentData.objects.filter(assignee_standardized__in=ass_list).order_by('assignee_standardized')
+    top_ten_ass = PatentData.objects.filter(user_id = req.session.get('logged_in_user_id'),assignee_standardized__in=ass_list).order_by('assignee_standardized')
     if request.GET.get('display'):
         context = {
             'top_ten_ass_view': top_ten_ass,
@@ -1463,7 +1482,7 @@ def top_ten_cpc_exl(req):
     sorted_cpc_counts = dict(sorted(cpc_counts_dict_ws.items(), key=lambda item: item[1], reverse=True))
     cpc_counts_dict = dict(list(sorted_cpc_counts.items())[:10])
     cpc_keys_list = list(cpc_counts_dict.keys())
-    top_ten_cpc = PatentData.objects.filter(Q(cpc__in=cpc_keys_list)).order_by('cpc')
+    top_ten_cpc = PatentData.objects.filter(Q(cpc__in=cpc_keys_list),user_id = req.session.get('logged_in_user_id')).order_by('cpc')
     if req.GET.get('display'):
         context = {
             'top_ten_cpc': top_ten_cpc,
@@ -1506,7 +1525,7 @@ def top_ten_ipc_exl(req):
     sorted_ipc_counts = dict(sorted(ipc_counts_dict_ws.items(), key=lambda item: item[1], reverse=True))
     ipc_counts_dict = dict(list(sorted_ipc_counts.items())[:10])
     ipc_keys_list = list(ipc_counts_dict.keys())
-    top_ten_ipc = PatentData.objects.filter(cpc__in=ipc_keys_list)
+    top_ten_ipc = PatentData.objects.filter(cpc__in=ipc_keys_list,user_id = req.session.get('logged_in_user_id'))
     if req.GET.get('display'):
         context = {
             'top_ten_ipc': top_ten_ipc,
@@ -1526,7 +1545,7 @@ def top_ten_ipc_exl(req):
 
 def download_excel_view(req):
     status = req.GET.get('status')
-    patents = PatentData.objects.filter(legal_status=status)
+    patents = PatentData.objects.filter(legal_status=status,user_id = req.session.get('logged_in_user_id'))
     data = {
         'Publication Number': list(patents.values_list('publication_number', flat=True)),
         'Assignee Standardized': list(patents.values_list('assignee_standardized', flat=True)),
@@ -1558,7 +1577,7 @@ def download_excel_view(req):
 
 def fetch_data_view(request):
     status = request.GET.get('status')
-    patents = PatentData.objects.filter(legal_status=status)
+    patents = PatentData.objects.filter(legal_status=status,user_id = req.session.get('logged_in_user_id'))
     data = [
         {
             'publication_number': patent.publication_number,
@@ -1768,7 +1787,6 @@ def get_country_code_count(req):
 def get_ipc_counts(req):
     patent_data_queryset = PatentData.objects.filter(user_id=req.session.get('logged_in_user_id'))
     ipc_counts_from_db = Counter()
-
     for patent_data in patent_data_queryset:
         ipc_values = patent_data.ipc.split('|') if patent_data.ipc else []
         for ipc_value in ipc_values:
@@ -1823,6 +1841,7 @@ def download_excel_file(request):
     ).exclude(
         cited_patents_count__isnull=True
     ).order_by('-cited_patents_count')[:10]
+
     if request.GET.get('display'):
         context = {
             'top_ten_cited_patents': top_ten_cited_patents,
@@ -1830,7 +1849,6 @@ def download_excel_file(request):
         return render(request, 'pages/charts/top_ten_ipc.html', context)
     else:
         data = {
-            # 'Project Code': [patent.project_code for patent in top_ten_cited_patents],
             'Publication Number': [patent.publication_number for patent in top_ten_cited_patents],
             'Assignee Standardized': [patent.assignee_standardized for patent in top_ten_cited_patents],
             'Cited Patents Count': [patent.cited_patents_count for patent in top_ten_cited_patents],
@@ -1843,9 +1861,27 @@ def download_excel_file(request):
             'EFAN': [patent.e_fan for patent in top_ten_cited_patents],
         }
         df = pd.DataFrame(data)
+
+        # Create an HttpResponse object
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         response['Content-Disposition'] = 'attachment; filename=top_ten_cited_patents.xlsx'
-        df.to_excel(response, index=False, sheet_name='Top Ten Cited Patents')
+
+        # Create a Pandas Excel writer using XlsxWriter as the engine
+        with pd.ExcelWriter(response, engine='xlsxwriter') as writer:
+            # Convert the dataframe to an XlsxWriter Excel object
+            df.to_excel(writer, index=False, sheet_name='Top Ten Cited Patents')
+
+            # Get the xlsxwriter workbook and worksheet objects
+            workbook = writer.book
+            worksheet = writer.sheets['Top Ten Cited Patents']
+
+            # Set the column widths
+            for i, col in enumerate(df.columns):
+                max_len = max(df[col].astype(str).apply(len).max(), len(col))
+                worksheet.set_column(i, i, max_len)
+
+        response['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+
         return response
 
 
@@ -1856,6 +1892,7 @@ def download_citing_excel_file(request):
     ).exclude(
         cited_patents_count__isnull=True
     ).order_by('-citing_patents_count')[:10]
+
     if request.GET.get('display'):
         context = {
             'top_ten_citing_patents': top_ten_citing_patents,
@@ -1863,7 +1900,6 @@ def download_citing_excel_file(request):
         return render(request, 'pages/charts/top_ten_ipc.html', context)
     else:
         data = {
-            # 'Project Code': [patent.project_code for patent in top_ten_cited_patents],
             'Publication Number': [patent.publication_number for patent in top_ten_citing_patents],
             'Assignee Standardized': [patent.assignee_standardized for patent in top_ten_citing_patents],
             'Cited Patents Count': [patent.cited_patents_count for patent in top_ten_citing_patents],
@@ -1876,14 +1912,32 @@ def download_citing_excel_file(request):
             'EFAN': [patent.e_fan for patent in top_ten_citing_patents],
         }
         df = pd.DataFrame(data)
+
+        # Create an HttpResponse object
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-        response['Content-Disposition'] = 'attachment; filename=top_ten_cited_patents.xlsx'
-        df.to_excel(response, index=False, sheet_name='Top Ten Citing Patents')
-        return response
+        response['Content-Disposition'] = 'attachment; filename=top_ten_citing_patents.xlsx'
+
+        # Create a Pandas Excel writer using XlsxWriter as the engine
+        with pd.ExcelWriter(response, engine='xlsxwriter') as writer:
+            # Convert the dataframe to an XlsxWriter Excel object
+            df.to_excel(writer, index=False, sheet_name='Top Ten Citing Patents')
+
+            # Get the xlsxwriter workbook and worksheet objects
+            workbook = writer.book
+            worksheet = writer.sheets['Top Ten Citing Patents']
+
+            # Set the column widths
+            for i, col in enumerate(df.columns):
+                max_len = max(df[col].astype(str).apply(len).max(), len(col))
+                worksheet.set_column(i, i, max_len)
+
+        response['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 
 
 def get_year_wise_excel(req):
     user_id = req.session.get('logged_in_user_id')
+
+    # Group patents by publication year and count them
     year_counts = PatentData.objects.filter(user_id=user_id).annotate(
         publication_year=ExtractYear('publication_dates')
     ).values('publication_year').annotate(
@@ -1891,7 +1945,6 @@ def get_year_wise_excel(req):
     ).order_by('-publication_year')
 
     data = {
-        # 'Project Code': [patent.project_code for patent in year_wise_count],
         'Publication Number': [patent.publication_number for patent in year_counts],
         'Assignee Standardized': [patent.assignee_standardized for patent in year_counts],
         'Cited Patents Count': [patent.cited_patents_count for patent in year_counts],
@@ -1903,10 +1956,29 @@ def get_year_wise_excel(req):
         'IPC Count': [patent.ipc for patent in year_counts],
         'EFAN': [patent.e_fan for patent in year_counts],
     }
+
     df = pd.DataFrame(data)
+
+    # Create an HttpResponse object
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = 'attachment; filename=top_ten_cited_patents.xlsx'
-    df.to_excel(response, index=False, sheet_name='Top Ten Cited Patents')
+    response['Content-Disposition'] = 'attachment; filename=year_wise_patents.xlsx'
+
+    # Create a Pandas Excel writer using XlsxWriter as the engine
+    with pd.ExcelWriter(response, engine='xlsxwriter') as writer:
+        # Convert the dataframe to an XlsxWriter Excel object
+        df.to_excel(writer, index=False, sheet_name='Year Wise Patents')
+
+        # Get the xlsxwriter workbook and worksheet objects
+        workbook = writer.book
+        worksheet = writer.sheets['Year Wise Patents']
+
+        # Set the column widths
+        for i, col in enumerate(df.columns):
+            max_len = max(df[col].astype(str).apply(len).max(), len(col))
+            worksheet.set_column(i, i, max_len)
+
+    response['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+
     return response
 
 
@@ -2039,6 +2111,3 @@ def user_profile(req):
     user_id = req.session.get('logged_in_user_id')
     user_qs = CustomUser.objects.get(id=user_id)
     return render(req, 'pages/onboard/profile.html', {'iebs_user': user_qs})
-
-
-
