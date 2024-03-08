@@ -544,7 +544,7 @@ def competitor_colab_view(request):
                 assignee_list = [data.get('assignee_standardized')]
                 lega_status = PatentData.objects.filter(assignee_standardized__in=assignee_list,
                                                         legal_status=data.get('legal_status'),
-                                                        user_id=req.session.get('logged_in_user_id'))
+                                                        user_id=request.session.get('logged_in_user_id'))
                 if data.get('type') == 'display':
                     ass_legal_status_qs = serialize('json', lega_status)
                     context = {'ass_legal_status_qs': json.loads(ass_legal_status_qs)}
@@ -580,7 +580,7 @@ def competitor_colab_view(request):
             elif data.get('assignee') and data.get('publication'):
                 year_wise_count = PatentData.objects.filter(assignee_standardized__icontains=data.get('assignee'),
                                                             publication_number=data.get('publication'),
-                                                            user_id=req.session.get('logged_in_user_id'))
+                                                            user_id=request.session.get('logged_in_user_id'))
                 if data.get('type') == 'display':
                     ass_pub_date_qs = serialize('json', year_wise_count)
                     context = {'ass_pub_date_qs': json.loads(ass_pub_date_qs)}
@@ -617,7 +617,7 @@ def competitor_colab_view(request):
             elif data.get('assignee') and data.get('year'):
                 year_wise_count = PatentData.objects.filter(assignee_standardized__icontains=data.get('assignee'),
                                                             application_dates__year=data.get('year'),
-                                                            user_id=req.session.get('logged_in_user_id'))
+                                                            user_id=request.session.get('logged_in_user_id'))
                 if data.get('type') == 'display':
                     partner_app_date_qs = serialize('json', year_wise_count)
                     context = {'partner_app_date_qs': json.loads(partner_app_date_qs)}
@@ -730,7 +730,7 @@ def competitor_colab_view(request):
                 if data.get('type') == 'display':
                     for partner in partners_list:
                         q_obj = get_q_object(assignee, partner)
-                        patents = PatentData.objects.filter(q_obj, user_id=req.session.get('logged_in_user_id'))
+                        patents = PatentData.objects.filter(q_obj, user_id=request.session.get('logged_in_user_id'))
                         # Convert QuerySet to a list of dictionaries
                         patents_data = serialize('json', patents)
                         patents_list = json.loads(patents_data)
@@ -744,7 +744,7 @@ def competitor_colab_view(request):
                 if data.get('type') == 'file':
                     for partner in partners_list:
                         q_obj = get_q_object(assignee, partner)
-                        patents = PatentData.objects.filter(q_obj, user_id=req.session.get('logged_in_user_id'))
+                        patents = PatentData.objects.filter(q_obj, user_id=request.session.get('logged_in_user_id'))
                         for patent_data in patents:
                             data = {
                                 'Publication Number': patent_data.publication_number,
@@ -2101,14 +2101,10 @@ def get_year_with_exp_date(req):
 
 def process_assignees(req):
     user_id = req.session.get('logged_in_user_id')
-
     # Exclude entries where assignee_standardized is None
     data = PatentData.objects.filter(user_id=user_id).exclude(assignee_standardized__isnull=True)
-
     data = data.values('assignee_standardized').annotate(count=Count('assignee_standardized')).order_by('-count')[:10]
-
     result = [{'Assignee - Standardized': item['assignee_standardized'], 'count': item['count']} for item in data]
-
     return result
 
 
@@ -2128,7 +2124,6 @@ def process_assignees_last_five_years(request):
 
     top_assignees_last_five_years_list = list(top_assignees_last_five_years)
     return top_assignees_last_five_years_list
-
 
 
 def process_legal_status(df):
