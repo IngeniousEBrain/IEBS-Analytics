@@ -17,6 +17,7 @@ from django.core.serializers import serialize
 from django.urls import reverse
 
 # Django imports
+from collections import defaultdict
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.hashers import check_password
 from django.http import JsonResponse
@@ -408,12 +409,14 @@ def extract_assignee_partners(req):
 
 
 def get_top_assignees_by_year(req):
-    top_assignees = PatentData.objects.filter(user_id = req.session.get('logged_in_user_id')).values('assignee_standardized').annotate(
+    top_assignees = PatentData.objects.filter(user_id=req.session.get('logged_in_user_id')).values(
+        'assignee_standardized').annotate(
         count=Count('assignee_standardized')).order_by('-count')[:10]
     result = collections.defaultdict(dict)
     for assignee in top_assignees:
         name = assignee['assignee_standardized']
-        year_wise_count = PatentData.objects.filter(assignee_standardized=name,user_id = req.session.get('logged_in_user_id')).values(
+        year_wise_count = PatentData.objects.filter(assignee_standardized=name,
+                                                    user_id=req.session.get('logged_in_user_id')).values(
             'application_dates__year').annotate(count=Count('id'))
         for data in year_wise_count:
             year = data['application_dates__year']
@@ -540,7 +543,8 @@ def competitor_colab_view(request):
             if data.get('assignee_standardized') and data.get('legal_status'):
                 assignee_list = [data.get('assignee_standardized')]
                 lega_status = PatentData.objects.filter(assignee_standardized__in=assignee_list,
-                                                        legal_status=data.get('legal_status'),user_id = req.session.get('logged_in_user_id'))
+                                                        legal_status=data.get('legal_status'),
+                                                        user_id=req.session.get('logged_in_user_id'))
                 if data.get('type') == 'display':
                     ass_legal_status_qs = serialize('json', lega_status)
                     context = {'ass_legal_status_qs': json.loads(ass_legal_status_qs)}
@@ -575,7 +579,8 @@ def competitor_colab_view(request):
                     return response
             elif data.get('assignee') and data.get('publication'):
                 year_wise_count = PatentData.objects.filter(assignee_standardized__icontains=data.get('assignee'),
-                                                            publication_number=data.get('publication'),user_id = req.session.get('logged_in_user_id'))
+                                                            publication_number=data.get('publication'),
+                                                            user_id=req.session.get('logged_in_user_id'))
                 if data.get('type') == 'display':
                     ass_pub_date_qs = serialize('json', year_wise_count)
                     context = {'ass_pub_date_qs': json.loads(ass_pub_date_qs)}
@@ -611,7 +616,8 @@ def competitor_colab_view(request):
 
             elif data.get('assignee') and data.get('year'):
                 year_wise_count = PatentData.objects.filter(assignee_standardized__icontains=data.get('assignee'),
-                                                            application_dates__year=data.get('year'),user_id = req.session.get('logged_in_user_id'))
+                                                            application_dates__year=data.get('year'),
+                                                            user_id=req.session.get('logged_in_user_id'))
                 if data.get('type') == 'display':
                     partner_app_date_qs = serialize('json', year_wise_count)
                     context = {'partner_app_date_qs': json.loads(partner_app_date_qs)}
@@ -724,7 +730,7 @@ def competitor_colab_view(request):
                 if data.get('type') == 'display':
                     for partner in partners_list:
                         q_obj = get_q_object(assignee, partner)
-                        patents = PatentData.objects.filter(q_obj,user_id = req.session.get('logged_in_user_id'))
+                        patents = PatentData.objects.filter(q_obj, user_id=req.session.get('logged_in_user_id'))
                         # Convert QuerySet to a list of dictionaries
                         patents_data = serialize('json', patents)
                         patents_list = json.loads(patents_data)
@@ -738,7 +744,7 @@ def competitor_colab_view(request):
                 if data.get('type') == 'file':
                     for partner in partners_list:
                         q_obj = get_q_object(assignee, partner)
-                        patents = PatentData.objects.filter(q_obj,user_id = req.session.get('logged_in_user_id'))
+                        patents = PatentData.objects.filter(q_obj, user_id=req.session.get('logged_in_user_id'))
                         for patent_data in patents:
                             data = {
                                 'Publication Number': patent_data.publication_number,
@@ -859,15 +865,16 @@ def competitor_charts(req):
     fig2.update_traces(marker=dict(line=dict(width=0.5, color='DarkSlateGray')))
     div2 = fig2.to_html(full_html=False)
     # ===================================BAR CHART=========================================
-    user_id = req.session.get('logged_in_user_id')
-    filtered_data = PatentData.objects.filter(user_id = req.session.get('logged_in_user_id'), citing_patents_count__isnull=False)
+    filtered_data = PatentData.objects.filter(user_id=req.session.get('logged_in_user_id'),
+                                              citing_patents_count__isnull=False)
     top_ten_highest_citing = filtered_data.order_by('-citing_patents_count')[:10]
     top_ten_values = [val.citing_patents_count for val in top_ten_highest_citing]
     assignee_names = [val.assignee_standardized.split('|')[0] for val in top_ten_highest_citing]
     publication_numbers = [val.publication_number for val in top_ten_highest_citing]
     cited_values = [val.cited_patents_count if val.cited_patents_count is not None else 1 for val in
                     top_ten_highest_citing]
-    citation_index_values = [round(citing / cited, 2) if cited != 0 else 0 for citing, cited in zip(top_ten_values, cited_values)]
+    citation_index_values = [round(citing / cited, 2) if cited != 0 else 0 for citing, cited in
+                             zip(top_ten_values, cited_values)]
 
     y_labels = [f"{assignee} | {publication}" for assignee, publication in zip(assignee_names, publication_numbers)]
     table_data = []
@@ -880,7 +887,7 @@ def competitor_charts(req):
         if cited_count != 0:
             citation_index = round(citing_count / cited_count, 2)
         else:
-            citation_index = 0  # or handle it in a way that makes sense for your application
+            citation_index = 0
 
         row_dict = {
             'assignee': assignee_name,
@@ -924,7 +931,8 @@ def competitor_charts(req):
     fig3.update_layout(updatemenus=[])
     div3 = fig3.to_html(full_html=False)
     # =========================================================================
-    top_assignees = PatentData.objects.filter(user_id = req.session.get('logged_in_user_id')).values('assignee_standardized').annotate(
+    top_assignees = PatentData.objects.filter(user_id=req.session.get('logged_in_user_id')).values(
+        'assignee_standardized').annotate(
         count=Count('assignee_standardized')).order_by('-count')[:10]
     top_assignee_ids = [a['assignee_standardized'] for a in top_assignees]
     legal_status_counts = PatentData.objects.filter(assignee_standardized__in=top_assignee_ids).values(
@@ -1446,7 +1454,8 @@ def top_ten_ass_exl(request):
     ass_list = []
     for dictq in data:
         ass_list.append(dictq['assignee_standardized'])
-    top_ten_ass = PatentData.objects.filter(user_id = req.session.get('logged_in_user_id'),assignee_standardized__in=ass_list).order_by('assignee_standardized')
+    top_ten_ass = PatentData.objects.filter(user_id=req.session.get('logged_in_user_id'),
+                                            assignee_standardized__in=ass_list).order_by('assignee_standardized')
     if request.GET.get('display'):
         context = {
             'top_ten_ass_view': top_ten_ass,
@@ -1487,7 +1496,8 @@ def top_ten_cpc_exl(req):
     sorted_cpc_counts = dict(sorted(cpc_counts_dict_ws.items(), key=lambda item: item[1], reverse=True))
     cpc_counts_dict = dict(list(sorted_cpc_counts.items())[:10])
     cpc_keys_list = list(cpc_counts_dict.keys())
-    top_ten_cpc = PatentData.objects.filter(Q(cpc__in=cpc_keys_list),user_id = req.session.get('logged_in_user_id')).order_by('cpc')
+    top_ten_cpc = PatentData.objects.filter(Q(cpc__in=cpc_keys_list),
+                                            user_id=req.session.get('logged_in_user_id')).order_by('cpc')
     if req.GET.get('display'):
         context = {
             'top_ten_cpc': top_ten_cpc,
@@ -1530,7 +1540,7 @@ def top_ten_ipc_exl(req):
     sorted_ipc_counts = dict(sorted(ipc_counts_dict_ws.items(), key=lambda item: item[1], reverse=True))
     ipc_counts_dict = dict(list(sorted_ipc_counts.items())[:10])
     ipc_keys_list = list(ipc_counts_dict.keys())
-    top_ten_ipc = PatentData.objects.filter(cpc__in=ipc_keys_list,user_id = req.session.get('logged_in_user_id'))
+    top_ten_ipc = PatentData.objects.filter(cpc__in=ipc_keys_list, user_id=req.session.get('logged_in_user_id'))
     if req.GET.get('display'):
         context = {
             'top_ten_ipc': top_ten_ipc,
@@ -1550,7 +1560,7 @@ def top_ten_ipc_exl(req):
 
 def download_excel_view(req):
     status = req.GET.get('status')
-    patents = PatentData.objects.filter(legal_status=status,user_id = req.session.get('logged_in_user_id'))
+    patents = PatentData.objects.filter(legal_status=status, user_id=req.session.get('logged_in_user_id'))
     data = {
         'Publication Number': list(patents.values_list('publication_number', flat=True)),
         'Assignee Standardized': list(patents.values_list('assignee_standardized', flat=True)),
@@ -1582,7 +1592,7 @@ def download_excel_view(req):
 
 def fetch_data_view(request):
     status = request.GET.get('status')
-    patents = PatentData.objects.filter(legal_status=status,user_id = req.session.get('logged_in_user_id'))
+    patents = PatentData.objects.filter(legal_status=status, user_id=req.session.get('logged_in_user_id'))
     data = [
         {
             'publication_number': patent.publication_number,
@@ -1792,28 +1802,44 @@ def get_country_code_count(req):
 def get_ipc_counts(req):
     patent_data_queryset = PatentData.objects.filter(user_id=req.session.get('logged_in_user_id'))
     ipc_counts_from_db = Counter()
+
     for patent_data in patent_data_queryset:
         ipc_values = patent_data.ipc.split('|') if patent_data.ipc else []
+
         for ipc_value in ipc_values:
+            # Skip processing if the ipc_value is 'nan'
+            if ipc_value.strip().upper() == 'NAN':
+                continue
+
             ipc_code = ipc_value.strip()[:4]
             ipc_counts_from_db[ipc_code] += 1
+
     ipc_counts_dict_ws = dict(ipc_counts_from_db)
     sorted_ipc_counts = dict(sorted(ipc_counts_dict_ws.items(), key=lambda item: item[1], reverse=True))
     ipc_counts_dict = dict(list(sorted_ipc_counts.items())[:10])
+
     return ipc_counts_dict
 
 
 def get_cpc_counts_from_db(req):
     patent_data_queryset = PatentData.objects.filter(user_id=req.session.get('logged_in_user_id'))
     cpc_counts_from_db = Counter()
+
     for patent_data in patent_data_queryset:
         cpc_values = patent_data.cpc.split('|') if patent_data.cpc else []
+
         for cpc_value in cpc_values:
+            # Skip processing if the cpc_value is 'nan'
+            if cpc_value.strip().upper() == 'NAN':
+                continue
+
             cpc_code = cpc_value.strip()[:4]
             cpc_counts_from_db[cpc_code] += 1
+
     cpc_counts_dict_ws = dict(cpc_counts_from_db)
     sorted_cpc_counts = dict(sorted(cpc_counts_dict_ws.items(), key=lambda item: item[1], reverse=True))
     cpc_counts_dict = dict(list(sorted_cpc_counts.items())[:10])
+
     req.session['cpc_counts_dict'] = cpc_counts_dict
     return cpc_counts_dict
 
@@ -1821,10 +1847,17 @@ def get_cpc_counts_from_db(req):
 def get_country_code_counts_from_db(req):
     patent_data_queryset = PatentData.objects.filter(user_id=req.session.get('logged_in_user_id'))
     country_code_counts_from_db = Counter()
+
     for patent_data in patent_data_queryset:
         publication_number = patent_data.publication_number
+
+        # Skip processing if publication_number is None or has insufficient length
+        if publication_number is None or len(publication_number) < 2:
+            continue
+
         country_code = publication_number[:2]
         country_code_counts_from_db[country_code] += 1
+
     country_code_counts_dict = dict(country_code_counts_from_db)
     return country_code_counts_dict
 
@@ -1990,34 +2023,46 @@ def get_year_wise_excel(req):
 def get_top_citing_count(req):
     citing_patents_dict = {}
     user_id_to_filter = req.session.get('logged_in_user_id')
+
     top_ten_citing_patents = PatentData.objects.filter(
         user_id=user_id_to_filter
     ).exclude(
         citing_patents_count__isnull=True
     ).order_by('-citing_patents_count')[:10]
+
     for patent_data in top_ten_citing_patents:
+        # Skip processing if citing_patents_count is None
+        if patent_data.citing_patents_count is None:
+            continue
+
         citing_patents_dict[patent_data.publication_number] = {
             "count": patent_data.citing_patents_count,
             "assignee": patent_data.assignee_standardized
         }
+
     return citing_patents_dict
 
 
 def get_top_cited_count(req):
     cited_patents_dict = {}
     user_id_to_filter = req.session.get('logged_in_user_id')
+
     top_ten_cited_patents = PatentData.objects.filter(
         user_id=user_id_to_filter
     ).exclude(
         cited_patents_count__isnull=True
     ).order_by('-cited_patents_count')[:10]
+
     for patent_data in top_ten_cited_patents:
+        # Skip processing if cited_patents_count is None
+        if patent_data.cited_patents_count is None:
+            continue
+
         cited_patents_dict[patent_data.publication_number] = {
             "count": patent_data.cited_patents_count,
             "assignee": patent_data.assignee_standardized
         }
-    # for patent_data in top_ten_cited_patents:
-    #     cited_patents_dict[patent_data.publication_number] = patent_data.cited_patents_count
+
     return cited_patents_dict
 
 
@@ -2034,25 +2079,36 @@ def get_year_with_publication(req):
 
 def get_year_with_exp_date(req):
     user_id = req.session.get('logged_in_user_id')
+
     year_counts = PatentData.objects.filter(
         Q(expected_expiry_dates__isnull=False) | Q(expected_expiry_dates__isnull=True),
-        expected_expiry_dates__isnull=False,
         user_id=user_id
     ).annotate(
         expected_expiry_date=ExtractYear('expected_expiry_dates')
     ).values('expected_expiry_date').annotate(count=Count('id'))
-    year_wise_exp_date = {item['expected_expiry_date']: item['count'] for item in year_counts}
+
+    year_wise_exp_date = defaultdict(int)
+
+    for item in year_counts:
+        # Skip processing if expected_expiry_date is None or invalid
+        if item['expected_expiry_date'] is None:
+            continue
+
+        year_wise_exp_date[item['expected_expiry_date']] += item['count']
+
     return dict(year_wise_exp_date)
 
 
 def process_assignees(req):
-    """
-    process_assignees
-    """
     user_id = req.session.get('logged_in_user_id')
-    data = PatentData.objects.filter(user_id=user_id)
+
+    # Exclude entries where assignee_standardized is None
+    data = PatentData.objects.filter(user_id=user_id).exclude(assignee_standardized__isnull=True)
+
     data = data.values('assignee_standardized').annotate(count=Count('assignee_standardized')).order_by('-count')[:10]
+
     result = [{'Assignee - Standardized': item['assignee_standardized'], 'count': item['count']} for item in data]
+
     return result
 
 
@@ -2060,15 +2116,19 @@ def process_assignees_last_five_years(request):
     user_id = request.session.get('logged_in_user_id')
     current_year = datetime.now().year
     last_five_years_start = current_year - 5
+
     top_assignees_last_five_years = (
         PatentData.objects
         .filter(user_id=user_id, application_dates__year__gte=last_five_years_start)
+        .exclude(application_dates__isnull=True)  # Exclude entries with null application_dates
         .values('assignee_standardized')
         .annotate(count=Count('assignee_standardized'))
         .order_by('-count')[:10]
     )
+
     top_assignees_last_five_years_list = list(top_assignees_last_five_years)
     return top_assignees_last_five_years_list
+
 
 
 def process_legal_status(df):
