@@ -867,7 +867,8 @@ def competitor_charts(req):
     publication_numbers = [val.publication_number for val in top_ten_highest_citing]
     cited_values = [val.cited_patents_count if val.cited_patents_count is not None else 1 for val in
                     top_ten_highest_citing]
-    citation_index_values = [round(citing / cited, 2) for citing, cited in zip(top_ten_values, cited_values)]
+    citation_index_values = [round(citing / cited, 2) if cited != 0 else 0 for citing, cited in zip(top_ten_values, cited_values)]
+
     y_labels = [f"{assignee} | {publication}" for assignee, publication in zip(assignee_names, publication_numbers)]
     table_data = []
 
@@ -876,7 +877,11 @@ def competitor_charts(req):
         publication_number = val.publication_number
         citing_count = val.citing_patents_count
         cited_count = val.cited_patents_count if val.cited_patents_count is not None else 1
-        citation_index = round(citing_count / cited_count, 2)
+        if cited_count != 0:
+            citation_index = round(citing_count / cited_count, 2)
+        else:
+            citation_index = 0  # or handle it in a way that makes sense for your application
+
         row_dict = {
             'assignee': assignee_name,
             'publication_number': publication_number,
