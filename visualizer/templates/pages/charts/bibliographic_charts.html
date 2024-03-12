@@ -26,7 +26,7 @@
                 </div>
             </div>
             <div class="col-lg-4 text-lg-right">
-                <form method="post" action="/bibliographic_charts/25/" enctype="multipart/form-data">
+                <form method="post" action="/bibliographic_charts/{{project_id}}/" enctype="multipart/form-data">
                     {% csrf_token %}
                     <label class="btn btn-primary btn-round m-2 btn-sm">
                         <i class="fas fa-file-upload"></i>
@@ -46,6 +46,7 @@
         </div>
         <!-- /.row -->
         <!-- Main row -->
+        {% if top_citing_patents %}
         <div class="row">
             <section class="content">
                 <div class="container-fluid">
@@ -93,11 +94,11 @@
                                                         <td class="text-center small">
                                                             <div class="d-flex justify-content-center">
                                                                 <button class="btn btn-secondary btn-xs mx-1"
-                                                                        onclick="IndCitingView('{{patent}}')"><i
+                                                                        onclick="IndCitingView('{{patent}}','{{project_id}}')"><i
                                                                         class="fa fa-eye" aria-hidden="true"></i>
                                                                 </button>
                                                                 <button class="btn btn-primary btn-xs mx-1"
-                                                                        onclick="download_ind_citingExl('{{patent}}')">
+                                                                        onclick="download_ind_citingExl('{{patent}}','{{project_id}}')">
                                                                     <i class="fas fa-file-download"
                                                                        aria-hidden="true"></i>
                                                                 </button>
@@ -109,13 +110,15 @@
                                                 </table>
                                             </div>
                                             <div class="text-center mt-2">
-                                                <button class="btn btn-secondary btn-xs" onclick="ViewCitingFile()">View</button>
+                                                <button class="btn btn-secondary btn-xs"
+                                                        onclick="ViewCitingFile({{project_id}})">
+                                                    View
+                                                </button>
                                                 <button class="btn btn-primary btn-xs"
-                                                        onclick="download_citingExcelFile()">Download
+                                                        onclick="download_citingExcelFile({{project_id}})">Download
                                                 </button>
                                             </div>
                                         </div>
-
                                     </div>
                                 </div>
                             </div>
@@ -164,13 +167,13 @@
                                                         <td class="text-center small">
                                                             <div class="d-flex justify-content-center">
                                                                 <button class="btn btn-secondary btn-xs mx-1"
-                                                                        onclick="ViewIndCited('{{ patent }}')"><i
+                                                                        onclick="ViewIndCited('{{ patent }}','{{project_id}}')"><i
                                                                         class="fa fa-eye" aria-hidden="true"></i>
                                                                 </button>
                                                                 <button class="btn btn-primary btn-xs mx-1"
-                                                                        onclick="downloadIndCitedExcel('{{ patent }}')">
+                                                                        onclick="downloadIndCitedExcel('{{ patent }}','{{project_id}}')">
                                                                     <i class="fas fa-file-download"
-                                                                            aria-hidden="true"></i></button>
+                                                                       aria-hidden="true"></i></button>
                                                             </div>
                                                         </td>
                                                     </tr>
@@ -179,9 +182,12 @@
                                                 </table>
                                             </div>
                                             <div class="text-center mt-2">
-                                                <button class="btn btn-secondary btn-xs" onclick="ViewCitedFile()">View</button>
+                                                <button class="btn btn-secondary btn-xs"
+                                                        onclick="ViewCitedFile('{{project_id}}')">
+                                                    View
+                                                </button>
                                                 <button class="btn btn-primary btn-xs"
-                                                        onclick="download_citedExcelFile()">Download
+                                                        onclick="download_citedExcelFile('{{project_id}}')">Download
                                                 </button>
                                             </div>
                                         </div>
@@ -231,11 +237,11 @@
                                                 <td class="text-center small">
                                                     <div class="d-flex justify-content-center">
                                                         <button class="btn btn-secondary btn-xs mx-1"
-                                                                onclick="viewInnovativeFile('{{ country }}')"><i
+                                                                onclick="viewInnovativeFile('{{ country }}','{{project_id}}')"><i
                                                                 class="fa fa-eye" aria-hidden="true"></i>
                                                         </button>
                                                         <button class="btn btn-primary btn-xs mx-1"
-                                                                onclick="downloadInnovativeFile('{{ country }}')">
+                                                                onclick="downloadInnovativeFile('{{ country }}', {{project_id}})">
                                                             <i class="fas fa-file-download" aria-hidden="true"></i>
                                                         </button>
                                                     </div>
@@ -287,13 +293,14 @@
                                                 <td class="text-center small">
                                                     <div class="d-flex justify-content-center">
                                                         <button class="btn btn-secondary btn-xs mx-1"
-                                                                onclick="viewLegalStatusFile('{{ status }}')"><i
+                                                                onclick="viewLegalStatusFile('{{ status }}','{{project_id}}')"><i
                                                                 class="fa fa-eye" aria-hidden="true"></i>
                                                         </button>
                                                         <button class="btn btn-primary btn-xs mx-1"
-                                                                onclick="legal_statusFile('{{ status }}')"><i
+                                                                onclick="legal_statusFile('{{ status }}','{{project_id}}')"><i
                                                                 class="fas fa-file-download"
-                                                                aria-hidden="true"></i></button>
+                                                                aria-hidden="true"></i>
+                                                        </button>
                                                     </div>
                                                 </td>
                                             </tr>
@@ -301,7 +308,6 @@
                                             </tbody>
                                         </table>
                                     </div>
-
                                 </div>
                             </div>
                         </div>
@@ -347,13 +353,14 @@
                                                 <td class="text-center small">
                                                     <div class="d-flex justify-content-center">
                                                         <button class="btn btn-secondary btn-xs mx-1"
-                                                                onclick="viewPublicationTend('{{ year }}')"><i
+                                                                onclick="viewPublicationTend('{{ year }}','{{project_id}}')"><i
                                                                 class="fa fa-eye" aria-hidden="true"></i>
                                                         </button>
                                                         <button class="btn btn-primary btn-xs mx-1"
-                                                                onclick="publication_Exl('{{ year }}')"><i
+                                                                onclick="publication_Exl('{{ year }}','{{project_id}}')"><i
                                                                 class="fas fa-file-download"
-                                                                aria-hidden="true"></i></button>
+                                                                aria-hidden="true"></i>
+                                                        </button>
                                                     </div>
                                                 </td>
                                             </tr>
@@ -399,30 +406,32 @@
                                             </tr>
                                             </thead>
                                             <tbody>
-                                                {% for item in top_assignees_dict %}
-                                                <tr>
-                                                    <td class="text-center small">{{ item.assignee_standardized }}</td>
-                                                    <td class="text-center small">{{ item.count }}</td>
-                                                    <td class="text-center small">
-                                                        <div class="d-flex justify-content-center">
-                                                            <button class="btn btn-secondary btn-xs mx-1"
-                                                                    onclick="ViewTopAssignee('{{ item.assignee_standardized }}')"><i class="fa fa-eye"
-                                                                                                         aria-hidden="true"></i>
-                                                            </button>
-                                                            <button class="btn btn-primary btn-xs mx-1"
-                                                                    onclick="DownloadTopAssigneeExl('{{ item.assignee_standardized }}')">
-                                                                <i class="fas fa-file-download" aria-hidden="true"></i>
-                                                            </button>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                                {% endfor %}
+                                            {% for item in top_assignees_dict %}
+                                            <tr>
+                                                <td class="text-center small">{{ item.assignee_standardized }}</td>
+                                                <td class="text-center small">{{ item.count }}</td>
+                                                <td class="text-center small">
+                                                    <div class="d-flex justify-content-center">
+                                                        <button class="btn btn-secondary btn-xs mx-1"
+                                                                onclick="ViewTopAssignee('{{ item.assignee_standardized }}','{{project_id}}')">
+                                                            <i class="fa fa-eye"
+                                                               aria-hidden="true"></i>
+                                                        </button>
+                                                        <button class="btn btn-primary btn-xs mx-1"
+                                                                onclick="DownloadTopAssigneeExl('{{ item.assignee_standardized }}','{{project_id}}')">
+                                                            <i class="fas fa-file-download" aria-hidden="true"></i>
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
                                             </tbody>
                                         </table>
                                     </div>
                                     <div class="text-center mt-2">
-                                        <button class="btn btn-secondary btn-xs" onclick="ViewTopTenAssignee()">View</button>
-                                        <button class="btn btn-primary btn-xs" onclick="DownloadTopTenAssigneeExl()">
+                                        <button class="btn btn-secondary btn-xs" onclick="ViewTopTenAssignee('{{project_id}}')">View
+                                        </button>
+                                        <button class="btn btn-primary btn-xs" onclick="DownloadTopTenAssigneeExl('{{project_id}}')">
                                             Download
                                         </button>
                                     </div>
@@ -450,7 +459,8 @@
                                 <div class="col-md-8">
                                     <div class="chart">
                                         <canvas id="stackedBarChart"
-                                                style="width:100%;max-width:100%;height:350px"></canvas>
+                                                style="width:100%;max-width:100%;height:350px">
+                                        </canvas>
                                     </div>
                                 </div>
                                 <!-- Table (30%) -->
@@ -465,7 +475,6 @@
                                             </tr>
                                             </thead>
                                             <tbody>
-
                                             {% for item in recent_assignees_last_five_years %}
                                             <tr>
                                                 <td class="text-center small">{{ item.assignee_standardized }}</td>
@@ -473,13 +482,14 @@
                                                 <td class="text-center small">
                                                     <div class="d-flex justify-content-center">
                                                         <button class="btn btn-secondary btn-xs mx-1"
-                                                                onclick="ViewTopRecentAssignee('{{item.assignee_standardized}}')"><i
-                                                                class="fa fa-eye" aria-hidden="true"></i>
+                                                                onclick="ViewTopRecentAssignee('{{item.assignee_standardized}}','{{project_id}}')">
+                                                            <i class="fa fa-eye" aria-hidden="true"></i>
                                                         </button>
                                                         <button class="btn btn-primary btn-xs mx-1"
-                                                                onclick="DownloadRecentAssignee('{{item.assignee_standardized}}')">
+                                                                onclick="DownloadRecentAssignee('{{item.assignee_standardized}}','{{project_id}}')">
                                                             <i class="fas fa-file-download"
-                                                                    aria-hidden="true"></i></button>
+                                                               aria-hidden="true"></i>
+                                                        </button>
                                                     </div>
                                                 </td>
                                             </tr>
@@ -488,9 +498,10 @@
                                         </table>
                                     </div>
                                     <div class="text-center mt-2">
-                                        <button class="btn btn-secondary btn-xs" onclick="ViewRecentAssignee()">View</button>
+                                        <button class="btn btn-secondary btn-xs" onclick="ViewRecentAssignee('{{project_id}}')">View
+                                        </button>
                                         <button class="btn btn-primary btn-xs"
-                                                onclick="DownloadTopRecentAssigneeExl()">Download
+                                                onclick="DownloadTopRecentAssigneeExl('{{project_id}}')">Download
                                         </button>
                                     </div>
                                 </div>
@@ -538,11 +549,11 @@
                                                 <td class="text-center small">
                                                     <div class="d-flex justify-content-center">
                                                         <button class="btn btn-secondary btn-xs mx-1"
-                                                                onclick="Expected_Exp_View('{{key}}')">
+                                                                onclick="Expected_Exp_View('{{key}}','{{project_id}}')">
                                                             <i class="fa fa-eye" aria-hidden="true"></i>
                                                         </button>
                                                         <button class="btn btn-primary btn-xs mx-1"
-                                                                onclick="Expected_Exp_Exl('{{key}}')"><i
+                                                                onclick="Expected_Exp_Exl('{{key}}','{{project_id}}')"><i
                                                                 class="fas fa-file-download" aria-hidden="true"></i>
                                                         </button>
                                                     </div>
@@ -576,7 +587,8 @@
                                 <div class="col-md-8">
                                     <div class="chart">
                                         <canvas id="horizontal-stacker-bar-chart"
-                                                style="width:100%;max-width:100%;height:350px;"></canvas>
+                                                style="width:100%;max-width:100%;height:350px;">
+                                        </canvas>
                                     </div>
                                 </div>
                                 <!-- Table (30%) -->
@@ -598,11 +610,11 @@
                                                 <td class="text-center small">
                                                     <div class="d-flex justify-content-center">
                                                         <button class="btn btn-secondary btn-xs mx-1"
-                                                                onclick="indIpcDataView('{{key}}')"><i class="fa fa-eye"
-                                                                                                     aria-hidden="true"></i>
+                                                                onclick="indIpcDataView('{{key}}','{{project_id}}')">
+                                                            <i class="fa fa-eye" aria-hidden="true"></i>
                                                         </button>
                                                         <button class="btn btn-primary btn-xs mx-1"
-                                                                onclick="downloadIpcExcelFile('{{key}}')"><i
+                                                                onclick="downloadIpcExcelFile('{{key}}','{{project_id}}')"><i
                                                                 class="fas fa-file-download" aria-hidden="true"></i>
                                                         </button>
                                                     </div>
@@ -613,8 +625,9 @@
                                         </table>
                                     </div>
                                     <div class="text-center mt-2">
-                                        <button class="btn btn-secondary btn-xs" onclick ="openIpcDataView()">View</button>
-                                        <button class="btn btn-primary btn-xs" onclick="downloadTopIPC()">
+                                        <button class="btn btn-secondary btn-xs" onclick="openIpcDataView('{{project_id}}')">View
+                                        </button>
+                                        <button class="btn btn-primary btn-xs" onclick="downloadTopIPC('{{project_id}}')">
                                             Download
                                         </button>
                                     </div>
@@ -664,11 +677,11 @@
                                                 <td class="text-center small">
                                                     <div class="d-flex justify-content-center">
                                                         <button class="btn btn-secondary btn-xs mx-1"
-                                                                onclick="indCpcDataView('{{key}}')"><i class="fa fa-eye"
-                                                                                                     aria-hidden="true"></i>
+                                                                onclick="indCpcDataView('{{key}}','{{project_id}}')">
+                                                            <i class="fa fa-eye" aria-hidden="true"></i>
                                                         </button>
                                                         <button class="btn btn-primary btn-xs mx-1"
-                                                                onclick="downloadIndCpc('{{key}}')"><i
+                                                                onclick="downloadIndCpc('{{key}}','{{project_id}}')"><i
                                                                 class="fas fa-file-download" aria-hidden="true"></i>
                                                         </button>
                                                     </div>
@@ -679,8 +692,9 @@
                                         </table>
                                     </div>
                                     <div class="text-center mt-2">
-                                        <button class="btn btn-secondary btn-xs" onclick ="openCpcDataView()">View</button>
-                                        <button class="btn btn-primary btn-xs" onclick="downloadTopCPC()">
+                                        <button class="btn btn-secondary btn-xs" onclick="openCpcDataView('{{project_id}}')">View
+                                        </button>
+                                        <button class="btn btn-primary btn-xs" onclick="downloadTopCPC('{{project_id}}')">
                                             Download
                                         </button>
                                     </div>
@@ -692,9 +706,15 @@
                 </div>
             </section>
         </div>
+        {% else %}
+        <div class="mt-4" style="text-align:center;">
+            <h6>No data Found! Please insert data by uploading a desired file</h6>
+        </div>
+        {% endif %}
         <!-- /.row (main row) -->
     </div><!-- /.container-fluid -->
 </section>
+
 {% endblock %}
 <aside class="control-sidebar control-sidebar-dark"></aside>
 {% block scripts %}
@@ -713,127 +733,129 @@
     var get_ipc_counts = {{get_ipc_counts | safe}};
 
 <!--=================viewLegalStatusFile====================-->
-function viewLegalStatusFile(status) {
-    var url = `/download_legal_status_exl/${status}/?display=1`;
+function viewLegalStatusFile(status,project_id) {
+    var url = `/download_legal_status_exl/${status}/${project_id}/?display=1`;
     window.open(url, '_blank');
 }
 <!--=====================================-->
-function ViewTopRecentAssignee(assignee) {
-    var url = `/download_recent_assignee_exl/${assignee}/?display=1`;
+function ViewTopRecentAssignee(assignee, project_id) {
+    var url = `/download_recent_assignee_exl/${assignee}/${project_id}?display=1`;
     window.open(url, '_blank');
 }
 <!--=====================================-->
-function ViewRecentAssignee() {
+function ViewRecentAssignee(project_id) {
     // Specify the URL of your Django view and add the 'display' parameter
-    var url = '/top_ten_recent_ass_exl/?display=1';
+    var url = `/top_ten_recent_ass_exl/${project_id}/?display=1`;
 
     // Open a new tab or window
     window.open(url, '_blank');
 }
 <!--=====================================-->
-function ViewTopAssignee(assignee) {
-    var url = `/download_top_assignee_exl/${assignee}/?display=1`;
+function ViewTopAssignee(assignee, project_id) {
+    var url = `/download_top_assignee_exl/${assignee}/${project_id}/?display=1`;
     window.open(url, '_blank');
 }
 <!--=====================================-->
-function viewPublicationTend(year) {
-    var url = `/download_publication_exl/${year}/?display=1`;
+function viewPublicationTend(year, project_id) {
+    var url = `/download_publication_exl/${year}/${project_id}/?display=1`;
     window.open(url, '_blank');
 }
 <!--=====================================-->
-function viewInnovativeFile(country) {
+function viewInnovativeFile(country,project_id) {
+    console.log("##",country)
     // Specify the URL of your Django view and add the 'display' parameter
-    var url = `/download_innovative_exl/${country}/?display=1`;
+    var url = `/download_innovative_exl/${country}/${project_id}/?display=1`;
 
     // Open a new tab or window
     window.open(url, '_blank');
 }
 <!--=====================================-->
-function ViewIndCited(patent) {
+function ViewIndCited(patent, project_id) {
     // Specify the URL of your Django view and add the 'display' parameter
-    var url = `/download_ind_cited_excel/${patent}/?display=1`;
+    var url = `/download_ind_cited_excel/${patent}/${project_id}/?display=1`;
 
     // Open a new tab or window
     window.open(url, '_blank');
 }
 <!--=====================================-->
-function IndCitingView(patent) {
+function IndCitingView(patent,project_id) {
     // Specify the URL of your Django view and add the 'display' parameter
-    var url = `/download_ind_citing_excel/${patent}/?display=1`;
+    var url = `/download_ind_citing_excel/${patent}/${project_id}/?display=1`;
 
     // Open a new tab or window
     window.open(url, '_blank');
 }
 
 <!--=====================================-->
-function Expected_Exp_View(year) {
+function Expected_Exp_View(year, project_id) {
     // Specify the URL of your Django view and add the 'display' parameter
-    var url = `/download_exp_exl/${year}/?display=1`;
+    var url = `/download_exp_exl/${year}/${project_id}/?display=1`;
 
     // Open a new tab or window
     window.open(url, '_blank');
 }
 <!--=====================================-->
-function indCpcDataView(cpc) {
+function indCpcDataView(cpc, project_id) {
     // Specify the URL of your Django view and add the 'display' parameter
-    var url = `/individual_cpc_exl/${cpc}/?display=1`;
+    var url = `/individual_cpc_exl/${cpc}/${project_id}/?display=1`;
 
     // Open a new tab or window
     window.open(url, '_blank');
 }
 <!--=====================================-->
-function indIpcDataView(ipc) {
+function indIpcDataView(ipc, project_id) {
     // Specify the URL of your Django view and add the 'display' parameter
-    var url = `/individual_ipc_exl/${ipc}/?display=1`;
+    var url = `/individual_ipc_exl/${ipc}/${project_id}/?display=1`;
 
     // Open a new tab or window
     window.open(url, '_blank');
 }
 <!--=====================================-->
-function ViewCitingFile() {
+function ViewCitingFile(project_id) {
     // Specify the URL of your Django view and add the 'display' parameter
-    var url = '/download_citing_excel_file/?display=1';
+    var url = `/download_citing_excel_file/${project_id}/?display=1`;
 
     // Open a new tab or window
     window.open(url, '_blank');
 }
 <!--=====================================-->
-function ViewTopTenAssignee() {
+function ViewTopTenAssignee(project_id) {
     // Specify the URL of your Django view and add the 'display' parameter
-    var url = '/top_ten_ass_exl/?display=1';
+    var url = `/top_ten_ass_exl/${project_id}/?display=1`;
 
     // Open a new tab or window
     window.open(url, '_blank');
 }
 <!--=====================================-->
-function ViewCitedFile() {
+function ViewCitedFile(project_id) {
     // Specify the URL of your Django view and add the 'display' parameter
-    var url = '/download_excel_file/?display=1';
+    var url = `/download_excel_file/${project_id}/?display=1`;
 
     // Open a new tab or window
     window.open(url, '_blank');
 }
 <!--=====================================-->
-function openCpcDataView() {
+function openCpcDataView(project_id) {
     // Specify the URL of your Django view and add the 'display' parameter
-    var url = '/top_ten_cpc_exl/?display=1';
+    var url = `/top_ten_cpc_exl/${project_id}/?display=1`;
 
     // Open a new tab or window
     window.open(url, '_blank');
 }
 <!--=====================================-->
-function openIpcDataView() {
+function openIpcDataView(project_id) {
     // Specify the URL of your Django view and add the 'display' parameter
-    var url = '/top_ten_ipc_exl/?display=1';
+    var url = `/top_ten_ipc_exl/${project_id}/?display=1`;
 
     // Open a new tab or window
     window.open(url, '_blank');
 }
 
 <!--==========================================-->
- function downloadIpcExcelFile(ipc) {
+ function downloadIpcExcelFile(ipc,project_id) {
+ console.log("downloadIpcExcelFile",project_id);
     if (ipc) {
-        fetch(`/individual_ipc_exl/${ipc}/`, {
+        fetch(`/individual_ipc_exl/${ipc}/${project_id}/`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -860,9 +882,9 @@ function openIpcDataView() {
 }
 <!--=====================================-->
 
- function downloadIndCpc(cpc) {
+ function downloadIndCpc(cpc,project_id) {
     if (cpc) {
-        fetch(`/individual_cpc_exl/${cpc}/`, {
+        fetch(`/individual_cpc_exl/${cpc}/${project_id}/`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -888,9 +910,9 @@ function openIpcDataView() {
     }
 }
 <!--=====================================-->
- function DownloadRecentAssignee(assignee) {
+ function DownloadRecentAssignee(assignee, project_id) {
     if (assignee) {
-        fetch(`/download_recent_assignee_exl/${assignee}/`, {
+        fetch(`/download_recent_assignee_exl/${assignee}/${project_id}/`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -917,9 +939,9 @@ function openIpcDataView() {
 }
 
 <!--=====================================-->
- function DownloadTopAssigneeExl(assignee) {
+ function DownloadTopAssigneeExl(assignee, project_id) {
     if (assignee) {
-        fetch(`/download_top_assignee_exl/${assignee}/`, {
+        fetch(`/download_top_assignee_exl/${assignee}/${project_id}`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -946,9 +968,9 @@ function openIpcDataView() {
 }
 
 <!--=====================================-->
- function download_ind_citingExl(patent) {
+ function download_ind_citingExl(patent, project_id) {
     if (patent) {
-        fetch(`/download_ind_citing_excel/${patent}/`, {
+        fetch(`/download_ind_citing_excel/${patent}/${project_id}/`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -974,9 +996,9 @@ function openIpcDataView() {
     }
 }
 <!--=====================================-->
- function downloadIndCitedExcel(patent) {
+ function downloadIndCitedExcel(patent,project_id) {
     if (patent) {
-        fetch(`/download_ind_cited_excel/${patent}/`, {
+        fetch(`/download_ind_cited_excel/${patent}/${project_id}/`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -1002,9 +1024,9 @@ function openIpcDataView() {
     }
 }
 <!--=====================================-->
- function publication_Exl(year) {
+ function publication_Exl(year,project_id) {
     if (year) {
-        fetch(`/download_publication_exl/${year}/`, {
+        fetch(`/download_publication_exl/${year}/${project_id}`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -1030,9 +1052,9 @@ function openIpcDataView() {
     }
 }
 <!--=====================================-->
- function Expected_Exp_Exl(year) {
+ function Expected_Exp_Exl(year,project_id) {
     if (year) {
-        fetch(`/download_exp_exl/${year}/`, {
+        fetch(`/download_exp_exl/${year}/${project_id}/`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -1058,9 +1080,9 @@ function openIpcDataView() {
     }
 }
 <!--=====================================-->
- function legal_statusFile(status) {
+ function legal_statusFile(status,project_id) {
     if (status) {
-        fetch(`/download_legal_status_exl/${status}/`, {
+        fetch(`/download_legal_status_exl/${status}/${project_id}`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -1087,9 +1109,9 @@ function openIpcDataView() {
 }
 
 <!--=====================================-->
- function downloadInnovativeFile(country) {
+ function downloadInnovativeFile(country,project_id) {
     if (country) {
-        fetch(`/download_innovative_exl/${country}/`, {
+        fetch(`/download_innovative_exl/${country}/${project_id}`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -1144,9 +1166,9 @@ function openIpcDataView() {
     }
 }
 <!--=====================================-->
-function download_citingExcelFile() {
+function download_citingExcelFile(project_id) {
     var user_id = window.user_id;
-    fetch("/download_citing_excel_file/", {
+    fetch(`/download_citing_excel_file/${project_id}/`, {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json',
@@ -1169,9 +1191,9 @@ function download_citingExcelFile() {
     .catch(error => console.error('Error:', error));
 }
 <!--=====================================-->
-function download_citedExcelFile() {
+function download_citedExcelFile(project_id) {
     var user_id = window.user_id;
-    fetch("/download_citedExl/", {
+    fetch(`/download_citedExl/${project_id}`, {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json',
@@ -1194,9 +1216,9 @@ function download_citedExcelFile() {
     .catch(error => console.error('Error:', error));
 }
 <!--=====================================-->
-function DownloadTopTenAssigneeExl() {
+function DownloadTopTenAssigneeExl(project_id) {
     var user_id = window.user_id;
-    fetch("/top_ten_ass_exl/", {
+    fetch(`/top_ten_ass_exl/${project_id}/`, {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json',
@@ -1219,9 +1241,9 @@ function DownloadTopTenAssigneeExl() {
     .catch(error => console.error('Error:', error));
 }
 <!--=====================================-->
-function DownloadTopRecentAssigneeExl() {
+function DownloadTopRecentAssigneeExl(project_id) {
     var user_id = window.user_id;
-    fetch("/top_ten_recent_ass_exl/", {
+    fetch(`/top_ten_recent_ass_exl/${project_id}/`, {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json',
@@ -1244,9 +1266,9 @@ function DownloadTopRecentAssigneeExl() {
     .catch(error => console.error('Error:', error));
 }
 <!--=====================================-->
-function downloadTopCPC() {
+function downloadTopCPC(project_id) {
     var user_id = window.user_id;
-    fetch("/top_ten_cpc_exl/", {
+    fetch(`/top_ten_cpc_exl/${project_id}`, {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json',
@@ -1269,9 +1291,9 @@ function downloadTopCPC() {
     .catch(error => console.error('Error:', error));
 }
 <!--=====================================-->
-function downloadTopIPC() {
+function downloadTopIPC(project_id) {
     var user_id = window.user_id;
-    fetch("/top_ten_ipc_exl/", {
+    fetch(`/top_ten_ipc_exl/${project_id}`, {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json',

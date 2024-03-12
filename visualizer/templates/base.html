@@ -89,16 +89,16 @@
                     <!-- Add icons to the links using the .nav-icon class with font-awesome or any other icon font library -->
                     <li class="nav-item has-treeview {% if '/index' in request.get_full_path or '/profile' in request.get_full_path or '/project-list' in request.get_full_path%} menu-open {% endif %}">
                         <a href="{% url 'index' %}"
-                           class="nav-link {% if '/index' in request.get_full_path or '/profile' in request.get_full_path or '/project-list' in request.get_full_path%} active {% endif %}">
+                           class="nav-link {% if '/index' in request.get_full_path or '/profile' in request.get_full_path or '/project-list/common/' in request.get_full_path %} active {% endif %}">
                             <i class="nav-icon fas fa-tachometer-alt"></i>
                             <p>
                                 Dashboard
                             </p>
                         </a>
                     </li>
-                    <li class="nav-item has-treeview {% if '/bibliographic_charts' in request.get_full_path or '/competitor_charts' in request.get_full_path or '/tech_charts' in request.get_full_path %} menu-open {% endif %}">
+                    <li class="nav-item has-treeview {% if '/bibliographic_charts' in request.get_full_path or '/competitor_charts' in request.get_full_path or '/tech_charts' in request.get_full_path or '/bibliographic/' in request.get_full_path or '/competitive/' in request.get_full_path  or '/technical/' in request.get_full_path %} menu-open {% endif %}">
                         <a href="#"
-                           class="nav-link {% if '/bibliographic_charts' in request.get_full_path or '/competitor_charts' in request.get_full_path or '/tech_charts' in request.get_full_path %} active {% endif %}">
+                           class="nav-link {% if '/bibliographic_charts' in request.get_full_path or '/competitor_charts' in request.get_full_path or '/tech_charts' in request.get_full_path  or 'project-list/competitive/' in request.get_full_path or '/project-list/bibliographic/' in request.get_full_path or '/project-list/technical/' in request.get_full_path %} active {% endif %}">
                             <i class="nav-icon fas fa-chart-pie"></i>
                             <p>
                                 Visualization Analytics
@@ -107,22 +107,23 @@
                         </a>
                         <ul class="nav nav-treeview">
                             <li class="nav-item">
-                                <a href="{% url 'project-list' %}"
-                                   class="nav-link {% if '/bibliographic_charts' in request.get_full_path %} active {% endif %}">
+                                <a href="{% url 'project-list' 'bibliographic' %}"
+                                   class="nav-link {% if '/bibliographic_charts' in request.get_full_path or '/bibliographic/' in request.get_full_path %} active {% endif %}">
                                     <i class="far fa-circle nav-icon"></i>
                                     <p>Bibliographic Charts</p>
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a href="{% url 'competitor_charts' %}"
-                                   class="nav-link {% if '/competitor_charts' in request.get_full_path %} active {% endif %}">
+
+                                <a href="{% url 'project-list' 'competitive' %}"
+                                   class="nav-link {% if '/competitor_charts' in request.get_full_path or '/competitive/' in request.get_full_path  %} active {% endif %}">
                                     <i class="far fa-circle nav-icon"></i>
                                     <p>Competitor Charts</p>
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a href="{% url 'tech_charts' %}"
-                                   class="nav-link {% if '/tech_charts' in request.get_full_path %} active {% endif %}">
+                                    <a href="{% url 'project-list' 'technical' %}"
+                                   class="nav-link {% if '/tech_charts' in request.get_full_path or '/technical/' in request.get_full_path %} active {% endif %}">
                                     <i class="far fa-circle nav-icon"></i>
                                     <p>Technical Charts</p>
                                 </a>

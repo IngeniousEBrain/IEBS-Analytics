@@ -167,42 +167,42 @@
     {% if top_ten_ipc %}
     {% for patent in top_ten_ipc %}
     <tr>
-        <td>{{ patent.publication_number }}</td>
-        <td>{{ patent.assignee_standardized }}</td>
-        <td>{{ patent.legal_status }}</td>
-        <td>{{ patent.expected_expiry_dates }}</td>
-        <td>{{ patent.remaining_life }}</td>
-        <td>{{ patent.cited_patents_count }}</td>
-        <td>{{ patent.citing_patents_count }}</td>
-        <td>{{ patent.inventors }}</td>
-        <td>{{ patent.earliest_patent_priority_date }}</td>
-        <td>{{ patent.application_dates }}</td>
-        <td>{{ patent.publication_dates }}</td>
-        <td>{{ patent.application_number }}</td>
-        <td>{{ patent.cpc }}</td>
-        <td>{{ patent.ipc }}</td>
-        <td>{{ patent.e_fan }}</td>
+        <td>{{ patent.publication_number|default:"" }}</td>
+        <td>{{ patent.assignee_standardized|default:"" }}</td>
+        <td>{{ patent.legal_status|default:"" }}</td>
+        <td>{{ patent.expected_expiry_dates|default:"" }}</td>
+        <td>{{ patent.remaining_life|default:"" }}</td>
+        <td>{{ patent.cited_patents_count|default:"" }}</td>
+        <td>{{ patent.citing_patents_count|default:"" }}</td>
+        <td>{{ patent.inventors|default:"" }}</td>
+        <td>{{ patent.earliest_patent_priority_date|default:"" }}</td>
+        <td>{{ patent.application_dates|default:"" }}</td>
+        <td>{{ patent.publication_dates|default:"" }}</td>
+        <td>{{ patent.application_number|default:"" }}</td>
+        <td>{{ patent.cpc|default:"" }}</td>
+        <td>{{ patent.ipc|default:"" }}</td>
+        <td>{{ patent.e_fan|default:"" }}</td>
     </tr>
     {% endfor %}
     {% endif %}
 {% if top_recent_ass_view %}
     {% for patent in top_recent_ass_view %}
     <tr>
-        <td>{{ patent.publication_number }}</td>
-        <td>{{ patent.assignee_standardized }}</td>
-        <td>{{ patent.legal_status }}</td>
-        <td>{{ patent.expected_expiry_dates }}</td>
-        <td>{{ patent.remaining_life }}</td>
-        <td>{{ patent.cited_patents_count }}</td>
-        <td>{{ patent.citing_patents_count }}</td>
-        <td>{{ patent.inventors }}</td>
-        <td>{{ patent.earliest_patent_priority_date }}</td>
-        <td>{{ patent.application_dates }}</td>
-        <td>{{ patent.publication_dates }}</td>
-        <td>{{ patent.application_number }}</td>
-        <td>{{ patent.cpc }}</td>
-        <td>{{ patent.ipc }}</td>
-        <td>{{ patent.e_fan }}</td>
+        <td>{{ patent.publication_number|default:"" }}</td>
+        <td>{{ patent.assignee_standardized|default:"" }}</td>
+        <td>{{ patent.legal_status|default:"" }}</td>
+        <td>{{ patent.expected_expiry_dates|default:"" }}</td>
+        <td>{{ patent.remaining_life|default:"" }}</td>
+        <td>{{ patent.cited_patents_count|default:"" }}</td>
+        <td>{{ patent.citing_patents_count|default:"" }}</td>
+        <td>{{ patent.inventors|default:"" }}</td>
+        <td>{{ patent.earliest_patent_priority_date|default:"" }}</td>
+        <td>{{ patent.application_dates|default:"" }}</td>
+        <td>{{ patent.publication_dates|default:"" }}</td>
+        <td>{{ patent.application_number|default:"" }}</td>
+        <td>{{ patent.cpc|default:"" }}</td>
+        <td>{{ patent.ipc|default:"" }}</td>
+        <td>{{ patent.e_fan|default:"" }}</td>
     </tr>
     {% endfor %}
     {% endif %}
@@ -211,42 +211,42 @@
 {% if innovators %}
     {% for patent in innovators %}
     <tr>
-        <td>{{ patent.publication_number }}</td>
-        <td>{{ patent.assignee_standardized }}</td>
-        <td>{{ patent.legal_status }}</td>
-        <td>{{ patent.expected_expiry_dates }}</td>
-        <td>{{ patent.remaining_life }}</td>
-        <td>{{ patent.cited_patents_count }}</td>
-        <td>{{ patent.citing_patents_count }}</td>
-        <td>{{ patent.inventors }}</td>
-        <td>{{ patent.earliest_patent_priority_date }}</td>
-        <td>{{ patent.application_dates }}</td>
-        <td>{{ patent.publication_dates }}</td>
-        <td>{{ patent.application_number }}</td>
-        <td>{{ patent.cpc }}</td>
-        <td>{{ patent.ipc }}</td>
-        <td>{{ patent.e_fan }}</td>
+        <td>{{ patent.publication_number|default:"" }}</td>
+        <td>{{ patent.assignee_standardized|default:"" }}</td>
+        <td>{{ patent.legal_status|default:"" }}</td>
+        <td>{{ patent.expected_expiry_dates|default:"" }}</td>
+        <td>{{ patent.remaining_life|default:"" }}</td>
+        <td>{{ patent.cited_patents_count|default:"" }}</td>
+        <td>{{ patent.citing_patents_count|default:"" }}</td>
+        <td>{{ patent.inventors|default:"" }}</td>
+        <td>{{ patent.earliest_patent_priority_date|default:"" }}</td>
+        <td>{{ patent.application_dates|default:"" }}</td>
+        <td>{{ patent.publication_dates|default:"" }}</td>
+        <td>{{ patent.application_number|default:"" }}</td>
+        <td>{{ patent.cpc|default:"" }}</td>
+        <td>{{ patent.ipc|default:"" }}</td>
+        <td>{{ patent.e_fan|default:""}}</td>
     </tr>
     {% endfor %}
     {% endif %}
     {% if top_recent_assignees_view %}
     {% for patent in top_recent_assignees_view %}
     <tr>
-        <td>{{ patent.publication_number }}</td>
-        <td>{{ patent.assignee_standardized }}</td>
-        <td>{{ patent.legal_status }}</td>
-        <td>{{ patent.expected_expiry_dates }}</td>
-        <td>{{ patent.remaining_life }}</td>
-        <td>{{ patent.cited_patents_count }}</td>
-        <td>{{ patent.citing_patents_count }}</td>
-        <td>{{ patent.inventors }}</td>
-        <td>{{ patent.earliest_patent_priority_date }}</td>
-        <td>{{ patent.application_dates }}</td>
-        <td>{{ patent.publication_dates }}</td>
-        <td>{{ patent.application_number }}</td>
-        <td>{{ patent.cpc }}</td>
-        <td>{{ patent.ipc }}</td>
-        <td>{{ patent.e_fan }}</td>
+        <td>{{ patent.publication_number|default:"" }}</td>
+        <td>{{ patent.assignee_standardized|default:"" }}</td>
+        <td>{{ patent.legal_status|default:"" }}</td>
+        <td>{{ patent.expected_expiry_dates|default:"" }}</td>
+        <td>{{ patent.remaining_life|default:"" }}</td>
+        <td>{{ patent.cited_patents_count|default:"" }}</td>
+        <td>{{ patent.citing_patents_count|default:"" }}</td>
+        <td>{{ patent.inventors|default:"" }}</td>
+        <td>{{ patent.earliest_patent_priority_date|default:"" }}</td>
+        <td>{{ patent.application_dates|default:"" }}</td>
+        <td>{{ patent.publication_dates|default:"" }}</td>
+        <td>{{ patent.application_number|default:"" }}</td>
+        <td>{{ patent.cpc|default:"" }}</td>
+        <td>{{ patent.ipc|default:"" }}</td>
+        <td>{{ patent.e_fan|default:"" }}</td>
     </tr>
     {% endfor %}
     {% endif %}
@@ -254,42 +254,42 @@
 {% if top_ten_assignees_view %}
     {% for patent in top_ten_assignees_view %}
     <tr>
-        <td>{{ patent.publication_number }}</td>
-        <td>{{ patent.assignee_standardized }}</td>
-        <td>{{ patent.legal_status }}</td>
-        <td>{{ patent.expected_expiry_dates }}</td>
-        <td>{{ patent.remaining_life }}</td>
-        <td>{{ patent.cited_patents_count }}</td>
-        <td>{{ patent.citing_patents_count }}</td>
-        <td>{{ patent.inventors }}</td>
-        <td>{{ patent.earliest_patent_priority_date }}</td>
-        <td>{{ patent.application_dates }}</td>
-        <td>{{ patent.publication_dates }}</td>
-        <td>{{ patent.application_number }}</td>
-        <td>{{ patent.cpc }}</td>
-        <td>{{ patent.ipc }}</td>
-        <td>{{ patent.e_fan }}</td>
+        <td>{{ patent.publication_number|default:"" }}</td>
+        <td>{{ patent.assignee_standardized|default:"" }}</td>
+        <td>{{ patent.legal_status|default:"" }}</td>
+        <td>{{ patent.expected_expiry_dates|default:"" }}</td>
+        <td>{{ patent.remaining_life|default:"" }}</td>
+        <td>{{ patent.cited_patents_count|default:"" }}</td>
+        <td>{{ patent.citing_patents_count|default:"" }}</td>
+        <td>{{ patent.inventors|default:"" }}</td>
+        <td>{{ patent.earliest_patent_priority_date|default:"" }}</td>
+        <td>{{ patent.application_dates|default:"" }}</td>
+        <td>{{ patent.publication_dates|default:"" }}</td>
+        <td>{{ patent.application_number|default:"" }}</td>
+        <td>{{ patent.cpc|default:"" }}</td>
+        <td>{{ patent.ipc|default:"" }}</td>
+        <td>{{ patent.e_fan|default:"" }}</td>
     </tr>
     {% endfor %}
     {% endif %}
 {% if top_ten_ass_view %}
     {% for patent in top_ten_ass_view %}
     <tr>
-        <td>{{ patent.publication_number }}</td>
-        <td>{{ patent.assignee_standardized }}</td>
-        <td>{{ patent.legal_status }}</td>
-        <td>{{ patent.expected_expiry_dates }}</td>
-        <td>{{ patent.remaining_life }}</td>
-        <td>{{ patent.cited_patents_count }}</td>
-        <td>{{ patent.citing_patents_count }}</td>
-        <td>{{ patent.inventors }}</td>
-        <td>{{ patent.earliest_patent_priority_date }}</td>
-        <td>{{ patent.application_dates }}</td>
-        <td>{{ patent.publication_dates }}</td>
-        <td>{{ patent.application_number }}</td>
-        <td>{{ patent.cpc }}</td>
-        <td>{{ patent.ipc }}</td>
-        <td>{{ patent.e_fan }}</td>
+        <td>{{ patent.publication_number|default:"" }}</td>
+        <td>{{ patent.assignee_standardized|default:"" }}</td>
+        <td>{{ patent.legal_status|default:"" }}</td>
+        <td>{{ patent.expected_expiry_dates|default:"" }}</td>
+        <td>{{ patent.remaining_life|default:"" }}</td>
+        <td>{{ patent.cited_patents_count|default:"" }}</td>
+        <td>{{ patent.citing_patents_count|default:"" }}</td>
+        <td>{{ patent.inventors|default:"" }}</td>
+        <td>{{ patent.earliest_patent_priority_date|default:"" }}</td>
+        <td>{{ patent.application_dates|default:"" }}</td>
+        <td>{{ patent.publication_dates|default:"" }}</td>
+        <td>{{ patent.application_number|default:"" }}</td>
+        <td>{{ patent.cpc|default:"" }}</td>
+        <td>{{ patent.ipc|default:"" }}</td>
+        <td>{{ patent.e_fan|default:"" }}</td>
     </tr>
     {% endfor %}
     {% endif %}
@@ -297,21 +297,21 @@
 {% if publication_trend %}
     {% for patent in publication_trend %}
     <tr>
-        <td>{{ patent.publication_number }}</td>
-        <td>{{ patent.assignee_standardized }}</td>
-        <td>{{ patent.legal_status }}</td>
-        <td>{{ patent.expected_expiry_dates }}</td>
-        <td>{{ patent.remaining_life }}</td>
-        <td>{{ patent.cited_patents_count }}</td>
-        <td>{{ patent.citing_patents_count }}</td>
-        <td>{{ patent.inventors }}</td>
-        <td>{{ patent.earliest_patent_priority_date }}</td>
-        <td>{{ patent.application_dates }}</td>
-        <td>{{ patent.publication_dates }}</td>
-        <td>{{ patent.application_number }}</td>
-        <td>{{ patent.cpc }}</td>
-        <td>{{ patent.ipc }}</td>
-        <td>{{ patent.e_fan }}</td>
+        <td>{{ patent.publication_number|default:"" }}</td>
+        <td>{{ patent.assignee_standardized|default:"" }}</td>
+        <td>{{ patent.legal_status|default:"" }}</td>
+        <td>{{ patent.expected_expiry_dates|default:"" }}</td>
+        <td>{{ patent.remaining_life|default:"" }}</td>
+        <td>{{ patent.cited_patents_count|default:"" }}</td>
+        <td>{{ patent.citing_patents_count|default:"" }}</td>
+        <td>{{ patent.inventors|default:"" }}</td>
+        <td>{{ patent.earliest_patent_priority_date|default:"" }}</td>
+        <td>{{ patent.application_dates|default:"" }}</td>
+        <td>{{ patent.publication_dates|default:"" }}</td>
+        <td>{{ patent.application_number|default:"" }}</td>
+        <td>{{ patent.cpc|default:"" }}</td>
+        <td>{{ patent.ipc|default:"" }}</td>
+        <td>{{ patent.e_fan|default:"" }}</td>
     </tr>
     {% endfor %}
     {% endif %}
@@ -320,21 +320,21 @@
 {% if legal_status_qs %}
     {% for patent in legal_status_qs %}
     <tr>
-        <td>{{ patent.publication_number }}</td>
-        <td>{{ patent.assignee_standardized }}</td>
-        <td>{{ patent.legal_status }}</td>
-        <td>{{ patent.expected_expiry_dates }}</td>
-        <td>{{ patent.remaining_life }}</td>
-        <td>{{ patent.cited_patents_count }}</td>
-        <td>{{ patent.citing_patents_count }}</td>
-        <td>{{ patent.inventors }}</td>
-        <td>{{ patent.earliest_patent_priority_date }}</td>
-        <td>{{ patent.application_dates }}</td>
-        <td>{{ patent.publication_dates }}</td>
-        <td>{{ patent.application_number }}</td>
-        <td>{{ patent.cpc }}</td>
-        <td>{{ patent.ipc }}</td>
-        <td>{{ patent.e_fan }}</td>
+        <td>{{ patent.publication_number|default:"" }}</td>
+        <td>{{ patent.assignee_standardized|default:"" }}</td>
+        <td>{{ patent.legal_status|default:"" }}</td>
+        <td>{{ patent.expected_expiry_dates|default:"" }}</td>
+        <td>{{ patent.remaining_life|default:"" }}</td>
+        <td>{{ patent.cited_patents_count|default:"" }}</td>
+        <td>{{ patent.citing_patents_count|default:"" }}</td>
+        <td>{{ patent.inventors|default:"" }}</td>
+        <td>{{ patent.earliest_patent_priority_date|default:"" }}</td>
+        <td>{{ patent.application_dates|default:"" }}</td>
+        <td>{{ patent.publication_dates|default:""}}</td>
+        <td>{{ patent.application_number|default:"" }}</td>
+        <td>{{ patent.cpc|default:"" }}</td>
+        <td>{{ patent.ipc|default:"" }}</td>
+        <td>{{ patent.e_fan|default:"" }}</td>
     </tr>
     {% endfor %}
     {% endif %}
@@ -342,63 +342,63 @@
     {% if exp_qs %}
     {% for patent in exp_qs %}
     <tr>
-        <td>{{ patent.publication_number }}</td>
-        <td>{{ patent.assignee_standardized }}</td>
-        <td>{{ patent.legal_status }}</td>
-        <td>{{ patent.expected_expiry_dates }}</td>
-        <td>{{ patent.remaining_life }}</td>
-        <td>{{ patent.cited_patents_count }}</td>
-        <td>{{ patent.citing_patents_count }}</td>
-        <td>{{ patent.inventors }}</td>
-        <td>{{ patent.earliest_patent_priority_date }}</td>
-        <td>{{ patent.application_dates }}</td>
-        <td>{{ patent.publication_dates }}</td>
-        <td>{{ patent.application_number }}</td>
-        <td>{{ patent.cpc }}</td>
-        <td>{{ patent.ipc }}</td>
-        <td>{{ patent.e_fan }}</td>
+        <td>{{ patent.publication_number|default:"" }}</td>
+        <td>{{ patent.assignee_standardized|default:"" }}</td>
+        <td>{{ patent.legal_status|default:"" }}</td>
+        <td>{{ patent.expected_expiry_dates|default:"" }}</td>
+        <td>{{ patent.remaining_life|default:"" }}</td>
+        <td>{{ patent.cited_patents_count|default:"" }}</td>
+        <td>{{ patent.citing_patents_count|default:"" }}</td>
+        <td>{{ patent.inventors|default:"" }}</td>
+        <td>{{ patent.earliest_patent_priority_date|default:"" }}</td>
+        <td>{{ patent.application_dates|default:"" }}</td>
+        <td>{{ patent.publication_dates|default:"" }}</td>
+        <td>{{ patent.application_number|default:"" }}</td>
+        <td>{{ patent.cpc|default:"" }}</td>
+        <td>{{ patent.ipc|default:"" }}</td>
+        <td>{{ patent.e_fan|default:"" }}</td>
     </tr>
     {% endfor %}
     {% endif %}
     {% if ind_citing_patents %}
     {% for patent in ind_citing_patents %}
     <tr>
-        <td>{{ patent.publication_number }}</td>
-        <td>{{ patent.assignee_standardized }}</td>
-        <td>{{ patent.legal_status }}</td>
-        <td>{{ patent.expected_expiry_dates }}</td>
-        <td>{{ patent.remaining_life }}</td>
-        <td>{{ patent.cited_patents_count }}</td>
-        <td>{{ patent.citing_patents_count }}</td>
-        <td>{{ patent.inventors }}</td>
-        <td>{{ patent.earliest_patent_priority_date }}</td>
-        <td>{{ patent.application_dates }}</td>
-        <td>{{ patent.publication_dates }}</td>
-        <td>{{ patent.application_number }}</td>
-        <td>{{ patent.cpc }}</td>
-        <td>{{ patent.ipc }}</td>
-        <td>{{ patent.e_fan }}</td>
+        <td>{{ patent.publication_number|default:"" }}</td>
+        <td>{{ patent.assignee_standardized|default:"" }}</td>
+        <td>{{ patent.legal_status|default:"" }}</td>
+        <td>{{ patent.expected_expiry_dates|default:"" }}</td>
+        <td>{{ patent.remaining_life|default:"" }}</td>
+        <td>{{ patent.cited_patents_count|default:"" }}</td>
+        <td>{{ patent.citing_patents_count|default:"" }}</td>
+        <td>{{ patent.inventors|default:"" }}</td>
+        <td>{{ patent.earliest_patent_priority_date|default:"" }}</td>
+        <td>{{ patent.application_dates|default:"" }}</td>
+        <td>{{ patent.publication_dates|default:"" }}</td>
+        <td>{{ patent.application_number|default:"" }}</td>
+        <td>{{ patent.cpc|default:"" }}</td>
+        <td>{{ patent.ipc|default:"" }}</td>
+        <td>{{ patent.e_fan|default:"" }}</td>
     </tr>
     {% endfor %}
     {% endif %}
     {% if ind_cited_patents %}
     {% for patent in ind_cited_patents %}
     <tr>
-        <td>{{ patent.publication_number }}</td>
-        <td>{{ patent.assignee_standardized }}</td>
-        <td>{{ patent.legal_status }}</td>
-        <td>{{ patent.expected_expiry_dates }}</td>
-        <td>{{ patent.remaining_life }}</td>
-        <td>{{ patent.cited_patents_count }}</td>
-        <td>{{ patent.citing_patents_count }}</td>
-        <td>{{ patent.inventors }}</td>
-        <td>{{ patent.earliest_patent_priority_date }}</td>
-        <td>{{ patent.application_dates }}</td>
-        <td>{{ patent.publication_dates }}</td>
-        <td>{{ patent.application_number }}</td>
-        <td>{{ patent.cpc }}</td>
-        <td>{{ patent.ipc }}</td>
-        <td>{{ patent.e_fan }}</td>
+        <td>{{ patent.publication_number|default:"" }}</td>
+        <td>{{ patent.assignee_standardized|default:"" }}</td>
+        <td>{{ patent.legal_status|default:"" }}</td>
+        <td>{{ patent.expected_expiry_dates|default:"" }}</td>
+        <td>{{ patent.remaining_life|default:"" }}</td>
+        <td>{{ patent.cited_patents_count|default:"" }}</td>
+        <td>{{ patent.citing_patents_count|default:"" }}</td>
+        <td>{{ patent.inventors|default:"" }}</td>
+        <td>{{ patent.earliest_patent_priority_date|default:"" }}</td>
+        <td>{{ patent.application_dates|default:"" }}</td>
+        <td>{{ patent.publication_dates|default:"" }}</td>
+        <td>{{ patent.application_number|default:"" }}</td>
+        <td>{{ patent.cpc|default:"" }}</td>
+        <td>{{ patent.ipc|default:"" }}</td>
+        <td>{{ patent.e_fan|default:"" }}</td>
     </tr>
     {% endfor %}
     {% endif %}
@@ -406,21 +406,21 @@
     {% if top_ten_cited_patents %}
     {% for patent in top_ten_cited_patents %}
     <tr>
-        <td>{{ patent.publication_number }}</td>
-        <td>{{ patent.assignee_standardized }}</td>
-        <td>{{ patent.legal_status }}</td>
-        <td>{{ patent.expected_expiry_dates }}</td>
-        <td>{{ patent.remaining_life }}</td>
-        <td>{{ patent.cited_patents_count }}</td>
-        <td>{{ patent.citing_patents_count }}</td>
-        <td>{{ patent.inventors }}</td>
-        <td>{{ patent.earliest_patent_priority_date }}</td>
-        <td>{{ patent.application_dates }}</td>
-        <td>{{ patent.publication_dates }}</td>
-        <td>{{ patent.application_number }}</td>
-        <td>{{ patent.cpc }}</td>
-        <td>{{ patent.ipc }}</td>
-        <td>{{ patent.e_fan }}</td>
+        <td>{{ patent.publication_number|default:"" }}</td>
+        <td>{{ patent.assignee_standardized|default:"" }}</td>
+        <td>{{ patent.legal_status|default:"" }}</td>
+        <td>{{ patent.expected_expiry_dates|default:"" }}</td>
+        <td>{{ patent.remaining_life|default:"" }}</td>
+        <td>{{ patent.cited_patents_count|default:"" }}</td>
+        <td>{{ patent.citing_patents_count|default:"" }}</td>
+        <td>{{ patent.inventors|default:"" }}</td>
+        <td>{{ patent.earliest_patent_priority_date|default:"" }}</td>
+        <td>{{ patent.application_dates|default:"" }}</td>
+        <td>{{ patent.publication_dates|default:"" }}</td>
+        <td>{{ patent.application_number|default:"" }}</td>
+        <td>{{ patent.cpc|default:"" }}</td>
+        <td>{{ patent.ipc|default:"" }}</td>
+        <td>{{ patent.e_fan|default:"" }}</td>
     </tr>
     {% endfor %}
     {% endif %}
@@ -428,21 +428,21 @@
     {% if top_ten_cpc %}
     {% for patent in top_ten_cpc %}
     <tr>
-        <td>{{ patent.publication_number }}</td>
-        <td>{{ patent.assignee_standardized }}</td>
-        <td>{{ patent.legal_status }}</td>
-        <td>{{ patent.expected_expiry_dates }}</td>
-        <td>{{ patent.remaining_life }}</td>
-        <td>{{ patent.cited_patents_count }}</td>
-        <td>{{ patent.citing_patents_count }}</td>
-        <td>{{ patent.inventors }}</td>
-        <td>{{ patent.earliest_patent_priority_date }}</td>
-        <td>{{ patent.application_dates }}</td>
-        <td>{{ patent.publication_dates }}</td>
-        <td>{{ patent.application_number }}</td>
-        <td>{{ patent.cpc }}</td>
-        <td>{{ patent.ipc }}</td>
-        <td>{{ patent.e_fan }}</td>
+       <td>{{ patent.publication_number|default:"" }}</td>
+        <td>{{ patent.assignee_standardized|default:"" }}</td>
+        <td>{{ patent.legal_status|default:"" }}</td>
+        <td>{{ patent.expected_expiry_dates|default:"" }}</td>
+        <td>{{ patent.remaining_life|default:"" }}</td>
+        <td>{{ patent.cited_patents_count|default:"" }}</td>
+        <td>{{ patent.citing_patents_count|default:"" }}</td>
+        <td>{{ patent.inventors|default:"" }}</td>
+        <td>{{ patent.earliest_patent_priority_date|default:"" }}</td>
+        <td>{{ patent.application_dates|default:"" }}</td>
+        <td>{{ patent.publication_dates|default:"" }}</td>
+        <td>{{ patent.application_number|default:"" }}</td>
+        <td>{{ patent.cpc|default:"" }}</td>
+        <td>{{ patent.ipc|default:"" }}</td>
+        <td>{{ patent.e_fan|default:"" }}</td>
     </tr>
     {% endfor %}
     {% endif %}
@@ -450,21 +450,21 @@
     {% if top_ten_citing_patents %}
     {% for patent in top_ten_citing_patents %}
     <tr>
-        <td>{{ patent.publication_number }}</td>
-        <td>{{ patent.assignee_standardized }}</td>
-        <td>{{ patent.legal_status }}</td>
-        <td>{{ patent.expected_expiry_dates }}</td>
-        <td>{{ patent.remaining_life }}</td>
-        <td>{{ patent.cited_patents_count }}</td>
-        <td>{{ patent.citing_patents_count }}</td>
-        <td>{{ patent.inventors }}</td>
-        <td>{{ patent.earliest_patent_priority_date }}</td>
-        <td>{{ patent.application_dates }}</td>
-        <td>{{ patent.publication_dates }}</td>
-        <td>{{ patent.application_number }}</td>
-        <td>{{ patent.cpc }}</td>
-        <td>{{ patent.ipc }}</td>
-        <td>{{ patent.e_fan }}</td>
+        <td>{{ patent.publication_number|default:"" }}</td>
+        <td>{{ patent.assignee_standardized|default:"" }}</td>
+        <td>{{ patent.legal_status|default:"" }}</td>
+        <td>{{ patent.expected_expiry_dates|default:"" }}</td>
+        <td>{{ patent.remaining_life|default:"" }}</td>
+        <td>{{ patent.cited_patents_count|default:"" }}</td>
+        <td>{{ patent.citing_patents_count|default:"" }}</td>
+        <td>{{ patent.inventors|default:"" }}</td>
+        <td>{{ patent.earliest_patent_priority_date|default:"" }}</td>
+        <td>{{ patent.application_dates|default:"" }}</td>
+        <td>{{ patent.publication_dates|default:"" }}</td>
+        <td>{{ patent.application_number|default:"" }}</td>
+        <td>{{ patent.cpc|default:"" }}</td>
+        <td>{{ patent.ipc|default:"" }}</td>
+        <td>{{ patent.e_fan|default:"" }}</td>
     </tr>
     {% endfor %}
     {% endif %}
@@ -473,21 +473,21 @@
     {% if ipc_qs %}
     {% for patent in ipc_qs %}
     <tr>
-        <td>{{ patent.publication_number }}</td>
-        <td>{{ patent.assignee_standardized }}</td>
-        <td>{{ patent.legal_status }}</td>
-        <td>{{ patent.expected_expiry_dates }}</td>
-        <td>{{ patent.remaining_life }}</td>
-        <td>{{ patent.cited_patents_count }}</td>
-        <td>{{ patent.citing_patents_count }}</td>
-        <td>{{ patent.inventors }}</td>
-        <td>{{ patent.earliest_patent_priority_date }}</td>
-        <td>{{ patent.application_dates }}</td>
-        <td>{{ patent.publication_dates }}</td>
-        <td>{{ patent.application_number }}</td>
-        <td>{{ patent.cpc }}</td>
-        <td>{{ patent.ipc }}</td>
-        <td>{{ patent.e_fan }}</td>
+        <td>{{ patent.publication_number|default:"" }}</td>
+        <td>{{ patent.assignee_standardized|default:"" }}</td>
+        <td>{{ patent.legal_status|default:"" }}</td>
+        <td>{{ patent.expected_expiry_dates|default:"" }}</td>
+        <td>{{ patent.remaining_life|default:"" }}</td>
+        <td>{{ patent.cited_patents_count|default:"" }}</td>
+        <td>{{ patent.citing_patents_count|default:"" }}</td>
+        <td>{{ patent.inventors|default:"" }}</td>
+        <td>{{ patent.earliest_patent_priority_date|default:"" }}</td>
+        <td>{{ patent.application_dates|default:"" }}</td>
+        <td>{{ patent.publication_dates|default:"" }}</td>
+        <td>{{ patent.application_number|default:"" }}</td>
+        <td>{{ patent.cpc|default:"" }}</td>
+        <td>{{ patent.ipc|default:"" }}</td>
+        <td>{{ patent.e_fan|default:"" }}</td>
     </tr>
     {% endfor %}
     {% endif %}
@@ -495,21 +495,21 @@
     {% if cpc_qs %}
     {% for patent in cpc_qs %}
     <tr>
-        <td>{{ patent.publication_number }}</td>
-        <td>{{ patent.assignee_standardized }}</td>
-        <td>{{ patent.legal_status }}</td>
-        <td>{{ patent.expected_expiry_dates }}</td>
-        <td>{{ patent.remaining_life }}</td>
-        <td>{{ patent.cited_patents_count }}</td>
-        <td>{{ patent.citing_patents_count }}</td>
-        <td>{{ patent.inventors }}</td>
-        <td>{{ patent.earliest_patent_priority_date }}</td>
-        <td>{{ patent.application_dates }}</td>
-        <td>{{ patent.publication_dates }}</td>
-        <td>{{ patent.application_number }}</td>
-        <td>{{ patent.cpc }}</td>
-        <td>{{ patent.ipc }}</td>
-        <td>{{ patent.e_fan }}</td>
+        <td>{{ patent.publication_number|default:"" }}</td>
+        <td>{{ patent.assignee_standardized|default:"" }}</td>
+        <td>{{ patent.legal_status|default:"" }}</td>
+        <td>{{ patent.expected_expiry_dates|default:"" }}</td>
+        <td>{{ patent.remaining_life|default:"" }}</td>
+        <td>{{ patent.cited_patents_count|default:"" }}</td>
+        <td>{{ patent.citing_patents_count|default:"" }}</td>
+        <td>{{ patent.inventors|default:"" }}</td>
+        <td>{{ patent.earliest_patent_priority_date|default:"" }}</td>
+        <td>{{ patent.application_dates|default:"" }}</td>
+        <td>{{ patent.publication_dates|default:"" }}</td>
+        <td>{{ patent.application_number|default:"" }}</td>
+        <td>{{ patent.cpc|default:"" }}</td>
+        <td>{{ patent.ipc|default:"" }}</td>
+        <td>{{ patent.e_fan|default:"" }}</td>
     </tr>
     {% endfor %}
     {% endif %}
