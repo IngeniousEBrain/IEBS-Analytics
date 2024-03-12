@@ -119,9 +119,21 @@
                                     <a href="{% url 'edit_project' project.id %}">
                                     <i class="fas fa-edit" style="color: rgb(87, 151, 87);" title="Edit Project"></i>
                                     </a>
-                                    <a href="{% url 'bibliographic_charts' chart_id=project.id %}">
+                                    {% if chart_type == 'bibliographic' %}
+                                    <a href="{% url 'bibliographic_charts' project_id=project.id %}">
                                         <i class="fas fa-chart-bar" aria-hidden="true" title="Projects Analytics"></i>
                                     </a>
+                                    {% endif %}
+                                    {% if chart_type == 'competitive' %}
+                                    <a href="{% url 'competitor_charts' project_id=project.id %}">
+                                        <i class="fas fa-chart-bar" aria-hidden="true" title="Projects Analytics"></i>
+                                    </a>
+                                    {% endif %}
+                                    {% if chart_type == 'technical' %}
+                                    <a href="{% url 'tech_charts' project_id=project.id %}">
+                                        <i class="fas fa-chart-bar" aria-hidden="true" title="Projects Analytics"></i>
+                                    </a>
+                                    {% endif %}
 <!--                                    <i class="fa fa-eye" aria-hidden="true" title="Project Details"-->
 <!--                                       style="color: rgb(27, 124, 180);"></i>-->
 
