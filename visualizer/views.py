@@ -75,6 +75,7 @@ def login(req):
             user = CustomUser.objects.get(username=username, is_superuser=False)
             req.session['logged_in_user_id'] = user.id
             req.session['user_name'] = username
+            req.session['user_role'] = user.roles
         except ObjectDoesNotExist:
             return JsonResponse({
                 'status': 'error',
@@ -462,7 +463,8 @@ def tech_charts(req, project_id):
     # Bar chart data
     bar_data = [10, 8, 6, 4, 2]
     bar_labels = ['Category 1', 'Category 2', 'Category 3', 'Category 4', 'Category 5']
-    bar_colors = {'#084594', '#2171b5', '#4292c6', '#6baed6', '#9ecae1'}
+    bar_colors = ['#084594', '#2171b5', '#4292c6', '#6baed6', '#9ecae1']
+
     pie = go.Pie(
         labels=pie_labels,
         values=pie_data,
@@ -824,8 +826,9 @@ def competitor_charts(req, project_id):
             hoverinfo='none',
             colorscale='PuBuGn',
             colorbar=dict(title='Partner Count'),
-            text=[[f'<span style="color:{text_colors[i][j]}">{count}</span>' if count is not None else '' for j, count in
-                   enumerate(row)] for i, row in enumerate(partner_count_matrix)],
+            text=[
+                [f'<span style="color:{text_colors[i][j]}">{count}</span>' if count is not None else '' for j, count in
+                 enumerate(row)] for i, row in enumerate(partner_count_matrix)],
             texttemplate="%{text}",
             textfont={"size": 14}
         ))
@@ -2068,7 +2071,6 @@ def get_ipc_counts(req, project_id):
         ipc_values = patent_data.ipc.split('|') if patent_data.ipc else []
 
         for ipc_value in ipc_values:
-            print(ipc_value)
             # Skip processing if the ipc_value is 'nan'
             if ipc_value.strip().upper() == 'NAN':
                 continue
@@ -2093,7 +2095,6 @@ def get_cpc_counts_from_db(req, project_id):
         cpc_values = patent_data.cpc.split('|') if patent_data.cpc else []
 
         for cpc_value in cpc_values:
-            print(cpc_value)
             # Skip processing if the cpc_value is 'nan'
             if cpc_value.strip().upper() == 'NAN':
                 continue
@@ -2123,11 +2124,9 @@ def get_country_code_counts_from_db(req, project_id):
             continue
 
         country_code = publication_number[:2]
-        print(country_code)
         country_code_counts_from_db[country_code] += 1
 
     country_code_counts_dict = dict(country_code_counts_from_db)
-    print(country_code_counts_dict)
     return country_code_counts_dict
 
 
@@ -2289,7 +2288,6 @@ def get_year_wise_excel(req, project_id):
 
 
 def get_top_citing_count(req, project_id):
-    print("get_top_citing_count", project_id)
     citing_patents_dict = {}
     user_id_to_filter = req.session.get('logged_in_user_id')
     top_ten_citing_patents = PatentData.objects.filter(
@@ -2442,3 +2440,13 @@ def user_profile(req):
     user_id = req.session.get('logged_in_user_id')
     user_qs = CustomUser.objects.get(id=user_id)
     return render(req, 'pages/onboard/profile.html', {'iebs_user': user_qs})
+
+
+# @request.validator
+# def project_client_association(req):
+#     """
+#     User Profile
+#     """
+#     user_id = req.session.get('logged_in_user_id')
+#     user_qs = CustomUser.objects.get(id=user_id)
+#     return render(req, 'pages/projects/project_client_association.html', {})
