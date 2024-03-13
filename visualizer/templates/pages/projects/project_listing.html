@@ -10,7 +10,7 @@
     <div class="container-fluid">
         <div class="row mb-2">
             <div class="col-sm-6">
-                <h1>Product Listing</h1>
+                <h1>Project Listing</h1>
             </div>
         </div>
     </div>
@@ -27,6 +27,7 @@
                         <table id="example1" class="table table-bordered table-striped">
                             <thead>
                             <tr>
+                                <th>S.NO.</th>
                                 <th>Product Code</th>
                                 <th>Name</th>
                                 <th>Description</th>
@@ -38,6 +39,7 @@
                             <tbody>
                             {% for project in projects_data %}
                             <tr>
+                                <td>{{ forloop.counter }}</td>
                                 <td>{{ project.code }}</td>
                                 <td>{{ project.name }}</td>
                                 <td>
@@ -119,7 +121,7 @@
                                     <a href="{% url 'edit_project' project.id %}">
                                     <i class="fas fa-edit" style="color: rgb(87, 151, 87);" title="Edit Project"></i>
                                     </a>
-                                    {% if chart_type == 'bibliographic' %}
+                                    {% if chart_type == 'bibliographic' or  chart_type == 'common' %}
                                     <a href="{% url 'bibliographic_charts' project_id=project.id %}">
                                         <i class="fas fa-chart-bar" aria-hidden="true" title="Projects Analytics"></i>
                                     </a>
@@ -138,10 +140,11 @@
 <!--                                       style="color: rgb(27, 124, 180);"></i>-->
 
                                     <!-- Trash icon -->
+                                    {% if not user_qs.roles == 'client'%}
                                     <i class="fa fa-trash" aria-hidden="true" style="color: rgb(219, 77, 77);"
                                        title="Delete"
                                        data-toggle="modal" data-target="#confirmDeleteModal{{project.id}}"></i>
-
+                                    {% endif %}
                                     <!-- Modal -->
                                     <div class="modal" id="confirmDeleteModal{{project.id}}" tabindex="-1"
                                          role="dialog">
@@ -178,6 +181,7 @@
                             </tbody>
                             <tfoot>
                             <tr>
+                                <th>S.NO.</th>
                                 <th>Product Code</th>
                                 <th>Name</th>
                                 <th>Description</th>

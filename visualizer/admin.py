@@ -67,21 +67,16 @@ class ProjectAdmin(admin.ModelAdmin):
     search_fields = ('code', 'name')
 
 
-@admin.register(UserProjectAssociation)
-class UserProjectAdmin(admin.ModelAdmin):
-    """
-    Admin configuration for the UserProjectAssociation model.
+class UserProjectAssociationAdmin(admin.ModelAdmin):
+    model = UserProjectAssociation
 
-    Attributes:
-        - list_display: Display fields in the list view.
-        - list_filter: Enable filtering by user and projects.
-        - search_fields: Enable search by user and projects.
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == "user":
+            kwargs["queryset"] = CustomUser.objects.filter(roles=CustomUser.PROJECT_MANAGER)
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
-    """
-    list_display = ('user',)
-    list_filter = ('user', 'projects')
-    search_fields = ('projects', 'projects')
 
+admin.site.register(UserProjectAssociation, UserProjectAssociationAdmin)
 
 # Unregister default Group and User models from admin
 admin.site.unregister(Group)

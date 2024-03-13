@@ -18,6 +18,8 @@
     <link rel="stylesheet" href="{% static 'plugins/jqvmap/jqvmap.min.css' %}">
     <!-- Theme style -->
     <link rel="stylesheet" href="{% static 'dist/css/adminlte.min.css' %}">
+<!--    ===================================================================-->
+    <link rel="stylesheet" href="{% static 'custom_css/analytics.css' %}">
     <!-- overlayScrollbars -->
     <link rel="stylesheet" href="{% static 'plugins/overlayScrollbars/css/OverlayScrollbars.min.css' %}">
     <!-- Daterange picker -->
@@ -29,31 +31,11 @@
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <script src="https://cdn.ckeditor.com/ckeditor5/44.0.0/classic/ckeditor.js"></script>
-    <style>
-    .main-sidebar {
-      border-color: aqua;
-    }
-    p {
-      color: aqua;
-    }
-    .brand-text{
-        color: aqua;
-        font-weight: bold;
-    }
-    .info{
-      color: aqua;
-    }
-     .nav-sidebar .nav-link.active {
-      background-color: royalblue;
-      color: white;
-    }
-    </style>
 </head>
 <body class="hold-transition sidebar-mini layout-fixed">
 <div class="wrapper">
     <!-- Navbar -->
     <nav class="main-header navbar navbar-expand navbar-white navbar-light">
-
         <ul class="navbar-nav ml-auto">
             <li class="nav-item">
                 <a href="{% url 'logout' %}" class="btn btn-danger btn-sm">
@@ -61,7 +43,6 @@
                 </a>
             </li>
         </ul>
-
     </nav>
     <aside class="main-sidebar sidebar-dark-primary elevation-4" style="border-right: 5px solid aqua;">
         <!-- Brand Logo -->
@@ -96,6 +77,18 @@
                             </p>
                         </a>
                     </li>
+                    {% if request.session.user_role == 'project_manager' %}
+                    <li class="nav-item has-treeview {% if '/project_client_association' in request.get_full_path or '/profile' in request.get_full_path or '/project-list' in request.get_full_path%} menu-open {% endif %}">
+                        <a href="{% url 'project_client_association' %}"
+                           class="nav-link {% if '/project_client_association' in request.get_full_path%} active {% endif %}">
+
+                            <i class="nav-icon fas fa-cog"></i>
+                            <p>
+                                Project-Client Association
+                            </p>
+                        </a>
+                    </li>
+                    {% endif %}
                     <li class="nav-item has-treeview {% if '/bibliographic_charts' in request.get_full_path or '/competitor_charts' in request.get_full_path or '/tech_charts' in request.get_full_path or '/bibliographic/' in request.get_full_path or '/competitive/' in request.get_full_path  or '/technical/' in request.get_full_path %} menu-open {% endif %}">
                         <a href="#"
                            class="nav-link {% if '/bibliographic_charts' in request.get_full_path or '/competitor_charts' in request.get_full_path or '/tech_charts' in request.get_full_path  or 'project-list/competitive/' in request.get_full_path or '/project-list/bibliographic/' in request.get_full_path or '/project-list/technical/' in request.get_full_path %} active {% endif %}">
@@ -114,7 +107,6 @@
                                 </a>
                             </li>
                             <li class="nav-item">
-
                                 <a href="{% url 'project-list' 'competitive' %}"
                                    class="nav-link {% if '/competitor_charts' in request.get_full_path or '/competitive/' in request.get_full_path  %} active {% endif %}">
                                     <i class="far fa-circle nav-icon"></i>
@@ -136,7 +128,6 @@
         </div>
         <!-- /.sidebar -->
     </aside>
-
     <!-- Content -->
     <div class="content-wrapper">
         <section class="content">

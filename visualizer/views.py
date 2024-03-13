@@ -256,13 +256,20 @@ def get_user_project_data(user_id):
         dict: Dictionary containing user-related project information.
     """
     user_qs = CustomUser.objects.filter(id=user_id).first()
-    total = Project.objects.filter(userprojectassociation__user_id=user_id)
-    completed_projects = Project.objects.filter(
-        userprojectassociation__user_id=user_id, status__exact='Completed'
-    )
-    in_progress_projects = Project.objects.filter(
-        userprojectassociation__user_id=user_id, status__exact='In Progress'
-    )
+    if user_qs.roles == 'client':
+        total = Project.objects.filter(Q(project_manager=user_id) |
+                                                     Q(clients=user_id) |
+                                                     Q(key_account_managers=user_id))
+        completed_projects = total.filter(status__exact='Completed')
+        in_progress_projects = total.filter(status__exact='In Progress')
+    else:
+        total = Project.objects.filter(userprojectassociation__user_id=user_id)
+        completed_projects = Project.objects.filter(
+            userprojectassociation__user_id=user_id, status__exact='Completed'
+        )
+        in_progress_projects = Project.objects.filter(
+            userprojectassociation__user_id=user_id, status__exact='In Progress'
+        )
 
     return {
         'user': user_qs,
@@ -296,7 +303,17 @@ def project_list(req, chart_type):
     """
     user_id = req.session.get('logged_in_user_id')
     user_qs = get_object_or_404(CustomUser, id=user_id)
-    projects = Project.objects.filter(userprojectassociation__user_id=user_id)
+    projects_as_manager = Project.objects.filter(project_manager=user_qs)
+
+    # Get projects where the logged-in user is a client
+    projects_as_client = Project.objects.filter(clients=user_qs)
+
+    # Get projects where the logged-in user is a key account manager
+    projects_as_kam = Project.objects.filter(key_account_managers=user_qs)
+
+    # Combine the queries and remove duplicates
+    projects = (projects_as_manager | projects_as_client | projects_as_kam).distinct()
+
     context = {'projects_data': projects, 'user_qs': user_qs, 'chart_type': chart_type}
     return render(req, 'pages/projects/project_listing.html', context)
 
@@ -399,7 +416,7 @@ def calculate_luminance(color):
 def extract_assignee_partners(req, code):
     assignee_partner_dict = {}
     user = req.session.get('logged_in_user_id')
-    for patent_data in PatentData.objects.filter(user_id=user, project_code=code):
+    for patent_data in PatentData.objects.filter(project_code=code):
         assignee_partners_str = patent_data.assignee_standardized
         assignee, *partners = map(lambda x: x.strip().title(), assignee_partners_str.split('|'))
         if assignee in assignee_partner_dict:
@@ -410,15 +427,13 @@ def extract_assignee_partners(req, code):
 
 
 def get_top_assignees_by_year(req, code):
-    print("get_top_assignees_by_year", code)
-    top_assignees = PatentData.objects.filter(user_id=req.session.get('logged_in_user_id'), project_code=code).values(
+    top_assignees = PatentData.objects.filter(project_code=code).values(
         'assignee_standardized').annotate(
         count=Count('assignee_standardized')).order_by('-count')[:10]
     result = collections.defaultdict(dict)
     for assignee in top_assignees:
         name = assignee['assignee_standardized']
-        year_wise_count = PatentData.objects.filter(assignee_standardized=name,
-                                                    user_id=req.session.get('logged_in_user_id')).values(
+        year_wise_count = PatentData.objects.filter(assignee_standardized=name).values(
             'application_dates__year').annotate(count=Count('id'))
         for data in year_wise_count:
             year = data['application_dates__year']
@@ -517,7 +532,7 @@ def tech_charts(req, project_id):
     # Show the plot
     div3 = heatmap.to_html()
     # ================================
-    context = {'plot_div1': div_combined, 'div2': div2, 'div3': div3}
+    context = {'plot_div1': div_combined, 'div2': div2, 'div3': div3, 'project_id': project_id}
     return render(req, 'pages/charts/technical_chart.html', context)
 
 
@@ -545,8 +560,7 @@ def competitor_colab_view(request, proj_code):
             if data.get('assignee_standardized') and data.get('legal_status'):
                 assignee_list = [data.get('assignee_standardized')]
                 lega_status = PatentData.objects.filter(assignee_standardized__in=assignee_list,
-                                                        legal_status=data.get('legal_status'), project_code=proj_code,
-                                                        user_id=request.session.get('logged_in_user_id'))
+                                                        legal_status=data.get('legal_status'), project_code=proj_code)
                 if data.get('type') == 'display':
                     ass_legal_status_qs = serialize('json', lega_status)
                     context = {'ass_legal_status_qs': json.loads(ass_legal_status_qs)}
@@ -585,7 +599,7 @@ def competitor_colab_view(request, proj_code):
                 year_wise_count = PatentData.objects.filter(assignee_standardized__icontains=data.get('assignee'),
                                                             publication_number=data.get('publication'),
                                                             project_code=proj_code,
-                                                            user_id=request.session.get('logged_in_user_id'))
+                                                            )
                 if data.get('type') == 'display':
                     ass_pub_date_qs = serialize('json', year_wise_count)
                     context = {'ass_pub_date_qs': json.loads(ass_pub_date_qs)}
@@ -625,7 +639,7 @@ def competitor_colab_view(request, proj_code):
                 year_wise_count = PatentData.objects.filter(assignee_standardized__icontains=data.get('assignee'),
                                                             application_dates__year=data.get('year'),
                                                             project_code=proj_code,
-                                                            user_id=request.session.get('logged_in_user_id'))
+                                                            )
                 if data.get('type') == 'display':
                     partner_app_date_qs = serialize('json', year_wise_count)
                     context = {'partner_app_date_qs': json.loads(partner_app_date_qs)}
@@ -662,7 +676,7 @@ def competitor_colab_view(request, proj_code):
                     return response
             elif data.get('type') == 'allCitedDisplay':
                 user_id = request.session.get('logged_in_user_id')
-                filtered_data = PatentData.objects.filter(user_id=user_id, citing_patents_count__isnull=False,
+                filtered_data = PatentData.objects.filter(citing_patents_count__isnull=False,
                                                           project_code=proj_code)
                 top_ten_highest_citing = filtered_data.order_by('-citing_patents_count')[:10]
                 top_ten_highest_citing_qs = serialize('json', top_ten_highest_citing)
@@ -675,7 +689,7 @@ def competitor_colab_view(request, proj_code):
 
             elif data.get('type') == 'allCitedFile':
                 user_id = request.session.get('logged_in_user_id')
-                filtered_data = PatentData.objects.filter(user_id=user_id, citing_patents_count__isnull=False,
+                filtered_data = PatentData.objects.filter(citing_patents_count__isnull=False,
                                                           project_code=proj_code)
                 top_ten_highest_citing = filtered_data.order_by('-citing_patents_count')[:10]
                 data_list = []
@@ -714,8 +728,7 @@ def competitor_colab_view(request, proj_code):
                 if data.get('type') == 'display':
                     for partner in partners_list:
                         q_obj = get_q_object(assignee, partner)
-                        patents = PatentData.objects.filter(q_obj, user_id=request.session.get('logged_in_user_id'),
-                                                            project_code=proj_code)
+                        patents = PatentData.objects.filter(q_obj, project_code=proj_code)
                         patents_data = serialize('json', patents)
                         patents_list = json.loads(patents_data)
                         patent_data[f"{assignee}_{partner}"] = patents_list
@@ -730,8 +743,7 @@ def competitor_colab_view(request, proj_code):
                 if data.get('type') == 'file':
                     for partner in partners_list:
                         q_obj = get_q_object(assignee, partner)
-                        patents = PatentData.objects.filter(q_obj, user_id=request.session.get('logged_in_user_id'),
-                                                            project_code=proj_code)
+                        patents = PatentData.objects.filter(q_obj, project_code=proj_code)
                         for patent_data in patents:
                             data = {
                                 'Publication Number': patent_data.publication_number,
@@ -787,8 +799,8 @@ def competitor_colab_view(request, proj_code):
 @request.validator
 def competitor_charts(req, project_id):
     code = Project.objects.filter(id=project_id).first().code
-    print("competitor_charts", code)
-    data = PatentData.objects.filter(user_id=req.session.get('logged_in_user_id'), project_code=code)
+    project_id_template = Project.objects.filter(id=project_id).first().id
+    data = PatentData.objects.filter(project_code=code)
     data1 = data.values('assignee_standardized').annotate(count=Count('assignee_standardized')).order_by('-count')[:10]
     result = []
     for item in data1:
@@ -828,7 +840,8 @@ def competitor_charts(req, project_id):
             colorbar=dict(title='Partner Count'),
             text=[
                 [f'<span style="color:{text_colors[i][j]}">{count}</span>' if count is not None else '' for j, count in
-                 enumerate(row)] for i, row in enumerate(partner_count_matrix)],
+                 enumerate(row)] for i, row in enumerate(partner_count_matrix)
+            ],
             texttemplate="%{text}",
             textfont={"size": 14}
         ))
@@ -842,31 +855,32 @@ def competitor_charts(req, project_id):
     div1 = fig1.to_html()
     # ==================================BUBBLE===================================================
     result_b = get_top_assignees_by_year(req, code)
-    data = []
-    for assignee, yeardict in result_b.items():
-        for year, count in yeardict.items():
-            data.append({'Assignee': assignee.title(), 'Year': year, 'Count': count})
-    df = pd.DataFrame(data)
-    fig2 = px.scatter(
-        df,
-        x="Year",
-        y="Assignee",
-        size="Count",
-        size_max=20,
-        height=500,
-        width=995,
-    )
-    fig2.update_layout(
-        title='Overall patent filing',
-        xaxis_title='Application Year',
-        yaxis_title='Assignee'
-    )
-    fig2.update_xaxes(type='category')
-    fig2.update_traces(marker=dict(line=dict(width=0.5, color='DarkSlateGray')))
-    div2 = fig2.to_html(full_html=False)
+    div2 = ''
+    if result_b:
+        data = []
+        for assignee, yeardict in result_b.items():
+            for year, count in yeardict.items():
+                data.append({'Assignee': assignee.title(), 'Year': year, 'Count': count})
+        df = pd.DataFrame(data)
+        fig2 = px.scatter(
+            df,
+            x="Year",
+            y="Assignee",
+            size="Count",
+            size_max=20,
+            height=500,
+            width=995,
+        )
+        fig2.update_layout(
+            title='Overall patent filing',
+            xaxis_title='Application Year',
+            yaxis_title='Assignee'
+        )
+        fig2.update_xaxes(type='category')
+        fig2.update_traces(marker=dict(line=dict(width=0.5, color='DarkSlateGray')))
+        div2 = fig2.to_html(full_html=False)
     # ===================================BAR CHART=========================================
-    filtered_data = PatentData.objects.filter(user_id=req.session.get('logged_in_user_id'),
-                                              citing_patents_count__isnull=False, project_code=code)
+    filtered_data = PatentData.objects.filter(citing_patents_count__isnull=False, project_code=code)
     top_ten_highest_citing = filtered_data.order_by('-citing_patents_count')[:10]
     top_ten_values = [val.citing_patents_count for val in top_ten_highest_citing]
     assignee_names = [val.assignee_standardized.split('|')[0] for val in top_ten_highest_citing]
@@ -931,7 +945,7 @@ def competitor_charts(req, project_id):
     fig3.update_layout(updatemenus=[])
     div3 = fig3.to_html(full_html=False)
     # =========================================================================
-    top_assignees = PatentData.objects.filter(user_id=req.session.get('logged_in_user_id'), project_code=code).values(
+    top_assignees = PatentData.objects.filter(project_code=code).values(
         'assignee_standardized').annotate(
         count=Count('assignee_standardized')).order_by('-count')[:10]
     top_assignee_ids = [a['assignee_standardized'] for a in top_assignees]
@@ -981,6 +995,7 @@ def competitor_charts(req, project_id):
     div6 = fig6.to_html(full_html=False)
     context = {'plot_div1': div1, 'plot_div2': div2, 'plot_div3': div3, 'plot_div4': div4,
                'plot_div6': div6, 'data1': data1, 'result': res, 'data': data, 'proj_code': code,
+               'project_id': project_id_template,
                'table_data': table_data, 'legal_status_counts': legal_status_counts}
     return render(req, 'pages/charts/competitor_charts.html', context)
 
@@ -996,7 +1011,7 @@ def download_publication_exl(request, year, project_id):
     data_list = []
     user_id_to_filter = request.session.get('logged_in_user_id')
     code = Project.objects.filter(id=project_id).first().code
-    innovators = PatentData.objects.filter(publication_dates__year=year, user_id=user_id_to_filter, project_code=code)
+    innovators = PatentData.objects.filter(publication_dates__year=year, project_code=code)
     if request.GET.get('display'):
         context = {
             'publication_trend': innovators,
@@ -1049,7 +1064,7 @@ def download_exp_exl(request, year, project_id):
     data_list = []
     user_id_to_filter = request.session.get('logged_in_user_id')
     code = Project.objects.filter(id=project_id).first().code
-    exp_qs = PatentData.objects.filter(expected_expiry_dates__year=year, user_id=user_id_to_filter, project_code=code)
+    exp_qs = PatentData.objects.filter(expected_expiry_dates__year=year, project_code=code)
     for patent_data in exp_qs:
         if request.GET.get('display'):
             context = {
@@ -1102,7 +1117,7 @@ def download_legal_status_exl(request, status, project_id):
     data_list = []
     user_id_to_filter = request.session.get('logged_in_user_id')
     code = Project.objects.filter(id=project_id).first().code
-    innovators = PatentData.objects.filter(legal_status=status, user_id=user_id_to_filter, project_code=code)
+    innovators = PatentData.objects.filter(legal_status=status, project_code=code)
     if request.GET.get('display'):
         context = {
             'legal_status_qs': innovators,
@@ -1155,7 +1170,7 @@ def individual_cpc_exl(request, cpc, project_id):
     data_list = []
     user_id_to_filter = request.session.get('logged_in_user_id')
     code = Project.objects.filter(id=project_id).first().code
-    cpc_qs = PatentData.objects.filter(cpc__startswith=cpc, user_id=user_id_to_filter, project_code=code)
+    cpc_qs = PatentData.objects.filter(cpc__startswith=cpc, project_code=code)
     if request.GET.get('display'):
         context = {
             'cpc_qs': cpc_qs,
@@ -1209,7 +1224,7 @@ def individual_ipc_exl(request, ipc, project_id):
     data_list = []
     user_id_to_filter = request.session.get('logged_in_user_id')
     code = Project.objects.filter(id=project_id).first().code
-    ipc_qs = PatentData.objects.filter(ipc__startswith=ipc, user_id=user_id_to_filter, project_code=code)
+    ipc_qs = PatentData.objects.filter(ipc__startswith=ipc, project_code=code)
     if request.GET.get('display'):
         context = {
             'ipc_qs': ipc_qs,
@@ -1263,8 +1278,7 @@ def download_innovative_exl(request, country, project_id):
     data_list = []
     user_id_to_filter = request.session.get('logged_in_user_id')
     code = Project.objects.filter(id=project_id).first().code
-    innovators = PatentData.objects.filter(publication_number__startswith=country, user_id=user_id_to_filter,
-                                           project_code=code)
+    innovators = PatentData.objects.filter(publication_number__startswith=country, project_code=code)
     if request.GET.get('display'):
         context = {
             'innovators': innovators,
@@ -1318,7 +1332,7 @@ def download_ind_citing_excel(request, patent, project_id):
     user_id_to_filter = request.session.get('logged_in_user_id')
     code = Project.objects.filter(id=project_id).first().code
     top_ten_citing_patents = PatentData.objects.filter(
-        publication_number=patent, user_id=user_id_to_filter, project_code=code
+        publication_number=patent, project_code=code
     )
     if request.GET.get('display'):
         context = {
@@ -1371,7 +1385,7 @@ def download_top_assignee_exl(request, assignee, project_id):
     user_id_to_filter = request.session.get('logged_in_user_id')
     code = Project.objects.filter(id=project_id).first().code
     top_ten_assignees = PatentData.objects.filter(
-        assignee_standardized=assignee, user_id=user_id_to_filter, project_code=code
+        assignee_standardized=assignee, project_code=code
     )
     if request.GET.get('display'):
         context = {
@@ -1426,7 +1440,7 @@ def download_recent_assignee_exl(request, assignee, project_id):
     user_id_to_filter = request.session.get('logged_in_user_id')
     code = Project.objects.filter(id=project_id).first().code
     top_ten_assignees = PatentData.objects.filter(
-        assignee_standardized=assignee, user_id=user_id_to_filter, project_code=code,
+        assignee_standardized=assignee, project_code=code,
         application_dates__year__gte=last_five_years_start
     )
     if request.GET.get('display'):
@@ -1480,7 +1494,7 @@ def download_ind_cited_excel(request, patent, project_id):
     user_id_to_filter = request.session.get('logged_in_user_id')
     code = Project.objects.filter(id=project_id).first().code
     top_ten_citing_patents = PatentData.objects.filter(
-        publication_number=patent, user_id=user_id_to_filter, project_code=code
+        publication_number=patent, project_code=code
     )
     if request.GET.get('display'):
         context = {
@@ -1534,7 +1548,7 @@ def download_demo_excel(req):
     header_row = ["S. No.", "Publication Number", "Assignee - Standardized", "Legal Status", "Expected Expiry Dates",
                   "Remaining Life", "Cited Patents - Count", "Citing Patents - Count", "Inventors",
                   "Earliest Patent Priority Date", "Application Dates", "Publication Dates", "Application Number",
-                  "CPC", "IPC", "EFAN", "Priority Country", "Assignee - Standardized", "Project–Code"]
+                  "CPC", "IPC", "EFAN", "Priority Country", "Assignee - Standardized"]
     ws.append(header_row)
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     response['Content-Disposition'] = 'attachment; filename=demo_excel_file.xlsx'
@@ -1546,7 +1560,7 @@ def download_citedExl(request, project_id):
     user_id_to_filter = request.session.get('logged_in_user_id')
     code = Project.objects.filter(id=project_id).first().code
     top_ten_cited_patents = PatentData.objects.filter(
-        user_id=user_id_to_filter, prject_code=code
+        prject_code=code
     ).exclude(
         citing_patents_count__isnull=True
     ).order_by('-cited_patents_count')[:10]
@@ -1592,7 +1606,7 @@ def top_ten_recent_ass_exl(request, project_id):
     last_five_years_start = current_year - 5
     top_assignees_last_five_years = (
         PatentData.objects
-        .filter(user_id=user_id_to_filter, application_dates__year__gte=last_five_years_start, project_code=code)
+        .filter(application_dates__year__gte=last_five_years_start, project_code=code)
         .values('assignee_standardized')
         .annotate(count=Count('assignee_standardized'))
         .order_by('-count')[:10]
@@ -1648,13 +1662,13 @@ def top_ten_recent_ass_exl(request, project_id):
 def top_ten_ass_exl(request, project_id):
     user_id_to_filter = request.session.get('logged_in_user_id')
     code = Project.objects.filter(id=project_id).first().code
-    data = PatentData.objects.filter(user_id=user_id_to_filter, project_code=code)
+    data = PatentData.objects.filter(project_code=code)
     data = data.values('assignee_standardized').annotate(count=Count('assignee_standardized')).order_by('-count')[:10]
     ass_list = []
     for dictq in data:
         ass_list.append(dictq['assignee_standardized'])
-    top_ten_ass = PatentData.objects.filter(user_id=request.session.get('logged_in_user_id'), project_code=code,
-                                            assignee_standardized__in=ass_list).order_by('assignee_standardized')
+    top_ten_ass = PatentData.objects.filter(project_code=code, assignee_standardized__in=ass_list).order_by(
+        'assignee_standardized')
     if request.GET.get('display'):
         context = {
             'top_ten_ass_view': top_ten_ass,
@@ -1682,26 +1696,20 @@ def top_ten_ass_exl(request, project_id):
         with pd.ExcelWriter(response, engine='xlsxwriter') as writer:
             # Convert the dataframe to an XlsxWriter Excel object
             df.to_excel(writer, index=False, sheet_name='top_ten_assignee')
-
             # Get the xlsxwriter workbook and worksheet objects
             workbook = writer.book
             worksheet = writer.sheets['top_ten_assignee']
-
             # Set the column widths
             for i, col in enumerate(df.columns):
                 max_len = max(df[col].astype(str).apply(len).max(), len(col))
                 worksheet.set_column(i, i, max_len)
-
         response['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-
         return response
-        # df.to_excel(response, index=False, sheet_name='Top Ten Cited Patents')
-        # return response
 
 
 def top_ten_cpc_exl(req, project_id):
     code = Project.object.filter(id=project_id).first().code
-    patent_data_queryset = PatentData.objects.filter(project_code=code, user_id=req.session.get('logged_in_user_id'))
+    patent_data_queryset = PatentData.objects.filter(project_code=code)
     cpc_counts_from_db = Counter()
     for patent_data in patent_data_queryset:
         cpc_values = patent_data.cpc.split('|') if patent_data.cpc else []
@@ -1712,8 +1720,7 @@ def top_ten_cpc_exl(req, project_id):
     sorted_cpc_counts = dict(sorted(cpc_counts_dict_ws.items(), key=lambda item: item[1], reverse=True))
     cpc_counts_dict = dict(list(sorted_cpc_counts.items())[:10])
     cpc_keys_list = list(cpc_counts_dict.keys())
-    top_ten_cpc = PatentData.objects.filter(Q(cpc__in=cpc_keys_list),
-                                            user_id=req.session.get('logged_in_user_id'), project_code=code).order_by(
+    top_ten_cpc = PatentData.objects.filter(Q(cpc__in=cpc_keys_list), project_code=code).order_by(
         'cpc')
     if req.GET.get('display'):
         context = {
@@ -1742,7 +1749,6 @@ def top_ten_cpc_exl(req, project_id):
         with pd.ExcelWriter(response, engine='xlsxwriter') as writer:
             # Convert the dataframe to an XlsxWriter Excel object
             df.to_excel(writer, index=False, sheet_name='Top Ten CPC')
-
             # Get the xlsxwriter workbook and worksheet objects
             workbook = writer.book
             worksheet = writer.sheets['Top Ten CPC']
@@ -1751,16 +1757,14 @@ def top_ten_cpc_exl(req, project_id):
             for i, col in enumerate(df.columns):
                 max_len = max(df[col].astype(str).apply(len).max(), len(col))
                 worksheet.set_column(i, i, max_len)
-
         response['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 
         return response
 
 
 def top_ten_ipc_exl(req, project_id):
-    print("top_ten_ipc_exl", project_id)
     code = Project.objects.filter(id=project_id).first().code
-    patent_data_queryset = PatentData.objects.filter(user_id=req.session.get('logged_in_user_id'), project_code=code)
+    patent_data_queryset = PatentData.objects.filter(project_code=code)
     ipc_counts_from_db = Counter()
     for patent_data in patent_data_queryset:
         ipc_values = patent_data.ipc.split('|') if patent_data.cpc else []
@@ -1772,8 +1776,7 @@ def top_ten_ipc_exl(req, project_id):
     sorted_ipc_counts = dict(sorted(ipc_counts_dict_ws.items(), key=lambda item: item[1], reverse=True))
     ipc_counts_dict = dict(list(sorted_ipc_counts.items())[:10])
     ipc_keys_list = list(ipc_counts_dict.keys())
-    top_ten_ipc = PatentData.objects.filter(cpc__in=ipc_keys_list, user_id=req.session.get('logged_in_user_id'),
-                                            project_code=code)
+    top_ten_ipc = PatentData.objects.filter(cpc__in=ipc_keys_list, project_code=code)
     if req.GET.get('display'):
         context = {
             'top_ten_ipc': top_ten_ipc,
@@ -1807,7 +1810,7 @@ def top_ten_ipc_exl(req, project_id):
 
 def download_excel_view(req):
     status = req.GET.get('status')
-    patents = PatentData.objects.filter(legal_status=status, user_id=req.session.get('logged_in_user_id'))
+    patents = PatentData.objects.filter(legal_status=status)
     data = {
         'Publication Number': list(patents.values_list('publication_number', flat=True)),
         'Assignee Standardized': list(patents.values_list('assignee_standardized', flat=True)),
@@ -1853,7 +1856,7 @@ def download_excel_view(req):
 
 def fetch_data_view(request):
     status = request.GET.get('status')
-    patents = PatentData.objects.filter(legal_status=status, user_id=request.session.get('logged_in_user_id'))
+    patents = PatentData.objects.filter(legal_status=status)
     data = [
         {
             'publication_number': patent.publication_number,
@@ -1917,10 +1920,8 @@ def bibliographic_charts(req, project_id):
                     df = pd.read_excel(uploaded_media, engine='openpyxl')
                     patent_data_rows = []
                     user_instance = CustomUser.objects.get(id=user_id)
-                    if PatentData.objects.filter(user_id=user_instance,
-                                                 project_code=project_code_qs):
-                        PatentData.objects.filter(user_id=user_instance,
-                                                  project_code=project_code_qs).delete()
+                    if PatentData.objects.filter(project_code=project_code_qs):
+                        PatentData.objects.filter(project_code=project_code_qs).delete()
                     for index, row in df.iterrows():
                         # print(row['Priority Country'])
                         application_date_str = row['Application Dates']
@@ -1988,16 +1989,15 @@ def process_excel_data(context, req, project_id):
         context (dict): The context dictionary to store chart data.
 
     """
-    print("process_excel_data", project_id)
     user_id = req.session.get('logged_in_user_id')
-    data = PatentData.objects.filter(user_id=user_id, project_code=project_id)
+    data = PatentData.objects.filter(project_code=project_id)
     data = data.values('assignee_standardized').annotate(count=Count('assignee_standardized')).order_by('-count')[:10]
     # top recent assignees
     current_year = datetime.now().year
     last_five_years_start = current_year - 5
     top_assignees_last_five_years = (
         PatentData.objects
-        .filter(user_id=user_id, project_code=project_id, application_dates__year__gte=last_five_years_start)
+        .filter(project_code=project_id, application_dates__year__gte=last_five_years_start)
         .values('assignee_standardized')
         .annotate(count=Count('assignee_standardized'))
         .order_by('-count')[:10]
@@ -2047,9 +2047,7 @@ def process_excel_data(context, req, project_id):
 
 
 def get_country_code_count(req, project_id):
-    print("get_country_code_count", project_id)
-    patent_data_queryset = PatentData.objects.filter(user_id=req.session.get('logged_in_user_id'),
-                                                     project_code=project_id)
+    patent_data_queryset = PatentData.objects.filter(project_code=project_id)
     assignee_country_counts_from_db = {}
     for patent_data in patent_data_queryset:
         assignee = patent_data.assignee_standardized
@@ -2062,9 +2060,7 @@ def get_country_code_count(req, project_id):
 
 
 def get_ipc_counts(req, project_id):
-    print("get_ipc_counts", project_id)
-    patent_data_queryset = PatentData.objects.filter(user_id=req.session.get('logged_in_user_id'),
-                                                     project_code=project_id)
+    patent_data_queryset = PatentData.objects.filter(project_code=project_id)
     ipc_counts_from_db = Counter()
 
     for patent_data in patent_data_queryset:
@@ -2086,9 +2082,7 @@ def get_ipc_counts(req, project_id):
 
 
 def get_cpc_counts_from_db(req, project_id):
-    print("get_cpc_counts_from_db", project_id)
-    patent_data_queryset = PatentData.objects.filter(user_id=req.session.get('logged_in_user_id'),
-                                                     project_code=project_id)
+    patent_data_queryset = PatentData.objects.filter(project_code=project_id)
     cpc_counts_from_db = Counter()
 
     for patent_data in patent_data_queryset:
@@ -2111,9 +2105,7 @@ def get_cpc_counts_from_db(req, project_id):
 
 
 def get_country_code_counts_from_db(req, project_id):
-    print("get_country_code_count", project_id)
-    patent_data_queryset = PatentData.objects.filter(user_id=req.session.get('logged_in_user_id'),
-                                                     project_code=project_id)
+    patent_data_queryset = PatentData.objects.filter(project_code=project_id)
     country_code_counts_from_db = Counter()
 
     for patent_data in patent_data_queryset:
@@ -2131,9 +2123,7 @@ def get_country_code_counts_from_db(req, project_id):
 
 
 def get_legal_status_count(req, project_id):
-    print("get_legal_status_count", project_id)
-    patent_data_queryset = PatentData.objects.filter(project_code=project_id,
-                                                     user_id=req.session.get('logged_in_user_id'))
+    patent_data_queryset = PatentData.objects.filter(project_code=project_id)
     legal_status_counts = patent_data_queryset.values('legal_status').annotate(count=Count('legal_status'))
     legal_status_counts_dict = {item['legal_status']: item['count'] for item in legal_status_counts}
     all_legal_statuses = ['PENDING', 'EXPIRED', 'PCT', 'GRANTED']
@@ -2145,9 +2135,7 @@ def get_legal_status_count(req, project_id):
 def download_excel_file(request, project_id):
     user_id_to_filter = request.session.get('logged_in_user_id')
     project_code = Project.objects.filter(id=project_id).first().code
-    top_ten_cited_patents = PatentData.objects.filter(
-        user_id=user_id_to_filter, project_code=project_code
-    ).exclude(
+    top_ten_cited_patents = PatentData.objects.filter(project_code=project_code).exclude(
         cited_patents_count__isnull=True
     ).order_by('-cited_patents_count')[:10]
 
@@ -2190,15 +2178,12 @@ def download_excel_file(request, project_id):
                 worksheet.set_column(i, i, max_len)
 
         response['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-
         return response
 
 
 def download_citing_excel_file(request, project_id):
     project_code = Project.objects.filter(id=project_id).first().code
-    top_ten_citing_patents = PatentData.objects.filter(
-        user_id=request.session.get('logged_in_user_id'), project_code=project_code
-    ).exclude(
+    top_ten_citing_patents = PatentData.objects.filter(project_code=project_code).exclude(
         cited_patents_count__isnull=True
     ).order_by('-citing_patents_count')[:10]
     if request.GET.get('display'):
@@ -2242,8 +2227,7 @@ def download_citing_excel_file(request, project_id):
 
 def get_year_wise_excel(req, project_id):
     project_code = Project.objects.filter(id=project_id).first().code
-    year_counts = PatentData.objects.filter(user_id=req.session.get('logged_in_user_id'),
-                                            project_code=project_code).annotate(
+    year_counts = PatentData.objects.filter(project_code=project_code).annotate(
         publication_year=ExtractYear('publication_dates')
     ).values('publication_year').annotate(
         count=Count('id')
@@ -2291,7 +2275,7 @@ def get_top_citing_count(req, project_id):
     citing_patents_dict = {}
     user_id_to_filter = req.session.get('logged_in_user_id')
     top_ten_citing_patents = PatentData.objects.filter(
-        user_id=user_id_to_filter, project_code=project_id
+        project_code=project_id
     ).exclude(
         citing_patents_count__isnull=True
     ).order_by('-citing_patents_count')[:10]
@@ -2310,11 +2294,10 @@ def get_top_citing_count(req, project_id):
 
 
 def get_top_cited_count(req, project_id):
-    print("get_top_cited_count", project_id)
     cited_patents_dict = {}
     user_id_to_filter = req.session.get('logged_in_user_id')
     top_ten_cited_patents = PatentData.objects.filter(
-        user_id=user_id_to_filter, project_code=project_id
+        project_code=project_id
     ).exclude(
         cited_patents_count__isnull=True
     ).order_by('-cited_patents_count')[:10]
@@ -2333,9 +2316,8 @@ def get_top_cited_count(req, project_id):
 
 
 def get_year_with_publication(req, project_id):
-    print("get_year_with_publication", project_id)
     user_id = req.session.get('logged_in_user_id')
-    year_counts = PatentData.objects.filter(user_id=user_id, project_code=project_id).annotate(
+    year_counts = PatentData.objects.filter(project_code=project_id).annotate(
         publication_year=ExtractYear('publication_dates')
     ).values('publication_year').annotate(
         count=Count('id')
@@ -2345,11 +2327,10 @@ def get_year_with_publication(req, project_id):
 
 
 def get_year_with_exp_date(req, project_id):
-    print("get_year_with_exp_date", project_id)
     user_id = req.session.get('logged_in_user_id')
     year_counts = PatentData.objects.filter(
         Q(expected_expiry_dates__isnull=False) | Q(expected_expiry_dates__isnull=True),
-        user_id=user_id, project_code=project_id
+        project_code=project_id
     ).annotate(
         expected_expiry_date=ExtractYear('expected_expiry_dates')
     ).values('expected_expiry_date').annotate(count=Count('id'))
@@ -2367,9 +2348,8 @@ def get_year_with_exp_date(req, project_id):
 
 
 def process_assignees(req, project_code):
-    print("2108", project_code)
     user_id = req.session.get('logged_in_user_id')
-    data = PatentData.objects.filter(user_id=user_id, project_code=project_code).exclude(
+    data = PatentData.objects.filter(project_code=project_code).exclude(
         assignee_standardized__isnull=True)
     data = data.values('assignee_standardized').annotate(count=Count('assignee_standardized')).order_by('-count')[:10]
     result = [{'Assignee - Standardized': item['assignee_standardized'], 'count': item['count']} for item in data]
@@ -2377,14 +2357,13 @@ def process_assignees(req, project_code):
 
 
 def process_assignees_last_five_years(request, project_id):
-    print("process_assignees_last_five_years", project_id)
     user_id = request.session.get('logged_in_user_id')
     current_year = datetime.now().year
     last_five_years_start = current_year - 5
 
     top_assignees_last_five_years = (
         PatentData.objects
-        .filter(project_code=project_id, user_id=user_id, application_dates__year__gte=last_five_years_start)
+        .filter(project_code=project_id, application_dates__year__gte=last_five_years_start)
         .exclude(application_dates__isnull=True)  # Exclude entries with null application_dates
         .values('assignee_standardized')
         .annotate(count=Count('assignee_standardized'))
@@ -2442,11 +2421,36 @@ def user_profile(req):
     return render(req, 'pages/onboard/profile.html', {'iebs_user': user_qs})
 
 
-# @request.validator
-# def project_client_association(req):
-#     """
-#     User Profile
-#     """
-#     user_id = req.session.get('logged_in_user_id')
-#     user_qs = CustomUser.objects.get(id=user_id)
-#     return render(req, 'pages/projects/project_client_association.html', {})
+@request.validator
+def project_client_association(req):
+    """
+    User Profile
+    """
+    user_id = req.session.get('logged_in_user_id')
+    clients = CustomUser.objects.filter(roles=CustomUser.CLIENT, is_superuser=False)
+    project_association = UserProjectAssociation.objects.get(user=user_id)
+    associated_projects = project_association.projects.all()
+    associated_project_ids = [project.id for project in associated_projects]
+
+    if req.method == 'POST':
+        client_username = req.POST.get('client')
+        project_ids = req.POST.getlist('projects')
+        client = get_object_or_404(CustomUser, username=client_username, roles=CustomUser.CLIENT)
+        for project_id in project_ids[0].split(','):
+            project = get_object_or_404(Project, id=int(project_id),
+                                        project_manager=req.session.get('logged_in_user_id'))
+            project.clients.add(client)
+            project.save()
+    return render(req, 'pages/projects/project_client_association.html',
+                  {'clients': clients, 'associated_projects': associated_projects,
+                   'associated_project_ids': associated_project_ids})
+
+
+@request.validator
+def get_associated_projects(req):
+    selected_client = req.GET.get('client')
+    associated_projects = Project.objects.filter(clients__username=selected_client)
+    print(associated_projects)
+
+    associated_project_ids = [project.id for project in associated_projects]
+    return JsonResponse({'associated_projects': associated_project_ids})
