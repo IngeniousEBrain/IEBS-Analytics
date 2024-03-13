@@ -1,0 +1,149 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block head %}
+<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+{% endblock %}
+{% block content %}
+<section class="content-header">
+    <div class="container">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1>Project - Client Association</h1>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="container mt-4">
+    <!-- Add the searchable dropdown here -->
+    <div class="form-group">
+        <label for="searchableDropdown">Search/Select Client</label>
+        <input title="Search/Select client" list="options" class="form-control" id="searchableDropdown" name="searchableDropdown" placeholder="Search for a client...">
+        <datalist id="options">
+            <!-- Add your dropdown options here -->
+            {% for client in clients %}
+            <option value="{{ client.username }}" data-client-id="{{ client.id }}">{{ client.username }}</option>
+            {% endfor %}
+        </datalist>
+    </div>
+
+    <!-- Add table with checkboxes here -->
+    <table class="table table-bordered table-striped">
+        <thead class="thead-dark">
+            <tr>
+                <th title="serial number">S. No.</th>
+                <th title="select project">Select</th>
+                <th title="Project Name">Project Name</th>
+                <th title="Project Code">Project Code</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for project in associated_projects %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td><input type="checkbox" title="allocate/deallocate project" name="projectCheckbox" value="{{ project.id }}"> </td>
+                <td>{{ project.name }}</td>
+                <td>{{ project.code }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <button title="Save Changes" type="button" id="saveButton" class="btn btn-primary">Save Associations</button>
+</div>
+{% endblock %}
+
+<aside class="control-sidebar control-sidebar-dark">
+    <!-- Control sidebar content goes here -->
+</aside>
+{% block scripts %}
+{{ block.super }}
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+
+<script>
+    $(document).ready(function () {
+        // Set up click event for the save button
+        $('#saveButton').click(function () {
+            var selectedClient = $('#searchableDropdown').val();
+            var selectedProjects = [];
+
+            // Gather selected project IDs
+            $('input[name="projectCheckbox"]:checked').each(function () {
+                selectedProjects.push($(this).val());
+            });
+
+            // Send the data to the backend
+            saveAssociations(selectedClient, selectedProjects);
+        });
+
+        function saveAssociations(client, projects) {
+            var csrfToken = getCookie('csrftoken');
+
+            $.ajax({
+                url: '/project_client_association/',
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                },
+                data: {
+                    'client': client,
+                    'projects': projects.join(',')
+                },
+                success: function (response) {
+                    Toastify({
+                        text: 'Associations saved successfully!',
+                        duration: 3000,
+                        gravity: "top",
+                        position: 'right',
+                        backgroundColor: "linear-gradient(to right, #00b09b, #96c93d)",
+                        stopOnFocus: true
+                    }).showToast();
+                },
+                error: function (error) {
+                    alert('Error saving associations: ' + error.responseText);
+                }
+            });
+        }
+
+        function getCookie(name) {
+            var cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                var cookies = document.cookie.split(';');
+                for (var i = 0; i < cookies.length; i++) {
+                    var cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        $('#searchableDropdown').change(function () {
+            var selectedClient = $(this).val();
+
+            // Reset all checkboxes
+            $('input[name="projectCheckbox"]').prop('checked', false);
+
+            // Fetch associated project IDs for the selected client from the backend
+            $.ajax({
+                url: '/get_associated_projects/',  // Updated URL
+                method: 'GET',
+                data: {
+                    'client': selectedClient
+                },
+                success: function (response) {
+                    // Iterate through the associated project IDs and check the corresponding checkboxes
+                    response.associated_projects.forEach(function (projectId) {
+                        $('input[name="projectCheckbox"][value="' + projectId + '"]').prop('checked', true);
+                    });
+                },
+                error: function (error) {
+                    console.error('Error fetching associated projects: ' + error.responseText);
+                }
+            });
+        });
+
+    });
+</script>
+{% endblock %}

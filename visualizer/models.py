@@ -69,107 +69,6 @@ class CustomUserManager(BaseUserManager):
         return user
 
 
-class Project(models.Model):
-    """
-    Model representing a project.
-
-    Attributes:
-        code (CharField): The unique code for the project.
-        name (CharField): The name of the project.
-        description (TextField): The description of the project.
-        status (CharField): The status of the project, chosen from predefined choices.
-        created_date (DateTimeField): The timestamp when the project was created.
-        updated_date (DateTimeField): The timestamp when the project was last updated.
-
-    Methods:
-        __str__(): String representation of the Project instance.
-
-    """
-    objects = None
-    COMPLETED = 'Completed'
-    IN_PROGRESS = 'In Progress'
-
-    STATUS_CHOICES = [
-        (COMPLETED, 'Completed'),
-        (IN_PROGRESS, 'In Progress')
-    ]
-
-    code = models.CharField(max_length=100, unique=True, blank=True, editable=False)
-    name = models.CharField(max_length=255)
-    description = RichTextField()
-    scope = RichTextField(default="")
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=IN_PROGRESS)
-    created_date = models.DateTimeField(default=timezone.now)
-    updated_date = models.DateTimeField(auto_now=True)
-
-    def __str__(self):
-        """
-        Return a string representation of the Project.
-
-        Returns:
-            str: String representation of the Project instance.
-
-        """
-        return str(self.name)
-
-
-@receiver(pre_save, sender=Project)
-def generate_project_code(sender, instance, **kwargs):
-    if instance._state.adding:
-        current_year = timezone.now().year
-        financial_year_start_month = 4
-        if timezone.now().month < financial_year_start_month:
-            current_year -= 1
-        last_project = Project.objects.last()
-        if last_project:
-            counter = int(last_project.code[-4:])
-            next_counter = counter + 1
-        else:
-            next_counter = 1
-        instance.code = f"IEBS2023{str(next_counter).zfill(4)}"
-    else:
-        if instance.code:
-            return
-
-
-pre_save.connect(generate_project_code, sender=Project)
-
-
-class UserProjectAssociation(models.Model):
-    """
-    Model representing the association between a user and multiple projects.
-
-    Attributes:
-        user (CustomUser): The user associated with the projects.
-        projects (ManyToManyField): The projects associated with the user.
-        assigned_time (DateTimeField): The timestamp when the association was initially created.
-        updated_assigned_time (DateTimeField): The timestamp when the association was last updated.
-
-    Methods:
-        __str__(): String representation of the UserProjectAssociation instance.
-
-    """
-    user = models.ForeignKey('CustomUser', on_delete=models.CASCADE,
-                             related_name='project_associations')
-    projects = models.ManyToManyField(Project)
-    assigned_time = models.DateTimeField(auto_now=True)
-    updated_assigned_time = models.DateTimeField(auto_now=True)
-
-    def __str__(self):
-        """
-        Return a string representation of the UserProjectAssociation.
-
-        The string includes the username of the associated user and the names of
-        the associated projects.
-
-        Returns:
-            str: String representation of the UserProjectAssociation.
-        """
-        user_username = str(self.user.username) if self.user else "None"
-        project_names = [str(project.name) for project in self.projects.all()]
-        return f"User: {user_username}, Projects: {', '.join(project_names)}"
-
-
 class CustomUser(AbstractBaseUser, PermissionsMixin):
     """
     CustomUser
@@ -213,6 +112,106 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         return str(self.username)
 
 
+class Project(models.Model):
+    """
+    Model representing a project.
+
+    Attributes:
+        code (CharField): The unique code for the project.
+        name (CharField): The name of the project.
+        description (TextField): The description of the project.
+        status (CharField): The status of the project, chosen from predefined choices.
+        created_date (DateTimeField): The timestamp when the project was created.
+        updated_date (DateTimeField): The timestamp when the project was last updated.
+
+    Methods:
+        __str__(): String representation of the Project instance.
+
+    """
+    objects = None
+    COMPLETED = 'Completed'
+    IN_PROGRESS = 'In Progress'
+
+    STATUS_CHOICES = [
+        (COMPLETED, 'Completed'),
+        (IN_PROGRESS, 'In Progress')
+    ]
+
+    code = models.CharField(max_length=100 , unique=True)
+    name = models.CharField(max_length=255, unique=True)
+    description = RichTextField()
+    scope = RichTextField(default="")
+    project_manager = models.ForeignKey(
+        CustomUser,
+        on_delete=models.CASCADE,
+        related_name='managed_projects',
+        limit_choices_to={'roles': CustomUser.PROJECT_MANAGER}
+    )
+
+    clients = models.ManyToManyField(
+        CustomUser,
+        related_name='assigned_projects',
+        limit_choices_to={'roles': CustomUser.CLIENT},
+        blank=True,
+    )
+
+    key_account_managers = models.ManyToManyField(
+        CustomUser,
+        related_name='assigned_projects_KAM',
+        limit_choices_to={'roles': CustomUser.KEY_ACCOUNT_HOLDER},
+        blank=True,
+    )
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=IN_PROGRESS)
+    created_date = models.DateTimeField(default=timezone.now)
+    updated_date = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        """
+        Return a string representation of the Project.
+
+        Returns:
+            str: String representation of the Project instance.
+
+        """
+        return str(self.name)
+
+
+class UserProjectAssociation(models.Model):
+    """
+    Model representing the association between a user and multiple projects.
+
+    Attributes:
+        user (CustomUser): The user associated with the projects.
+        projects (ManyToManyField): The projects associated with the user.
+        assigned_time (DateTimeField): The timestamp when the association was initially created.
+        updated_assigned_time (DateTimeField): The timestamp when the association was last updated.
+
+    Methods:
+        __str__(): String representation of the UserProjectAssociation instance.
+
+    """
+    user = models.ForeignKey('CustomUser', on_delete=models.CASCADE,
+                             related_name='project_associations')
+    projects = models.ManyToManyField(Project)
+    assigned_time = models.DateTimeField(auto_now=True)
+    updated_assigned_time = models.DateTimeField(auto_now=True)
+
+
+    def __str__(self):
+        """
+        Return a string representation of the UserProjectAssociation.
+
+        The string includes the username of the associated user and the names of
+        the associated projects.
+
+        Returns:
+            str: String representation of the UserProjectAssociation.
+        """
+        user_username = str(self.user.username) if self.user else "None"
+        project_names = [str(project.name) for project in self.projects.all()]
+        return f"Manager: {user_username} || Projects: {', '.join(project_names)}"
+
+
 class PatentData(models.Model):
     user = models.ForeignKey('CustomUser', on_delete=models.CASCADE,
                              related_name='patent_user')
@@ -237,7 +236,6 @@ class PatentData(models.Model):
 
     def __str__(self):
         return f"{self.assignee_standardized} - {self.publication_number}"
-
 
 
 class Technical_node(models.Model):

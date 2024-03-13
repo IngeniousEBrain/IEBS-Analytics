@@ -19,6 +19,7 @@ urlpatterns = [
     path('edit_project/<int:project_id>/', views.edit_project, name='edit_project'),
     # ================================================================
     path('in_progress_project_list', views.in_progress_project_list, name='in_progress_project_list'),
+    path('project_client_association/', views.project_client_association, name='project_client_association'),
     path('completed_project_list', views.completed_project_list, name='completed_project_list'),
     path('tech_charts/<int:project_id>/', views.tech_charts, name='tech_charts'),
     path('competitor_charts/<int:project_id>/', views.competitor_charts, name='competitor_charts'),
@@ -50,5 +51,7 @@ urlpatterns = [
     path('fetch_data/', views.fetch_data_view, name='fetch_data'),
     # ==========================competitive chart data===========================================
     path('competitor_colab_view/<str:proj_code>/', views.competitor_colab_view, name='competitor_colab_view'),
+    path('get_associated_projects/', views.get_associated_projects, name='get_associated_projects'),
+
 
 ]

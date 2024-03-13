@@ -4,9 +4,21 @@
 {% endblock %}
 {% block content %}
 <!--<h6>Collaborations of competitors</h6>-->
+{% if div2 %}
+
+<div class="tab-container">
+    <a href="{% url 'tech_charts' project_id %}" class="tab-link active">
+        <span class="tab-icon">&#8592;</span>
+        Technical Charts
+    </a>
+    <a href="{% url 'bibliographic_charts' project_id %}" class="tab-link active">
+        <span class="tab-icon">&#8592;</span>
+        Bibliographic Charts
+    </a>
+</div>
 <div class="table-container">
     {% if plot_div1 == 'NO partner data found !'%}
-    <h6  style="color:red; margin-left:40%"> NO partner data found !</h6>
+    <h6 style="color:red; margin-left:40%"> NO partner data found !</h6>
     {% else %}
     {{ plot_div1|safe }}
     {% endif %}
@@ -23,50 +35,54 @@
             </tr>
             </thead>
             <tbody>
-             {% for row in result %}
+            {% for row in result %}
             {% if row.partners %}
-                {% for partner, count in row.partners.items %}
-                    <tr>
-                        <td class="text-center small">{{ row.assignee }}</td>
-                        <td class="text-center small">{{ partner }}</td>
-                        <td class="text-center small">{{ count }}</td>
-                        <td class="text-center small">
-                            <div class="action-buttons">
-                                <button class="btn btn-secondary btn-xs" onclick="PartnerDataView('{{ row.assignee }}', {{ row.partners|safe }}, '{{proj_code}}', 'display')">
-                                    <i class="fa fa-eye" aria-hidden="true"></i>
-                                </button>
-                                <button class="btn btn-primary btn-xs" onclick="PartnerDataView('{{ row.assignee }}', {{ row.partners|safe }},'{{proj_code}}', 'file')">
-                                    <i class="fas fa-file-download" aria-hidden="true"></i>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                {% endfor %}
+            {% for partner, count in row.partners.items %}
+            <tr>
+                <td class="text-center small">{{ row.assignee }}</td>
+                <td class="text-center small">{{ partner }}</td>
+                <td class="text-center small">{{ count }}</td>
+                <td class="text-center small">
+                    <div class="action-buttons">
+                        <button class="btn btn-secondary btn-xs"
+                                onclick="PartnerDataView('{{ row.assignee }}', {{ row.partners|safe }}, '{{proj_code}}', 'display')">
+                            <i class="fa fa-eye" aria-hidden="true"></i>
+                        </button>
+                        <button class="btn btn-primary btn-xs"
+                                onclick="PartnerDataView('{{ row.assignee }}', {{ row.partners|safe }},'{{proj_code}}', 'file')">
+                            <i class="fas fa-file-download" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
             {% else %}
-                <tr>
-                    <td class="text-center small">{{ row.assignee }}</td>
-                    <td class="text-center small"></td>
-                    <td class="text-center small"></td>
-                    <td class="text-center small">
-                        <div class="action-buttons">
-                            <button title = "view details" class="btn btn-secondary btn-xs" onclick="PartnerDataView('{{ row.assignee }}', {{ row.partners|safe }},'{{proj_code}}', 'display')">
-                                <i class="fa fa-eye" aria-hidden="true"></i>
-                            </button>
-                            <button title="download excel file" class="btn btn-primary btn-xs" onclick="PartnerDataView('{{ row.assignee }}', {{ row.partners|safe }},'{{proj_code}}', 'file')">
-                                <i class="fas fa-file-download" aria-hidden="true"></i>
-                            </button>
-                        </div>
-                    </td>
-                </tr>
+            <tr>
+                <td class="text-center small">{{ row.assignee }}</td>
+                <td class="text-center small"></td>
+                <td class="text-center small"></td>
+                <td class="text-center small">
+                    <div class="action-buttons">
+                        <button title="view details" class="btn btn-secondary btn-xs"
+                                onclick="PartnerDataView('{{ row.assignee }}', {{ row.partners|safe }},'{{proj_code}}', 'display')">
+                            <i class="fa fa-eye" aria-hidden="true"></i>
+                        </button>
+                        <button title="download excel file" class="btn btn-primary btn-xs"
+                                onclick="PartnerDataView('{{ row.assignee }}', {{ row.partners|safe }},'{{proj_code}}', 'file')">
+                            <i class="fas fa-file-download" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
             {% endif %}
-        {% endfor %}
+            {% endfor %}
             </tbody>
         </table>
     </div>
-<!--    <div class="text-center mt-2">-->
-<!--        <button class="btn btn-secondary btn-xs" onclick="AllPartnerDataView('allDisplay')">View</button>-->
-<!--        <button class="btn btn-primary btn-xs" onclick="AllPartnerDataView('allFile')">Download</button>-->
-<!--    </div>-->
+    <!--    <div class="text-center mt-2">-->
+    <!--        <button class="btn btn-secondary btn-xs" onclick="AllPartnerDataView('allDisplay')">View</button>-->
+    <!--        <button class="btn btn-primary btn-xs" onclick="AllPartnerDataView('allFile')">Download</button>-->
+    <!--    </div>-->
 </div>
 
 
@@ -93,10 +109,12 @@
                 <td class="text-center small">{{ row.Count }}</td>
                 <td class="text-center small">
                     <div class="action-buttons">
-                        <button class="btn btn-secondary btn-xs" onclick="view_application_year('{{ row.Assignee }}', '{{ row.Year }}', '{{proj_code}}', 'display')">
+                        <button class="btn btn-secondary btn-xs"
+                                onclick="view_application_year('{{ row.Assignee }}', '{{ row.Year }}', '{{proj_code}}', 'display')">
                             <i class="fa fa-eye" aria-hidden="true"></i>
                         </button>
-                        <button class="btn btn-primary btn-xs" onclick="view_application_year('{{ row.Assignee }}', '{{ row.Year }}', '{{proj_code}}', 'file')">
+                        <button class="btn btn-primary btn-xs"
+                                onclick="view_application_year('{{ row.Assignee }}', '{{ row.Year }}', '{{proj_code}}', 'file')">
                             <i class="fas fa-file-download" aria-hidden="true"></i>
                         </button>
                     </div>
@@ -141,7 +159,8 @@
                                 onclick="ViewAssPubYear('{{ row.assignee }}', '{{ row.publication_number }}', '{{proj_code}}', 'display')">
                             <i class="fa fa-eye" aria-hidden="true"></i>
                         </button>
-                        <button class="btn btn-primary btn-xs" onclick="ViewAssPubYear('{{ row.assignee }}', '{{ row.publication_number }}', '{{proj_code}}', 'file')">
+                        <button class="btn btn-primary btn-xs"
+                                onclick="ViewAssPubYear('{{ row.assignee }}', '{{ row.publication_number }}', '{{proj_code}}', 'file')">
                             <i class="fas fa-file-download" aria-hidden="true"></i>
                         </button>
                     </div>
@@ -152,7 +171,8 @@
         </table>
     </div>
     <div class="text-center mt-2">
-        <button class="btn btn-secondary btn-xs" onclick="ViewAllCitedFile('allCitedDisplay', '{{proj_code}}')">View</button>
+        <button class="btn btn-secondary btn-xs" onclick="ViewAllCitedFile('allCitedDisplay', '{{proj_code}}')">View
+        </button>
         <button class="btn btn-primary btn-xs"
                 onclick="ViewAllCitedFile('allCitedFile', '{{proj_code}}')">Download
         </button>
@@ -175,25 +195,25 @@
             </tr>
             </thead>
             <tbody>
-                {% for row in legal_status_counts %}
-                    <tr>
-                        <td class="text-center small">{{ row.assignee_standardized }}</td>
-                        <td class="text-center small">{{ row.legal_status }}</td>
-                        <td class="text-center small">{{ row.count }}</td>
-                        <td class="text-center small">
-                            <div class="action-buttons">
-                                <button class="btn btn-secondary btn-xs"
-                                        onclick="LegalStatusView('{{ row.assignee_standardized }}', '{{ row.legal_status }}', {{proj_code}}, 'display')">
-                                    <i class="fa fa-eye" aria-hidden="true"></i>
-                                </button>
-                                <button class="btn btn-primary btn-xs"
-                                        onclick="LegalStatusView('{{ row.assignee_standardized }}', '{{ row.legal_status }}', {{proj_code}},'file')">
-                                    <i class="fas fa-file-download" aria-hidden="true"></i>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                {% endfor %}
+            {% for row in legal_status_counts %}
+            <tr>
+                <td class="text-center small">{{ row.assignee_standardized }}</td>
+                <td class="text-center small">{{ row.legal_status }}</td>
+                <td class="text-center small">{{ row.count }}</td>
+                <td class="text-center small">
+                    <div class="action-buttons">
+                        <button class="btn btn-secondary btn-xs"
+                                onclick="LegalStatusView('{{ row.assignee_standardized }}', '{{ row.legal_status }}', {{proj_code}}, 'display')">
+                            <i class="fa fa-eye" aria-hidden="true"></i>
+                        </button>
+                        <button class="btn btn-primary btn-xs"
+                                onclick="LegalStatusView('{{ row.assignee_standardized }}', '{{ row.legal_status }}', {{proj_code}},'file')">
+                            <i class="fas fa-file-download" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
             </tbody>
         </table>
     </div>
@@ -245,273 +265,281 @@
 <!--        </button>-->
 <!--    </div>-->
 <!--</div>-->
+{% else %}
+<img id="logo" src="{% static 'img/No data-amico.svg' %}" width="100%" height="70%">
+<div style="justify-content: center;">
+<b>No Data Found! Please contact the Project Manager!</b>
+</div>
+
+{% endif %}
 {% endblock %}
+
 <aside class="control-sidebar control-sidebar-dark"></aside>
 {% block scripts %}
 <script>
-     // =============== for All first assignee - partner table========================
+    // =============== for All first assignee - partner table========================
 function ViewAllCitedFile(type, proj_code) {
-    var data = {
-        type: type
-    };
-    fetch(`/competitor_colab_view/${proj_code}/`, {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(data)
+   var data = {
+       type: type
+   };
+   fetch(`/competitor_colab_view/${proj_code}/`, {
+   method: 'POST',
+   headers: {
+       'Content-Type': 'application/json',
+   },
+   body: JSON.stringify(data)
 })
 .then(response => {
-    // Check if the response was successful (status 2xx)
-    console.log('Response from server:', response);
-    if (response.ok) {
-        if (type === 'allCitedDisplay') {
-            window.open(response.url, '_blank');
-        } else {
-            return response.blob(); // Assuming the server responds with a file
-        }
-    } else {
-        // Handle error responses if needed
-        throw new Error('Server responded with an error');
-    }
+   // Check if the response was successful (status 2xx)
+   console.log('Response from server:', response);
+   if (response.ok) {
+       if (type === 'allCitedDisplay') {
+           window.open(response.url, '_blank');
+       } else {
+           return response.blob(); // Assuming the server responds with a file
+       }
+   } else {
+       // Handle error responses if needed
+       throw new Error('Server responded with an error');
+   }
 })
 .then(blob => {
-    // Create the link, download, and remove it in a single action using a closure:
-    (function(blob) {
-        var link = document.createElement('a');
-        link.href = window.URL.createObjectURL(blob);
-        link.download = 'Influence Of Innovation.xlsx';
-        link.click();
-        document.body.removeChild(link);
-    })(blob);
+   // Create the link, download, and remove it in a single action using a closure:
+   (function(blob) {
+       var link = document.createElement('a');
+       link.href = window.URL.createObjectURL(blob);
+       link.download = 'Influence Of Innovation.xlsx';
+       link.click();
+       document.body.removeChild(link);
+   })(blob);
 })
 .catch(error => {
-    console.error('Error:', error);
+   console.error('Error:', error);
 });
 }
 // =============== for All first assignee - partner table========================
 function AllPartnerDataView(type, proj_code) {
-    var data = {
-        type: type
-    };
-    fetch(`/competitor_colab_view/${proj_code}/`, {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(data)
+   var data = {
+       type: type
+   };
+   fetch(`/competitor_colab_view/${proj_code}/`, {
+   method: 'POST',
+   headers: {
+       'Content-Type': 'application/json',
+   },
+   body: JSON.stringify(data)
 })
 .then(response => {
-    // Check if the response was successful (status 2xx)
-    console.log('Response from server:', response);
-    if (response.ok) {
-        if (type === 'allDisplay') {
-            window.open(response.url, '_blank');
-        } else {
-            return response.blob(); // Assuming the server responds with a file
-        }
-    } else {
-        // Handle error responses if needed
-        throw new Error('Server responded with an error');
-    }
+   // Check if the response was successful (status 2xx)
+   console.log('Response from server:', response);
+   if (response.ok) {
+       if (type === 'allDisplay') {
+           window.open(response.url, '_blank');
+       } else {
+           return response.blob(); // Assuming the server responds with a file
+       }
+   } else {
+       // Handle error responses if needed
+       throw new Error('Server responded with an error');
+   }
 })
 .then(blob => {
-    // Create the link, download, and remove it in a single action using a closure:
-    (function(blob) {
-        var link = document.createElement('a');
-        link.href = window.URL.createObjectURL(blob);
-        link.download = 'Top Ten IPC.xlsx';
-        link.click();
-        document.body.removeChild(link);
-    })(blob);
+   // Create the link, download, and remove it in a single action using a closure:
+   (function(blob) {
+       var link = document.createElement('a');
+       link.href = window.URL.createObjectURL(blob);
+       link.download = 'Top Ten IPC.xlsx';
+       link.click();
+       document.body.removeChild(link);
+   })(blob);
 })
 .catch(error => {
-    console.error('Error:', error);
+   console.error('Error:', error);
 });
 }
 
 // =============== for first assignee - partner table========================
-    function PartnerDataView(assignee, partners, proj_code ,type) {
-        if (partners === '' || Object.keys(partners).length === 0) {
-            console.error('Partners data is missing. Cannot proceed.');
-            return;
-        }
-        var partnersJson = encodeURIComponent(JSON.stringify(partners));
-        // Prepare the data to be sent in the request body
-        var data = {
-            assignee: assignee,
-            partners: partnersJson,
-            type: type
-        };
-        fetch(`/competitor_colab_view/${proj_code}/`, {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(data)
+   function PartnerDataView(assignee, partners, proj_code ,type) {
+       if (partners === '' || Object.keys(partners).length === 0) {
+           console.error('Partners data is missing. Cannot proceed.');
+           return;
+       }
+       var partnersJson = encodeURIComponent(JSON.stringify(partners));
+       // Prepare the data to be sent in the request body
+       var data = {
+           assignee: assignee,
+           partners: partnersJson,
+           type: type
+       };
+       fetch(`/competitor_colab_view/${proj_code}/`, {
+   method: 'POST',
+   headers: {
+       'Content-Type': 'application/json',
+   },
+   body: JSON.stringify(data)
 })
 .then(response => {
-    // Check if the response was successful (status 2xx)
-    console.log('Response from server:', response);
-    if (response.ok) {
-        if (type === 'display') {
-            window.open(response.url, '_blank');
-        } else {
-            return response.blob(); // Assuming the server responds with a file
-        }
-    } else {
-        // Handle error responses if needed
-        throw new Error('Server responded with an error');
-    }
+   // Check if the response was successful (status 2xx)
+   console.log('Response from server:', response);
+   if (response.ok) {
+       if (type === 'display') {
+           window.open(response.url, '_blank');
+       } else {
+           return response.blob(); // Assuming the server responds with a file
+       }
+   } else {
+       // Handle error responses if needed
+       throw new Error('Server responded with an error');
+   }
 })
 .then(blob => {
-    // Create the link, download, and remove it in a single action using a closure:
-    (function(blob) {
-        var link = document.createElement('a');
-        link.href = window.URL.createObjectURL(blob);
-        link.download = 'Collaboration of Competitor.xlsx';
-        link.click();
-        document.body.removeChild(link);
-    })(blob);
+   // Create the link, download, and remove it in a single action using a closure:
+   (function(blob) {
+       var link = document.createElement('a');
+       link.href = window.URL.createObjectURL(blob);
+       link.download = 'Collaboration of Competitor.xlsx';
+       link.click();
+       document.body.removeChild(link);
+   })(blob);
 })
 .catch(error => {
-    console.error('Error:', error);
+   console.error('Error:', error);
 });
 }
 
-    // ===================for second application year table================
-      function view_application_year(assignee, year, proj_code ,type) {
-      console.log('Clicked:', assignee, year);
+   // ===================for second application year table================
+     function view_application_year(assignee, year, proj_code ,type) {
+     console.log('Clicked:', assignee, year);
 
-      // Prepare the data to be sent in the request body
-      var data = {
-          assignee: assignee,
-          year: year,
-          type: type
-      };
+     // Prepare the data to be sent in the request body
+     var data = {
+         assignee: assignee,
+         year: year,
+         type: type
+     };
 
-      fetch(`/competitor_colab_view/${proj_code}/`, {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(data)
+     fetch(`/competitor_colab_view/${proj_code}/`, {
+   method: 'POST',
+   headers: {
+       'Content-Type': 'application/json',
+   },
+   body: JSON.stringify(data)
 })
 .then(response => {
-    // Check if the response was successful (status 2xx)
-    console.log('Response from server:', response);
-    if (response.ok) {
-        if (type === 'display') {
-            window.open(response.url, '_blank');
-        } else {
-            return response.blob(); // Assuming the server responds with a file
-        }
-    } else {
-        // Handle error responses if needed
-        throw new Error('Server responded with an error');
-    }
+   // Check if the response was successful (status 2xx)
+   console.log('Response from server:', response);
+   if (response.ok) {
+       if (type === 'display') {
+           window.open(response.url, '_blank');
+       } else {
+           return response.blob(); // Assuming the server responds with a file
+       }
+   } else {
+       // Handle error responses if needed
+       throw new Error('Server responded with an error');
+   }
 })
 .then(blob => {
-    // Create the link, download, and remove it in a single action using a closure:
-    (function(blob) {
-        var link = document.createElement('a');
-        link.href = window.URL.createObjectURL(blob);
-        link.download = 'Overall Patent Filing.xlsx';
-        link.click();
-        document.body.removeChild(link);
-    })(blob);
+   // Create the link, download, and remove it in a single action using a closure:
+   (function(blob) {
+       var link = document.createElement('a');
+       link.href = window.URL.createObjectURL(blob);
+       link.download = 'Overall Patent Filing.xlsx';
+       link.click();
+       document.body.removeChild(link);
+   })(blob);
 })
 .catch(error => {
-    console.error('Error:', error);
+   console.error('Error:', error);
 });
 }
-    //====================ViewAssPubYear==========
-     function ViewAssPubYear(assignee, publication, proj_code , type) {
-  // Prepare the data to be sent in the request body
-  var data = {
-      assignee: assignee,
-      publication: publication,
-      type: type
-  };
+   //====================ViewAssPubYear==========
+    function ViewAssPubYear(assignee, publication, proj_code , type) {
+ // Prepare the data to be sent in the request body
+ var data = {
+     assignee: assignee,
+     publication: publication,
+     type: type
+ };
 
-  fetch(`/competitor_colab_view/${proj_code}/`, {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(data)
+ fetch(`/competitor_colab_view/${proj_code}/`, {
+   method: 'POST',
+   headers: {
+       'Content-Type': 'application/json',
+   },
+   body: JSON.stringify(data)
 })
 .then(response => {
-    // Check if the response was successful (status 2xx)
-    console.log('Response from server:', response);
-    if (response.ok) {
-        if (type === 'display') {
-            window.open(response.url, '_blank');
-        } else {
-            return response.blob(); // Assuming the server responds with a file
-        }
-    } else {
-        // Handle error responses if needed
-        throw new Error('Server responded with an error');
-    }
+   // Check if the response was successful (status 2xx)
+   console.log('Response from server:', response);
+   if (response.ok) {
+       if (type === 'display') {
+           window.open(response.url, '_blank');
+       } else {
+           return response.blob(); // Assuming the server responds with a file
+       }
+   } else {
+       // Handle error responses if needed
+       throw new Error('Server responded with an error');
+   }
 })
 .then(blob => {
-    // Create the link, download, and remove it in a single action using a closure:
-    (function(blob) {
-        var link = document.createElement('a');
-        link.href = window.URL.createObjectURL(blob);
-        link.download = 'Influence Of Innovation.xlsx';
-        link.click();
-        document.body.removeChild(link);
-    })(blob);
+   // Create the link, download, and remove it in a single action using a closure:
+   (function(blob) {
+       var link = document.createElement('a');
+       link.href = window.URL.createObjectURL(blob);
+       link.download = 'Influence Of Innovation.xlsx';
+       link.click();
+       document.body.removeChild(link);
+   })(blob);
 })
 .catch(error => {
-    console.error('Error:', error);
+   console.error('Error:', error);
 });
 }
 
 //====================LegalStatusView==========
-      function LegalStatusView(assignee_standardized, legal_status, proj_code, type) {
-      // Prepare the data to be sent in the request body
-      var data = {
-          assignee_standardized: assignee_standardized,
-          legal_status: legal_status,
-          type:type
-      };
+     function LegalStatusView(assignee_standardized, legal_status, proj_code, type) {
+     // Prepare the data to be sent in the request body
+     var data = {
+         assignee_standardized: assignee_standardized,
+         legal_status: legal_status,
+         type:type
+     };
 
-     fetch(`/competitor_colab_view/${proj_code}/`, {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(data)
+    fetch(`/competitor_colab_view/${proj_code}/`, {
+   method: 'POST',
+   headers: {
+       'Content-Type': 'application/json',
+   },
+   body: JSON.stringify(data)
 })
 .then(response => {
-    // Check if the response was successful (status 2xx)
-    console.log('Response from server:', response);
-    if (response.ok) {
-        if (type === 'display') {
-            window.open(response.url, '_blank');
-        } else {
-            return response.blob(); // Assuming the server responds with a file
-        }
-    } else {
-        // Handle error responses if needed
-        throw new Error('Server responded with an error');
-    }
+   // Check if the response was successful (status 2xx)
+   console.log('Response from server:', response);
+   if (response.ok) {
+       if (type === 'display') {
+           window.open(response.url, '_blank');
+       } else {
+           return response.blob(); // Assuming the server responds with a file
+       }
+   } else {
+       // Handle error responses if needed
+       throw new Error('Server responded with an error');
+   }
 })
 .then(blob => {
-    // Create the link, download, and remove it in a single action using a closure:
-    (function(blob) {
-        var link = document.createElement('a');
-        link.href = window.URL.createObjectURL(blob);
-        link.download = 'Legal Status Distribution.xlsx';
-        link.click();
-        document.body.removeChild(link);
-    })(blob);
+   // Create the link, download, and remove it in a single action using a closure:
+   (function(blob) {
+       var link = document.createElement('a');
+       link.href = window.URL.createObjectURL(blob);
+       link.download = 'Legal Status Distribution.xlsx';
+       link.click();
+       document.body.removeChild(link);
+   })(blob);
 })
 .catch(error => {
-    console.error('Error:', error);
+   console.error('Error:', error);
 });
 }
 

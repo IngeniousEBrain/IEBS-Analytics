@@ -3,6 +3,16 @@
 {% block head %}
 {% endblock %}
 {% block content %}
+<div class="tab-container">
+    <a href="{% url 'competitor_charts' project_id %}" class="tab-link active">
+        <span class="tab-icon">&#8592;</span>
+        Competitor Charts
+    </a>
+    <a href="{% url 'bibliographic_charts' project_id %}" class="tab-link active">
+        <span class="tab-icon">&#8592;</span>
+        Bibliographic Charts
+    </a>
+</div>
 {{plot_div1|safe}}
 {{div2|safe}}
 {{div3|safe}}
