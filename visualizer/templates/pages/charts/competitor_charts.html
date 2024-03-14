@@ -4,7 +4,7 @@
 {% endblock %}
 {% block content %}
 <!--<h6>Collaborations of competitors</h6>-->
-{% if div2 %}
+
 
 <div class="tab-container">
     <a href="{% url 'tech_charts' project_id %}" class="tab-link active">
@@ -265,13 +265,7 @@
 <!--        </button>-->
 <!--    </div>-->
 <!--</div>-->
-{% else %}
-<img id="logo" src="{% static 'img/No data-amico.svg' %}" width="100%" height="70%">
-<div style="justify-content: center;">
-<b>No Data Found! Please contact the Project Manager!</b>
-</div>
 
-{% endif %}
 {% endblock %}
 
 <aside class="control-sidebar control-sidebar-dark"></aside>
