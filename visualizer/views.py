@@ -304,16 +304,9 @@ def project_list(req, chart_type):
     user_id = req.session.get('logged_in_user_id')
     user_qs = get_object_or_404(CustomUser, id=user_id)
     projects_as_manager = Project.objects.filter(project_manager=user_qs)
-
-    # Get projects where the logged-in user is a client
     projects_as_client = Project.objects.filter(clients=user_qs)
-
-    # Get projects where the logged-in user is a key account manager
     projects_as_kam = Project.objects.filter(key_account_managers=user_qs)
-
-    # Combine the queries and remove duplicates
     projects = (projects_as_manager | projects_as_client | projects_as_kam).distinct()
-
     context = {'projects_data': projects, 'user_qs': user_qs, 'chart_type': chart_type}
     return render(req, 'pages/projects/project_listing.html', context)
 
@@ -448,91 +441,9 @@ def tech_charts(req, project_id):
     logic for tech charts
     """
     print("tech", project_id)
-    data_pie = [1, 8, 1, 1, 7]
-    labels_pie = ['TISSUE ANALYSIS', 'Herbiside LOCALIZATION', 'BIOMAKER ANALYSIS', 'CELL CLASSIFICATION',
-                  'SPECIAL NONTAG']
-    colors_pie = ['#084594', '#2171b5', '#4292c6', '#6baed6', '#9ecae1']
-    data_donut = [5, 4, 3, 2, 1]
-    labels_donut = ['Category A', 'Category B', 'Category C', 'Category D', 'Category E']
-    colors_donut = ['#084594', '#2171b5', '#4292c6', '#6baed6', '#9ecae1']
-    pie_trace = go.Pie(labels=labels_pie, values=data_pie, marker=dict(colors=colors_pie))
-    donut_trace = go.Pie(labels=labels_donut, values=data_donut, hole=0.4, marker=dict(colors=colors_donut))
-
-    fig_combined = make_subplots(
-        rows=1, cols=2, subplot_titles=['Pie Chart', 'Donut Chart'],
-        specs=[[{'type': 'domain'}, {'type': 'domain'}]]
-    )
-    fig_combined.add_trace(pie_trace, row=1, col=1)
-    fig_combined.add_trace(donut_trace, row=1, col=2)
-    fig_combined.update_layout(
-        title='Pie and Donut Charts Side by Side',
-        height=500,
-        width=950
-    )
-    div_combined = fig_combined.to_html()
-    # =================================
-    pie_data = [5, 4, 3, 2, 1, 5, 4, 9]
-    pie_labels = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
-    # Extended color list
-    pie_colors = ['#3498db', '#E4EBF7', '#2ecc71', '#E4EBF7', '#e74c3c', '#95a5a6', '#f1c40f', '#bdc3c7']
-    # Bar chart data
-    bar_data = [10, 8, 6, 4, 2]
-    bar_labels = ['Category 1', 'Category 2', 'Category 3', 'Category 4', 'Category 5']
-    bar_colors = ['#084594', '#2171b5', '#4292c6', '#6baed6', '#9ecae1']
-
-    pie = go.Pie(
-        labels=pie_labels,
-        values=pie_data,
-        marker_colors=pie_colors
-    )
-    # Create horizontal bar chart
-    bar = go.Bar(
-        y=bar_labels,
-        x=bar_data,
-        orientation='h',
-        marker_color=bar_colors
-    )
-
-    # Create subplots
-    fig = make_subplots(
-        rows=1, cols=2,
-        specs=[[{'type': 'domain'}, {'type': 'xy'}]])
-
-    # Add traces
-    fig.add_trace(pie, row=1, col=1)
-    fig.add_trace(bar, row=1, col=2)
-
-    # Update layout
-    fig.update_layout(
-        title="Combined Chart",
-        width=950,
-        height=600
-    )
-
-    div2 = fig.to_html()
-    # =================================
-    data = np.random.rand(13, 13)
-
-    # Define the color scale (blue and white shades)
-    colorscale = [[0, 'white'], [1, 'skyblue']]
-
-    # Create the heatmap
-    heatmap = go.Figure(data=go.Heatmap(
-        z=data,
-        colorscale=colorscale,
-    ))
-
-    # Set the layout parameters
-    heatmap.update_layout(
-        width=950,
-        height=400,
-        margin=dict(l=0, r=0, b=0, t=0),
-    )
-
-    # Show the plot
-    div3 = heatmap.to_html()
     # ================================
-    context = {'plot_div1': div_combined, 'div2': div2, 'div3': div3, 'project_id': project_id}
+    proj_name = Project.objects.filter(id = project_id).first().name
+    context = {'project_id': project_id, 'proj_name':proj_name}
     return render(req, 'pages/charts/technical_chart.html', context)
 
 
