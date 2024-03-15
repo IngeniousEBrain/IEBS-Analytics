@@ -709,8 +709,10 @@ def competitor_colab_view(request, proj_code):
 
 @request.validator
 def competitor_charts(req, project_id):
-    code = Project.objects.filter(id=project_id).first().code
-    project_id_template = Project.objects.filter(id=project_id).first().id
+    project_qs = Project.objects.filter(id=project_id).first()
+    project_id_template = project_qs.id
+    code = project_qs.code
+    project_name = project_qs.name
     data = PatentData.objects.filter(project_code=code)
     data1 = data.values('assignee_standardized').annotate(count=Count('assignee_standardized')).order_by('-count')[:10]
     result = []
@@ -906,7 +908,7 @@ def competitor_charts(req, project_id):
     div6 = fig6.to_html(full_html=False)
     context = {'plot_div1': div1, 'plot_div2': div2, 'plot_div3': div3, 'plot_div4': div4,
                'plot_div6': div6, 'data1': data1, 'result': res, 'data': data, 'proj_code': code,
-               'project_id': project_id_template,
+               'project_id': project_id_template,'project_name':project_name,
                'table_data': table_data, 'legal_status_counts': legal_status_counts}
     return render(req, 'pages/charts/competitor_charts.html', context)
 
@@ -967,8 +969,7 @@ def download_publication_exl(request, year, project_id):
         response['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 
         return response
-        # df.to_excel(response, index=False)
-        # return response
+
 
 
 def download_exp_exl(request, year, project_id):
@@ -1020,8 +1021,7 @@ def download_exp_exl(request, year, project_id):
         response['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 
         return response
-        # df.to_excel(response, index=False)
-        # return response
+
 
 
 def download_legal_status_exl(request, status, project_id):
@@ -1073,8 +1073,7 @@ def download_legal_status_exl(request, status, project_id):
         response['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 
         return response
-        # df.to_excel(response, index=False)
-        # return response
+
 
 
 def individual_cpc_exl(request, cpc, project_id):
@@ -1126,8 +1125,7 @@ def individual_cpc_exl(request, cpc, project_id):
         response['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 
         return response
-        # df.to_excel(response, index=False)
-        # return response
+
 
 
 def individual_ipc_exl(request, ipc, project_id):
@@ -1181,8 +1179,7 @@ def individual_ipc_exl(request, ipc, project_id):
         response['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 
         return response
-        # df.to_excel(response, index=False)
-        # return response
+
 
 
 def download_innovative_exl(request, country, project_id):
@@ -1234,8 +1231,7 @@ def download_innovative_exl(request, country, project_id):
         response['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 
         return response
-        # df.to_excel(response, index=False)
-        # return response
+
 
 
 def download_ind_citing_excel(request, patent, project_id):
@@ -1566,8 +1562,7 @@ def top_ten_recent_ass_exl(request, project_id):
         response['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 
         return response
-        # df.to_excel(response, index=False, sheet_name='Top Ten Cited Patents')
-        # return response
+
 
 
 def top_ten_ass_exl(request, project_id):
@@ -1704,7 +1699,6 @@ def top_ten_ipc_exl(req, project_id):
         with pd.ExcelWriter(response, engine='xlsxwriter') as writer:
             # Convert the dataframe to an XlsxWriter Excel object
             df.to_excel(writer, index=False, sheet_name='Top Ten IPC')
-
             # Get the xlsxwriter workbook and worksheet objects
             workbook = writer.book
             worksheet = writer.sheets['Top Ten IPC']
@@ -1713,9 +1707,7 @@ def top_ten_ipc_exl(req, project_id):
             for i, col in enumerate(df.columns):
                 max_len = max(df[col].astype(str).apply(len).max(), len(col))
                 worksheet.set_column(i, i, max_len)
-
         response['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-
         return response
 
 
@@ -1748,20 +1740,14 @@ def download_excel_view(req):
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     response['Content-Disposition'] = f'attachment; filename={status}_data.xlsx'
     with pd.ExcelWriter(response, engine='xlsxwriter') as writer:
-        # Convert the dataframe to an XlsxWriter Excel object
         df.to_excel(writer, index=False, sheet_name=f'{status}_data')
-
-        # Get the xlsxwriter workbook and worksheet objects
         workbook = writer.book
         worksheet = writer.sheets[f'{status}_data']
-
         # Set the column widths
         for i, col in enumerate(df.columns):
             max_len = max(df[col].astype(str).apply(len).max(), len(col))
             worksheet.set_column(i, i, max_len)
-
     response['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-
     return response
 
 
@@ -1816,11 +1802,12 @@ def bibliographic_charts(req, project_id):
     """
     context = {}
     try:
-        project_code_qs = Project.objects.filter(id=project_id).first().code
-        process_excel_data(context, req=req, project_id=project_code_qs)
+        project_code_qs = Project.objects.filter(id=project_id).first()
+        process_excel_data(context, req=req, project_id=project_code_qs.code)
         user_instance = CustomUser.objects.get(id=req.session.get('logged_in_user_id'))
         context['user_instance'] = user_instance
         context['project_id'] = project_id
+        context['project_name'] = project_code_qs.name
         if req.method == 'POST':
             uploaded_media = req.FILES.get('patient_data')
             if uploaded_media:
@@ -1831,8 +1818,8 @@ def bibliographic_charts(req, project_id):
                     df = pd.read_excel(uploaded_media, engine='openpyxl')
                     patent_data_rows = []
                     user_instance = CustomUser.objects.get(id=user_id)
-                    if PatentData.objects.filter(project_code=project_code_qs):
-                        PatentData.objects.filter(project_code=project_code_qs).delete()
+                    if PatentData.objects.filter(project_code=project_code_qs.code):
+                        PatentData.objects.filter(project_code=project_code_qs.code).delete()
                     for index, row in df.iterrows():
                         # print(row['Priority Country'])
                         application_date_str = row['Application Dates']
@@ -1874,14 +1861,14 @@ def bibliographic_charts(req, project_id):
                             'cpc': row['CPC'],
                             'ipc': row['IPC'],
                             'e_fan': row['EFAN'],
-                            'project_code': project_code_qs,
+                            'project_code': project_code_qs.code,
                             # 'priority_country': row['Priority Country']
                         }
                         patent_data_rows.append(patent_data_dict)
                     PatentData.objects.bulk_create([
                         PatentData(**data) for data in patent_data_rows
                     ])
-                    process_excel_data(context, req=req, project_id=project_code_qs)
+                    process_excel_data(context, req=req, project_id=project_code_qs.code)
                 except Exception as e:
                     print(f"Error processing uploaded file: {str(e)}")
                     return HttpResponseServerError("Error processing uploaded file. Please try again.")
@@ -1995,10 +1982,8 @@ def get_ipc_counts(req, project_id):
 def get_cpc_counts_from_db(req, project_id):
     patent_data_queryset = PatentData.objects.filter(project_code=project_id)
     cpc_counts_from_db = Counter()
-
     for patent_data in patent_data_queryset:
         cpc_values = patent_data.cpc.split('|') if patent_data.cpc else []
-
         for cpc_value in cpc_values:
             # Skip processing if the cpc_value is 'nan'
             if cpc_value.strip().upper() == 'NAN':
@@ -2006,11 +1991,9 @@ def get_cpc_counts_from_db(req, project_id):
 
             cpc_code = cpc_value.strip()[:4]
             cpc_counts_from_db[cpc_code] += 1
-
     cpc_counts_dict_ws = dict(cpc_counts_from_db)
     sorted_cpc_counts = dict(sorted(cpc_counts_dict_ws.items(), key=lambda item: item[1], reverse=True))
     cpc_counts_dict = dict(list(sorted_cpc_counts.items())[:10])
-
     req.session['cpc_counts_dict'] = cpc_counts_dict
     return cpc_counts_dict
 
@@ -2018,11 +2001,8 @@ def get_cpc_counts_from_db(req, project_id):
 def get_country_code_counts_from_db(req, project_id):
     patent_data_queryset = PatentData.objects.filter(project_code=project_id)
     country_code_counts_from_db = Counter()
-
     for patent_data in patent_data_queryset:
         publication_number = patent_data.publication_number
-
-        # Skip processing if publication_number is None or has insufficient length
         if publication_number is None or len(publication_number) < 2:
             continue
 
@@ -2069,25 +2049,15 @@ def download_excel_file(request, project_id):
             'EFAN': [patent.e_fan for patent in top_ten_cited_patents],
         }
         df = pd.DataFrame(data)
-
-        # Create an HttpResponse object
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         response['Content-Disposition'] = 'attachment; filename=top_ten_cited_patents.xlsx'
-
-        # Create a Pandas Excel writer using XlsxWriter as the engine
         with pd.ExcelWriter(response, engine='xlsxwriter') as writer:
-            # Convert the dataframe to an XlsxWriter Excel object
             df.to_excel(writer, index=False, sheet_name='Top Ten Cited Patents')
-
-            # Get the xlsxwriter workbook and worksheet objects
             workbook = writer.book
             worksheet = writer.sheets['Top Ten Cited Patents']
-
-            # Set the column widths
             for i, col in enumerate(df.columns):
                 max_len = max(df[col].astype(str).apply(len).max(), len(col))
                 worksheet.set_column(i, i, max_len)
-
         response['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         return response
 
@@ -2117,12 +2087,9 @@ def download_citing_excel_file(request, project_id):
             'EFAN': [patent.e_fan for patent in top_ten_citing_patents],
         }
         df = pd.DataFrame(data)
-        # Create an HttpResponse object
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         response['Content-Disposition'] = 'attachment; filename=download_citing_excel_file.xlsx'
-        # Create a Pandas Excel writer using XlsxWriter as the engine
         with pd.ExcelWriter(response, engine='xlsxwriter') as writer:
-            # Convert the dataframe to an XlsxWriter Excel object
             df.to_excel(writer, index=False, sheet_name='top ten citing')
             workbook = writer.book
             worksheet = writer.sheets['top ten citing']
@@ -2130,9 +2097,7 @@ def download_citing_excel_file(request, project_id):
             for i, col in enumerate(df.columns):
                 max_len = max(df[col].astype(str).apply(len).max(), len(col))
                 worksheet.set_column(i, i, max_len)
-
         response['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-
         return response
 
 
@@ -2156,29 +2121,17 @@ def get_year_wise_excel(req, project_id):
         'IPC Count': [patent.ipc for patent in year_counts],
         'EFAN': [patent.e_fan for patent in year_counts],
     }
-
     df = pd.DataFrame(data)
-
-    # Create an HttpResponse object
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     response['Content-Disposition'] = 'attachment; filename=year_wise_patents.xlsx'
-
-    # Create a Pandas Excel writer using XlsxWriter as the engine
     with pd.ExcelWriter(response, engine='xlsxwriter') as writer:
-        # Convert the dataframe to an XlsxWriter Excel object
         df.to_excel(writer, index=False, sheet_name='Year Wise Patents')
-
-        # Get the xlsxwriter workbook and worksheet objects
         workbook = writer.book
         worksheet = writer.sheets['Year Wise Patents']
-
-        # Set the column widths
         for i, col in enumerate(df.columns):
             max_len = max(df[col].astype(str).apply(len).max(), len(col))
             worksheet.set_column(i, i, max_len)
-
     response['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-
     return response
 
 
