@@ -4,8 +4,6 @@
 {% endblock %}
 {% block content %}
 <!--<h6>Collaborations of competitors</h6>-->
-
-
 <div class="tab-container">
     <a href="{% url 'tech_charts' project_id %}" class="tab-link active">
         <span class="tab-icon">&#8592;</span>
@@ -16,7 +14,7 @@
         Bibliographic Charts
     </a>
 </div>
-<h4>Competitor Charts-({{project_name}})</h4>
+<h4>Competitor Charts-<b>({{project_name}})</b></h4>
 <div class="table-container">
     {% if plot_div1 == 'NO partner data found !'%}
     <h6 style="color:red; margin-left:40%"> NO partner data found !</h6>
