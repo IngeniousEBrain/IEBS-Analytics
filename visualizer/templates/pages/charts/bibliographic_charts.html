@@ -7,26 +7,35 @@
 <!-- Main content -->
 <section class="content">
     <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <h4 class="mb-2">Bibliographic Charts - <b>({{ project_name }})</b></h4>
+            </div>
+        </div>
+
         {% if top_citing_patents %}
-        <div class="tab-container">
-            <a href="{% url 'competitor_charts' project_id %}" class="tab-link active">
-                <span class="tab-icon">&#8592;</span>
-                Competitive Charts
-            </a>
-            <a href="{% url 'tech_charts' project_id %}" class="tab-link active">
-                <span class="tab-icon">&#8592;</span>
-                Technical Charts
-            </a>
+        <div class="row">
+            <div class="col-12">
+                <div class="tab-container">
+                    <a href="{% url 'competitor_charts' project_id %}" class="tab-link active">
+                        <span class="tab-icon">&#8592;</span>
+                        Competitive Charts
+                    </a>
+                    <a href="{% url 'tech_charts' project_id %}" class="tab-link active">
+                        <span class="tab-icon">&#8592;</span>
+                        Technical Charts
+                    </a>
+                </div>
+            </div>
         </div>
         {% endif %}
+
         <div class="row align-items-center">
             <div class="col-lg-8">
-                <div class="input-group mb-5">
+                <div class="input-group mb-4">
                     {% if top_citing_patents %}
                     <div class="input-group-prepend">
-                        <label class="input-group-text" for="chartType">
-                            <i class="fas fa-chart-pie"></i>
-                        </label>
+                        <span class="input-group-text"><i class="fas fa-chart-pie"></i></span>
                     </div>
                     <select class="form-control" id="chartType" onchange="changeChartType()">
                         <option value="area">Area Chart</option>
@@ -42,18 +51,25 @@
 
             {% if user_instance.roles == 'project_manager' %}
             <div class="col-lg-4 text-lg-right">
-                <form method="post" action="/bibliographic_charts/{{project_id}}/" enctype="multipart/form-data">
+                <form method="post" action="/bibliographic_charts/{{ project_id }}/" enctype="multipart/form-data"
+                      class="mb-2">
                     {% csrf_token %}
-                    <label class="btn btn-primary btn-round m-2 btn-sm">
-                        <i class="fas fa-file-upload"></i>
-                        Upload File
-                        <input type="file" accept=".xlsx,.xls" style="display: none;" name="patient_data">
-                    </label>
-                    <button type="submit" class="btn btn-dark btn-round ml-2 btn-sm">
-                        <i class="fas fa-chart-line"></i>Go
-                    </button>
+                    <div class="input-group">
+                        <div class="custom-file">
+                            <input type="file" accept=".xlsx,.xls" class="custom-file-input" id="patientData"
+                                   name="patient_data">
+                            <label class="custom-file-label"  for="patientData"
+                                   style="white-space: nowrap; overflow: visible; margin-left: 162px;">Choose file</label>
+                        </div>
+                        <div class="input-group-append">
+                            <button type="submit" class="btn btn-primary btn-round ml-2">
+                                <i class="fas fa-upload"></i> Upload
+                            </button>
+                        </div>
+                    </div>
                 </form>
-                <div>
+
+                <div class="text-right">
                     <a href="{% url 'download_demo_excel' %}">
                         <i class="fas fa-file-download"></i> Download Demo Excel
                     </a>
@@ -61,691 +77,693 @@
             </div>
             {% endif %}
         </div>
-        <!-- /.row -->
-        <!-- Main row -->
-        {% if top_citing_patents %}
-        <div class="row">
-            <section class="content">
-                <div class="container-fluid">
-                    <div class="row">
-                        <div class="col-md-12">
-                            <!-- DONUT CHART -->
-                            <div class="card card-info">
-                                <div class="card-header">
-                                    <h3 class="card-title">Top Citing</h3>
-                                    <div class="card-tools">
-                                        <button type="button" class="btn btn-tool" data-card-widget="collapse">
-                                            <i class="fas fa-minus"></i>
-                                        </button>
-                                        <button type="button" class="btn btn-tool" data-card-widget="remove">
-                                            <i class="fas fa-times"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                                <div class="card-body">
-                                    <div class="row">
-                                        <!-- Chart (70%) -->
-                                        <div class="col-md-6">
-                                            <canvas id="donutChart"
-                                                    style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;">
-                                            </canvas>
-                                        </div>
-                                        <!-- Table (30%) -->
-                                        <div class="col-md-6">
-                                            <div style="max-height: 300px; overflow-y: auto;">
-                                                <table class="table table-sm table-bordered">
-                                                    <thead style="background-color: #808080">
-                                                    <tr>
-                                                        <th class="text-center small">Patent</th>
-                                                        <th class="text-center small">Assignee</th>
-                                                        <th class="text-center small">Citation Count</th>
-                                                        <th class="text-center small">Actions</th>
-                                                    </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                    {% for patent, data in top_citing_patents.items %}
-                                                    <tr>
-                                                        <td class="text-center small">{{ patent }}</td>
-                                                        <td class="text-center small">{{ data.assignee }}</td>
-                                                        <td class="text-center small">{{ data.count }}</td>
-                                                        <td class="text-center small">
-                                                            <div class="d-flex justify-content-center">
-                                                                <button class="btn btn-secondary btn-xs mx-1"
-                                                                        onclick="IndCitingView('{{patent}}','{{project_id}}')">
-                                                                    <i
-                                                                            class="fa fa-eye" aria-hidden="true"></i>
-                                                                </button>
-                                                                <button class="btn btn-primary btn-xs mx-1"
-                                                                        onclick="download_ind_citingExl('{{patent}}','{{project_id}}')">
-                                                                    <i class="fas fa-file-download"
-                                                                       aria-hidden="true"></i>
-                                                                </button>
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                    {% endfor %}
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                            <div class="text-center mt-2">
-                                                <button class="btn btn-secondary btn-xs"
-                                                        onclick="ViewCitingFile({{project_id}})">
-                                                    View
-                                                </button>
-                                                <button class="btn btn-primary btn-xs"
-                                                        onclick="download_citingExcelFile({{project_id}})">Download
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
+    </div>
+
+    <!-- /.row -->
+    <!-- Main row -->
+    {% if top_citing_patents %}
+    <div class="row">
+        <section class="content">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-md-12">
+                        <!-- DONUT CHART -->
+                        <div class="card card-info">
+                            <div class="card-header">
+                                <h3 class="card-title">Top Citing</h3>
+                                <div class="card-tools">
+                                    <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                        <i class="fas fa-minus"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-tool" data-card-widget="remove">
+                                        <i class="fas fa-times"></i>
+                                    </button>
                                 </div>
                             </div>
-                            <!-- /.card -->
-                        </div>
-                        <!-- /.col (LEFT) -->
-                        <div class="col-md-12">
-                            <!-- LINE CHART -->
-                            <div class="card card-info">
-                                <div class="card-header">
-                                    <h3 class="card-title">Top Cited</h3>
-                                    <div class="card-tools">
-                                        <button type="button" class="btn btn-tool" data-card-widget="collapse">
-                                            <i class="fas fa-minus"></i>
-                                        </button>
-                                        <button type="button" class="btn btn-tool" data-card-widget="remove">
-                                            <i class="fas fa-times"></i>
-                                        </button>
+                            <div class="card-body">
+                                <div class="row">
+                                    <!-- Chart (70%) -->
+                                    <div class="col-md-6">
+                                        <canvas id="donutChart"
+                                                style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;">
+                                        </canvas>
                                     </div>
-                                </div>
-                                <div class="card-body">
-                                    <div class="row">
-                                        <!-- Chart (70%) -->
-                                        <div class="col-md-6">
-                                            <canvas id="donut_cited_Chart"
-                                                    style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
+                                    <!-- Table (30%) -->
+                                    <div class="col-md-6">
+                                        <div style="max-height: 300px; overflow-y: auto;">
+                                            <table class="table table-sm table-bordered">
+                                                <thead style="background-color: #808080">
+                                                <tr>
+                                                    <th class="text-center small">Patent</th>
+                                                    <th class="text-center small">Assignee</th>
+                                                    <th class="text-center small">Citation Count</th>
+                                                    <th class="text-center small">Actions</th>
+                                                </tr>
+                                                </thead>
+                                                <tbody>
+                                                {% for patent, data in top_citing_patents.items %}
+                                                <tr>
+                                                    <td class="text-center small">{{ patent }}</td>
+                                                    <td class="text-center small">{{ data.assignee }}</td>
+                                                    <td class="text-center small">{{ data.count }}</td>
+                                                    <td class="text-center small">
+                                                        <div class="d-flex justify-content-center">
+                                                            <button class="btn btn-secondary btn-xs mx-1"
+                                                                    onclick="IndCitingView('{{patent}}','{{project_id}}')">
+                                                                <i
+                                                                        class="fa fa-eye" aria-hidden="true"></i>
+                                                            </button>
+                                                            <button class="btn btn-primary btn-xs mx-1"
+                                                                    onclick="download_ind_citingExl('{{patent}}','{{project_id}}')">
+                                                                <i class="fas fa-file-download"
+                                                                   aria-hidden="true"></i>
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                                </tbody>
+                                            </table>
                                         </div>
-                                        <!-- Table (30%) -->
-                                        <div class="col-md-6">
-                                            <div style="max-height: 300px; overflow-y: auto;">
-                                                <table class="table table-sm table-bordered">
-                                                    <thead style="background-color: #808080">
-                                                    <tr>
-                                                        <th class="text-center small">Patent</th>
-                                                        <th class="text-center small">Assignee</th>
-                                                        <th class="text-center small">Citations</th>
-                                                        <th class="text-center small">Actions</th>
-                                                    </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                    {% for patent, data in top_cited_patents.items %}
-                                                    <tr>
-                                                        <td class="text-center small">{{ patent }}</td>
-                                                        <td class="text-center small">{{ data.assignee }}</td>
-                                                        <td class="text-center small">{{ data.count }}</td>
-                                                        <td class="text-center small">
-                                                            <div class="d-flex justify-content-center">
-                                                                <button class="btn btn-secondary btn-xs mx-1"
-                                                                        onclick="ViewIndCited('{{ patent }}','{{project_id}}')">
-                                                                    <i
-                                                                            class="fa fa-eye" aria-hidden="true"></i>
-                                                                </button>
-                                                                <button class="btn btn-primary btn-xs mx-1"
-                                                                        onclick="downloadIndCitedExcel('{{ patent }}','{{project_id}}')">
-                                                                    <i class="fas fa-file-download"
-                                                                       aria-hidden="true"></i></button>
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                    {% endfor %}
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                            <div class="text-center mt-2">
-                                                <button class="btn btn-secondary btn-xs"
-                                                        onclick="ViewCitedFile('{{project_id}}')">
-                                                    View
-                                                </button>
-                                                <button class="btn btn-primary btn-xs"
-                                                        onclick="download_citedExcelFile('{{project_id}}')">Download
-                                                </button>
-                                            </div>
+                                        <div class="text-center mt-2">
+                                            <button class="btn btn-secondary btn-xs"
+                                                    onclick="ViewCitingFile({{project_id}})">
+                                                View
+                                            </button>
+                                            <button class="btn btn-primary btn-xs"
+                                                    onclick="download_citingExcelFile({{project_id}})">Download
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
+                        <!-- /.card -->
                     </div>
-                    <!-- LINE CHART -->
-                    <div class="card card-info ">
-                        <div class="card-header">
-                            <h3 class="card-title">Top Innovative Jurisdiction</h3>
-                            <div class="card-tools">
-                                <button type="button" class="btn btn-tool" data-card-widget="collapse">
-                                    <i class="fas fa-minus"></i>
-                                </button>
-                                <button type="button" class="btn btn-tool" data-card-widget="remove">
-                                    <i class="fas fa-times"></i>
-                                </button>
+                    <!-- /.col (LEFT) -->
+                    <div class="col-md-12">
+                        <!-- LINE CHART -->
+                        <div class="card card-info">
+                            <div class="card-header">
+                                <h3 class="card-title">Top Cited</h3>
+                                <div class="card-tools">
+                                    <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                        <i class="fas fa-minus"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-tool" data-card-widget="remove">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
                             </div>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <!-- Chart (70%) -->
-                                <div class="col-md-8">
-                                    <div class="chart linechart">
-                                        <canvas id="lineChart"
+                            <div class="card-body">
+                                <div class="row">
+                                    <!-- Chart (70%) -->
+                                    <div class="col-md-6">
+                                        <canvas id="donut_cited_Chart"
                                                 style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
                                     </div>
-                                </div>
-                                <!-- Table (30%) -->
-                                <div class="col-md-4">
-                                    <div style="max-height: 300px; overflow-y: auto;">
-                                        <table class="table table-sm table-bordered">
-                                            <thead style="background-color: #808080">
-                                            <tr>
-                                                <th class="text-center small">Country Code</th>
-                                                <th class="text-center small">Count</th>
-                                                <th class="text-center small">Actions</th>
-                                            </tr>
-                                            </thead>
-                                            <tbody>
-                                            {% for country, count in get_country_code_counts_from_db.items %}
-                                            <tr>
-                                                <td class="text-center small">{{ country }}</td>
-                                                <td class="text-center small">{{ count }}</td>
-                                                <td class="text-center small">
-                                                    <div class="d-flex justify-content-center">
-                                                        <button class="btn btn-secondary btn-xs mx-1"
-                                                                onclick="viewInnovativeFile('{{ country }}','{{project_id}}')">
-                                                            <i
-                                                                    class="fa fa-eye" aria-hidden="true"></i>
-                                                        </button>
-                                                        <button class="btn btn-primary btn-xs mx-1"
-                                                                onclick="downloadInnovativeFile('{{ country }}', {{project_id}})">
-                                                            <i class="fas fa-file-download" aria-hidden="true"></i>
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                            {% endfor %}
-                                            </tbody>
-                                        </table>
+                                    <!-- Table (30%) -->
+                                    <div class="col-md-6">
+                                        <div style="max-height: 300px; overflow-y: auto;">
+                                            <table class="table table-sm table-bordered">
+                                                <thead style="background-color: #808080">
+                                                <tr>
+                                                    <th class="text-center small">Patent</th>
+                                                    <th class="text-center small">Assignee</th>
+                                                    <th class="text-center small">Citations</th>
+                                                    <th class="text-center small">Actions</th>
+                                                </tr>
+                                                </thead>
+                                                <tbody>
+                                                {% for patent, data in top_cited_patents.items %}
+                                                <tr>
+                                                    <td class="text-center small">{{ patent }}</td>
+                                                    <td class="text-center small">{{ data.assignee }}</td>
+                                                    <td class="text-center small">{{ data.count }}</td>
+                                                    <td class="text-center small">
+                                                        <div class="d-flex justify-content-center">
+                                                            <button class="btn btn-secondary btn-xs mx-1"
+                                                                    onclick="ViewIndCited('{{ patent }}','{{project_id}}')">
+                                                                <i
+                                                                        class="fa fa-eye" aria-hidden="true"></i>
+                                                            </button>
+                                                            <button class="btn btn-primary btn-xs mx-1"
+                                                                    onclick="downloadIndCitedExcel('{{ patent }}','{{project_id}}')">
+                                                                <i class="fas fa-file-download"
+                                                                   aria-hidden="true"></i></button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        <div class="text-center mt-2">
+                                            <button class="btn btn-secondary btn-xs"
+                                                    onclick="ViewCitedFile('{{project_id}}')">
+                                                View
+                                            </button>
+                                            <button class="btn btn-primary btn-xs"
+                                                    onclick="download_citedExcelFile('{{project_id}}')">Download
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        <!-- /.card-body -->
-                    </div>
-                    <!-- PIE CHART -->
-                    <div class="card card-info">
-                        <div class="card-header">
-                            <h3 class="card-title">Legal Status Analysis</h3>
-                            <div class="card-tools">
-                                <button type="button" class="btn btn-tool" data-card-widget="collapse">
-                                    <i class="fas fa-minus"></i>
-                                </button>
-                                <button type="button" class="btn btn-tool" data-card-widget="remove">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-8">
-                                    <canvas id="pieChart"
-                                            style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
-                                </div>
-                                <div class="col-md-4">
-                                    <div style="max-height: 300px; overflow-y: auto;">
-                                        <table class="table table-sm table-bordered">
-                                            <thead style="background-color: #808080">
-                                            <tr>
-                                                <th class="text-center small">Status</th>
-                                                <th class="text-center small">Count</th>
-                                                <th class="text-center small">Actions</th>
-                                            </tr>
-                                            </thead>
-                                            <tbody>
-                                            {% for status, count in legal_status_counts.items %}
-                                            <tr>
-                                                <td class="text-center small">{{ status }}</td>
-                                                <td class="text-center small">{{ count }}</td>
-                                                <td class="text-center small">
-                                                    <div class="d-flex justify-content-center">
-                                                        <button class="btn btn-secondary btn-xs mx-1"
-                                                                onclick="viewLegalStatusFile('{{ status }}','{{project_id}}')">
-                                                            <i
-                                                                    class="fa fa-eye" aria-hidden="true"></i>
-                                                        </button>
-                                                        <button class="btn btn-primary btn-xs mx-1"
-                                                                onclick="legal_statusFile('{{ status }}','{{project_id}}')">
-                                                            <i
-                                                                    class="fas fa-file-download"
-                                                                    aria-hidden="true"></i>
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                            {% endfor %}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- /.card-body -->
-                    </div>
-                    <!-- AREA CHART -->
-                    <div class="card card-info">
-                        <div class="card-header">
-                            <h3 class="card-title">Publication Trend</h3>
-                            <div class="card-tools">
-                                <button type="button" class="btn btn-tool" data-card-widget="collapse">
-                                    <i class="fas fa-minus"></i>
-                                </button>
-                                <button type="button" class="btn btn-tool" data-card-widget="remove">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <!-- Chart (70%) -->
-                                <div class="col-md-8">
-                                    <div class="chart">
-                                        <canvas id="areaChart" style="width:100%;max-width:100%;height:350px"></canvas>
-                                    </div>
-                                </div>
-                                <!-- Table (30%) -->
-                                <div class="col-md-4">
-                                    <div style="max-height: 300px; overflow-y: auto;">
-                                        <table class="table table-sm table-bordered">
-                                            <thead style="background-color: #808080">
-                                            <tr>
-                                                <th class="text-center small">Year</th>
-                                                <th class="text-center small">Count</th>
-                                                <th class="text-center small">Actions</th>
-                                            </tr>
-                                            </thead>
-                                            <tbody>
-                                            {% for year, count in year_wise_count.items %}
-                                            <tr>
-                                                <td class="text-center small">{{ year }}</td>
-                                                <td class="text-center small">{{ count }}</td>
-                                                <td class="text-center small">
-                                                    <div class="d-flex justify-content-center">
-                                                        <button class="btn btn-secondary btn-xs mx-1"
-                                                                onclick="viewPublicationTend('{{ year }}','{{project_id}}')">
-                                                            <i
-                                                                    class="fa fa-eye" aria-hidden="true"></i>
-                                                        </button>
-                                                        <button class="btn btn-primary btn-xs mx-1"
-                                                                onclick="publication_Exl('{{ year }}','{{project_id}}')">
-                                                            <i
-                                                                    class="fas fa-file-download"
-                                                                    aria-hidden="true"></i>
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                            {% endfor %}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- /.card-body -->
-                    </div>
-                    <!--TOP ASSIGNEE-->
-                    <div class="card card-info">
-                        <div class="card-header">
-                            <h3 class="card-title">Top Assignee</h3>
-                            <div class="card-tools">
-                                <button type="button" class="btn btn-tool" data-card-widget="collapse">
-                                    <i class="fas fa-minus"></i>
-                                </button>
-                                <button type="button" class="btn btn-tool" data-card-widget="remove">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <!-- Chart (70%) -->
-                                <div class="col-md-8">
-                                    <div class="chart">
-                                        <canvas id="barChart" style="width:100%;max-width:100%;height:350px"></canvas>
-                                    </div>
-                                </div>
-                                <!-- Table (30%) -->
-                                <div class="col-md-4">
-                                    <div style="max-height: 300px; overflow-y: auto;">
-                                        <table class="table table-sm table-bordered">
-                                            <thead style="background-color: #808080">
-                                            <tr>
-                                                <th class="text-center small">Assignee</th>
-                                                <th class="text-center small">Count</th>
-                                                <th class="text-center small">Actions</th>
-                                            </tr>
-                                            </thead>
-                                            <tbody>
-                                            {% for item in top_assignees_dict %}
-                                            <tr>
-                                                <td class="text-center small">{{ item.assignee_standardized }}</td>
-                                                <td class="text-center small">{{ item.count }}</td>
-                                                <td class="text-center small">
-                                                    <div class="d-flex justify-content-center">
-                                                        <button class="btn btn-secondary btn-xs mx-1"
-                                                                onclick="ViewTopAssignee('{{ item.assignee_standardized }}','{{project_id}}')">
-                                                            <i class="fa fa-eye"
-                                                               aria-hidden="true"></i>
-                                                        </button>
-                                                        <button class="btn btn-primary btn-xs mx-1"
-                                                                onclick="DownloadTopAssigneeExl('{{ item.assignee_standardized }}','{{project_id}}')">
-                                                            <i class="fas fa-file-download" aria-hidden="true"></i>
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                            {% endfor %}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                    <div class="text-center mt-2">
-                                        <button class="btn btn-secondary btn-xs"
-                                                onclick="ViewTopTenAssignee('{{project_id}}')">View
-                                        </button>
-                                        <button class="btn btn-primary btn-xs"
-                                                onclick="DownloadTopTenAssigneeExl('{{project_id}}')">
-                                            Download
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- /.card-body -->
-                    </div>
-                    <!-- STACKED BAR CHART -->
-                    <div class="card card-info">
-                        <div class="card-header">
-                            <h3 class="card-title">Recent Active Assignee</h3>
-                            <div class="card-tools">
-                                <button type="button" class="btn btn-tool" data-card-widget="collapse">
-                                    <i class="fas fa-minus"></i>
-                                </button>
-                                <button type="button" class="btn btn-tool" data-card-widget="remove">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <!-- Chart (70%) -->
-                                <div class="col-md-8">
-                                    <div class="chart">
-                                        <canvas id="stackedBarChart"
-                                                style="width:100%;max-width:100%;height:350px">
-                                        </canvas>
-                                    </div>
-                                </div>
-                                <!-- Table (30%) -->
-                                <div class="col-md-4">
-                                    <div style="max-height: 300px; overflow-y: auto;">
-                                        <table class="table table-sm table-bordered">
-                                            <thead style="background-color: #808080">
-                                            <tr>
-                                                <th class="text-center small">Assignee</th>
-                                                <th class="text-center small">Count</th>
-                                                <th class="text-center small">Actions</th>
-                                            </tr>
-                                            </thead>
-                                            <tbody>
-                                            {% for item in recent_assignees_last_five_years %}
-                                            <tr>
-                                                <td class="text-center small">{{ item.assignee_standardized }}</td>
-                                                <td class="text-center small">{{ item.count }}</td>
-                                                <td class="text-center small">
-                                                    <div class="d-flex justify-content-center">
-                                                        <button class="btn btn-secondary btn-xs mx-1"
-                                                                onclick="ViewTopRecentAssignee('{{item.assignee_standardized}}','{{project_id}}')">
-                                                            <i class="fa fa-eye" aria-hidden="true"></i>
-                                                        </button>
-                                                        <button class="btn btn-primary btn-xs mx-1"
-                                                                onclick="DownloadRecentAssignee('{{item.assignee_standardized}}','{{project_id}}')">
-                                                            <i class="fas fa-file-download"
-                                                               aria-hidden="true"></i>
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                            {% endfor %}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                    <div class="text-center mt-2">
-                                        <button class="btn btn-secondary btn-xs"
-                                                onclick="ViewRecentAssignee('{{project_id}}')">View
-                                        </button>
-                                        <button class="btn btn-primary btn-xs"
-                                                onclick="DownloadTopRecentAssigneeExl('{{project_id}}')">Download
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- /.card-body -->
-                    </div>
-
-                    <div class="card card-info">
-                        <div class="card-header">
-                            <h3 class="card-title">Expected Expiry Date</h3>
-                            <div class="card-tools">
-                                <button type="button" class="btn btn-tool" data-card-widget="collapse">
-                                    <i class="fas fa-minus"></i>
-                                </button>
-                                <button type="button" class="btn btn-tool" data-card-widget="remove">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <!-- Chart (70%) -->
-                                <div class="col-md-8">
-                                    <div class="chart">
-                                        <canvas id="myChart" style="width:100%;max-width:100%;height:350px;"></canvas>
-                                    </div>
-                                </div>
-                                <!-- Table (30%) -->
-                                <div class="col-md-4">
-                                    <div style="max-height: 300px; overflow-y: auto;">
-                                        <table class="table table-sm table-bordered">
-                                            <thead style="background-color: #808080">
-                                            <tr>
-                                                <th class="text-center small">Year</th>
-                                                <th class="text-center small">Count</th>
-                                                <th class="text-center small">Actions</th>
-                                            </tr>
-                                            </thead>
-                                            <tbody>
-                                            {% for key, val in year_wise_exp_date|dict_key_sort %}
-                                            <tr>
-                                                <td class="text-center small">{{ key }}</td>
-                                                <td class="text-center small">{{ val }}</td>
-                                                <td class="text-center small">
-                                                    <div class="d-flex justify-content-center">
-                                                        <button class="btn btn-secondary btn-xs mx-1"
-                                                                onclick="Expected_Exp_View('{{key}}','{{project_id}}')">
-                                                            <i class="fa fa-eye" aria-hidden="true"></i>
-                                                        </button>
-                                                        <button class="btn btn-primary btn-xs mx-1"
-                                                                onclick="Expected_Exp_Exl('{{key}}','{{project_id}}')">
-                                                            <i
-                                                                    class="fas fa-file-download" aria-hidden="true"></i>
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                            {% endfor %}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- /.card-body -->
-                    </div>
-
-                    <div class="card card-info">
-                        <div class="card-header">
-                            <h3 class="card-title">Top IPC</h3>
-                            <div class="card-tools">
-                                <button type="button" class="btn btn-tool" data-card-widget="collapse">
-                                    <i class="fas fa-minus"></i>
-                                </button>
-                                <button type="button" class="btn btn-tool" data-card-widget="remove">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <!-- Chart (70%) -->
-                                <div class="col-md-8">
-                                    <div class="chart">
-                                        <canvas id="horizontal-stacker-bar-chart"
-                                                style="width:100%;max-width:100%;height:350px;">
-                                        </canvas>
-                                    </div>
-                                </div>
-                                <!-- Table (30%) -->
-                                <div class="col-md-4">
-                                    <div style="max-height: 300px; overflow-y: auto;">
-                                        <table class="table table-sm table-bordered">
-                                            <thead style="background-color: #808080">
-                                            <tr>
-                                                <th class="text-center small">IPC</th>
-                                                <th class="text-center small">Count</th>
-                                                <th class="text-center small">Actions</th>
-                                            </tr>
-                                            </thead>
-                                            <tbody>
-                                            {% for key, val in get_ipc_counts.items %}
-                                            <tr>
-                                                <td class="text-center small">{{ key }}</td>
-                                                <td class="text-center small">{{ val }}</td>
-                                                <td class="text-center small">
-                                                    <div class="d-flex justify-content-center">
-                                                        <button class="btn btn-secondary btn-xs mx-1"
-                                                                onclick="indIpcDataView('{{key}}','{{project_id}}')">
-                                                            <i class="fa fa-eye" aria-hidden="true"></i>
-                                                        </button>
-                                                        <button class="btn btn-primary btn-xs mx-1"
-                                                                onclick="downloadIpcExcelFile('{{key}}','{{project_id}}')">
-                                                            <i
-                                                                    class="fas fa-file-download" aria-hidden="true"></i>
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                            {% endfor %}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                    <div class="text-center mt-2">
-                                        <button class="btn btn-secondary btn-xs"
-                                                onclick="openIpcDataView('{{project_id}}')">View
-                                        </button>
-                                        <button class="btn btn-primary btn-xs"
-                                                onclick="downloadTopIPC('{{project_id}}')">
-                                            Download
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- /.card-body -->
-                    </div>
-                    <!--TOP IPC-->
-                    <div class="card card-info">
-                        <div class="card-header">
-                            <h3 class="card-title">Top CPC</h3>
-                            <div class="card-tools">
-                                <button type="button" class="btn btn-tool" data-card-widget="collapse">
-                                    <i class="fas fa-minus"></i>
-                                </button>
-                                <button type="button" class="btn btn-tool" data-card-widget="remove">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <!-- Chart (70%) -->
-                                <div class="col-md-8">
-                                    <div class="chart">
-                                        <canvas id="horizontal-stacker-bar-chart_cpc"
-                                                style="width:100%;max-width:100%;height:350px;"></canvas>
-                                    </div>
-                                </div>
-                                <!-- Table (30%) -->
-                                <div class="col-md-4">
-                                    <div style="max-height: 300px; overflow-y: auto;">
-                                        <table class="table table-sm table-bordered">
-                                            <thead style="background-color: #808080">
-                                            <tr>
-                                                <th class="text-center small">CPC</th>
-                                                <th class="text-center small">Count</th>
-                                                <th class="text-center small">Actions</th>
-                                            </tr>
-                                            </thead>
-                                            <tbody>
-                                            {% for key, val in get_cpc_counts_from_db.items %}
-                                            <tr>
-                                                <td class="text-center small">{{ key }}</td>
-                                                <td class="text-center small">{{ val }}</td>
-                                                <td class="text-center small">
-                                                    <div class="d-flex justify-content-center">
-                                                        <button class="btn btn-secondary btn-xs mx-1"
-                                                                onclick="indCpcDataView('{{key}}','{{project_id}}')">
-                                                            <i class="fa fa-eye" aria-hidden="true"></i>
-                                                        </button>
-                                                        <button class="btn btn-primary btn-xs mx-1"
-                                                                onclick="downloadIndCpc('{{key}}','{{project_id}}')"><i
-                                                                class="fas fa-file-download" aria-hidden="true"></i>
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                            {% endfor %}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                    <div class="text-center mt-2">
-                                        <button class="btn btn-secondary btn-xs"
-                                                onclick="openCpcDataView('{{project_id}}')">View
-                                        </button>
-                                        <button class="btn btn-primary btn-xs"
-                                                onclick="downloadTopCPC('{{project_id}}')">
-                                            Download
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- /.card-body -->
                     </div>
                 </div>
-            </section>
-        </div>
-        {% else %}
-        <img id="logo" src="{% static 'img/No data-amico.svg' %}" width="100%" height="70%">
-        <div style="text-align: center;">
-            <b>No Data Found! Please contact the Project Manager!</b>
-        </div>
-        {% endif %}
-        <!-- /.row (main row) -->
+                <!-- LINE CHART -->
+                <div class="card card-info ">
+                    <div class="card-header">
+                        <h3 class="card-title">Top Innovative Jurisdiction</h3>
+                        <div class="card-tools">
+                            <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                            <button type="button" class="btn btn-tool" data-card-widget="remove">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <!-- Chart (70%) -->
+                            <div class="col-md-8">
+                                <div class="chart linechart">
+                                    <canvas id="lineChart"
+                                            style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
+                                </div>
+                            </div>
+                            <!-- Table (30%) -->
+                            <div class="col-md-4">
+                                <div style="max-height: 300px; overflow-y: auto;">
+                                    <table class="table table-sm table-bordered">
+                                        <thead style="background-color: #808080">
+                                        <tr>
+                                            <th class="text-center small">Country Code</th>
+                                            <th class="text-center small">Count</th>
+                                            <th class="text-center small">Actions</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        {% for country, count in get_country_code_counts_from_db.items %}
+                                        <tr>
+                                            <td class="text-center small">{{ country }}</td>
+                                            <td class="text-center small">{{ count }}</td>
+                                            <td class="text-center small">
+                                                <div class="d-flex justify-content-center">
+                                                    <button class="btn btn-secondary btn-xs mx-1"
+                                                            onclick="viewInnovativeFile('{{ country }}','{{project_id}}')">
+                                                        <i
+                                                                class="fa fa-eye" aria-hidden="true"></i>
+                                                    </button>
+                                                    <button class="btn btn-primary btn-xs mx-1"
+                                                            onclick="downloadInnovativeFile('{{ country }}', {{project_id}})">
+                                                        <i class="fas fa-file-download" aria-hidden="true"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- /.card-body -->
+                </div>
+                <!-- PIE CHART -->
+                <div class="card card-info">
+                    <div class="card-header">
+                        <h3 class="card-title">Legal Status Analysis</h3>
+                        <div class="card-tools">
+                            <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                            <button type="button" class="btn btn-tool" data-card-widget="remove">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <canvas id="pieChart"
+                                        style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
+                            </div>
+                            <div class="col-md-4">
+                                <div style="max-height: 300px; overflow-y: auto;">
+                                    <table class="table table-sm table-bordered">
+                                        <thead style="background-color: #808080">
+                                        <tr>
+                                            <th class="text-center small">Status</th>
+                                            <th class="text-center small">Count</th>
+                                            <th class="text-center small">Actions</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        {% for status, count in legal_status_counts.items %}
+                                        <tr>
+                                            <td class="text-center small">{{ status }}</td>
+                                            <td class="text-center small">{{ count }}</td>
+                                            <td class="text-center small">
+                                                <div class="d-flex justify-content-center">
+                                                    <button class="btn btn-secondary btn-xs mx-1"
+                                                            onclick="viewLegalStatusFile('{{ status }}','{{project_id}}')">
+                                                        <i
+                                                                class="fa fa-eye" aria-hidden="true"></i>
+                                                    </button>
+                                                    <button class="btn btn-primary btn-xs mx-1"
+                                                            onclick="legal_statusFile('{{ status }}','{{project_id}}')">
+                                                        <i
+                                                                class="fas fa-file-download"
+                                                                aria-hidden="true"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- /.card-body -->
+                </div>
+                <!-- AREA CHART -->
+                <div class="card card-info">
+                    <div class="card-header">
+                        <h3 class="card-title">Publication Trend</h3>
+                        <div class="card-tools">
+                            <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                            <button type="button" class="btn btn-tool" data-card-widget="remove">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <!-- Chart (70%) -->
+                            <div class="col-md-8">
+                                <div class="chart">
+                                    <canvas id="areaChart" style="width:100%;max-width:100%;height:350px"></canvas>
+                                </div>
+                            </div>
+                            <!-- Table (30%) -->
+                            <div class="col-md-4">
+                                <div style="max-height: 300px; overflow-y: auto;">
+                                    <table class="table table-sm table-bordered">
+                                        <thead style="background-color: #808080">
+                                        <tr>
+                                            <th class="text-center small">Year</th>
+                                            <th class="text-center small">Count</th>
+                                            <th class="text-center small">Actions</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        {% for year, count in year_wise_count.items %}
+                                        <tr>
+                                            <td class="text-center small">{{ year }}</td>
+                                            <td class="text-center small">{{ count }}</td>
+                                            <td class="text-center small">
+                                                <div class="d-flex justify-content-center">
+                                                    <button class="btn btn-secondary btn-xs mx-1"
+                                                            onclick="viewPublicationTend('{{ year }}','{{project_id}}')">
+                                                        <i
+                                                                class="fa fa-eye" aria-hidden="true"></i>
+                                                    </button>
+                                                    <button class="btn btn-primary btn-xs mx-1"
+                                                            onclick="publication_Exl('{{ year }}','{{project_id}}')">
+                                                        <i
+                                                                class="fas fa-file-download"
+                                                                aria-hidden="true"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- /.card-body -->
+                </div>
+                <!--TOP ASSIGNEE-->
+                <div class="card card-info">
+                    <div class="card-header">
+                        <h3 class="card-title">Top Assignee</h3>
+                        <div class="card-tools">
+                            <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                            <button type="button" class="btn btn-tool" data-card-widget="remove">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <!-- Chart (70%) -->
+                            <div class="col-md-8">
+                                <div class="chart">
+                                    <canvas id="barChart" style="width:100%;max-width:100%;height:350px"></canvas>
+                                </div>
+                            </div>
+                            <!-- Table (30%) -->
+                            <div class="col-md-4">
+                                <div style="max-height: 300px; overflow-y: auto;">
+                                    <table class="table table-sm table-bordered">
+                                        <thead style="background-color: #808080">
+                                        <tr>
+                                            <th class="text-center small">Assignee</th>
+                                            <th class="text-center small">Count</th>
+                                            <th class="text-center small">Actions</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        {% for item in top_assignees_dict %}
+                                        <tr>
+                                            <td class="text-center small">{{ item.assignee_standardized }}</td>
+                                            <td class="text-center small">{{ item.count }}</td>
+                                            <td class="text-center small">
+                                                <div class="d-flex justify-content-center">
+                                                    <button class="btn btn-secondary btn-xs mx-1"
+                                                            onclick="ViewTopAssignee('{{ item.assignee_standardized }}','{{project_id}}')">
+                                                        <i class="fa fa-eye"
+                                                           aria-hidden="true"></i>
+                                                    </button>
+                                                    <button class="btn btn-primary btn-xs mx-1"
+                                                            onclick="DownloadTopAssigneeExl('{{ item.assignee_standardized }}','{{project_id}}')">
+                                                        <i class="fas fa-file-download" aria-hidden="true"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="text-center mt-2">
+                                    <button class="btn btn-secondary btn-xs"
+                                            onclick="ViewTopTenAssignee('{{project_id}}')">View
+                                    </button>
+                                    <button class="btn btn-primary btn-xs"
+                                            onclick="DownloadTopTenAssigneeExl('{{project_id}}')">
+                                        Download
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- /.card-body -->
+                </div>
+                <!-- STACKED BAR CHART -->
+                <div class="card card-info">
+                    <div class="card-header">
+                        <h3 class="card-title">Recent Active Assignee</h3>
+                        <div class="card-tools">
+                            <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                            <button type="button" class="btn btn-tool" data-card-widget="remove">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <!-- Chart (70%) -->
+                            <div class="col-md-8">
+                                <div class="chart">
+                                    <canvas id="stackedBarChart"
+                                            style="width:100%;max-width:100%;height:350px">
+                                    </canvas>
+                                </div>
+                            </div>
+                            <!-- Table (30%) -->
+                            <div class="col-md-4">
+                                <div style="max-height: 300px; overflow-y: auto;">
+                                    <table class="table table-sm table-bordered">
+                                        <thead style="background-color: #808080">
+                                        <tr>
+                                            <th class="text-center small">Assignee</th>
+                                            <th class="text-center small">Count</th>
+                                            <th class="text-center small">Actions</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        {% for item in recent_assignees_last_five_years %}
+                                        <tr>
+                                            <td class="text-center small">{{ item.assignee_standardized }}</td>
+                                            <td class="text-center small">{{ item.count }}</td>
+                                            <td class="text-center small">
+                                                <div class="d-flex justify-content-center">
+                                                    <button class="btn btn-secondary btn-xs mx-1"
+                                                            onclick="ViewTopRecentAssignee('{{item.assignee_standardized}}','{{project_id}}')">
+                                                        <i class="fa fa-eye" aria-hidden="true"></i>
+                                                    </button>
+                                                    <button class="btn btn-primary btn-xs mx-1"
+                                                            onclick="DownloadRecentAssignee('{{item.assignee_standardized}}','{{project_id}}')">
+                                                        <i class="fas fa-file-download"
+                                                           aria-hidden="true"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="text-center mt-2">
+                                    <button class="btn btn-secondary btn-xs"
+                                            onclick="ViewRecentAssignee('{{project_id}}')">View
+                                    </button>
+                                    <button class="btn btn-primary btn-xs"
+                                            onclick="DownloadTopRecentAssigneeExl('{{project_id}}')">Download
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- /.card-body -->
+                </div>
+
+                <div class="card card-info">
+                    <div class="card-header">
+                        <h3 class="card-title">Expected Expiry Date</h3>
+                        <div class="card-tools">
+                            <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                            <button type="button" class="btn btn-tool" data-card-widget="remove">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <!-- Chart (70%) -->
+                            <div class="col-md-8">
+                                <div class="chart">
+                                    <canvas id="myChart" style="width:100%;max-width:100%;height:350px;"></canvas>
+                                </div>
+                            </div>
+                            <!-- Table (30%) -->
+                            <div class="col-md-4">
+                                <div style="max-height: 300px; overflow-y: auto;">
+                                    <table class="table table-sm table-bordered">
+                                        <thead style="background-color: #808080">
+                                        <tr>
+                                            <th class="text-center small">Year</th>
+                                            <th class="text-center small">Count</th>
+                                            <th class="text-center small">Actions</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        {% for key, val in year_wise_exp_date|dict_key_sort %}
+                                        <tr>
+                                            <td class="text-center small">{{ key }}</td>
+                                            <td class="text-center small">{{ val }}</td>
+                                            <td class="text-center small">
+                                                <div class="d-flex justify-content-center">
+                                                    <button class="btn btn-secondary btn-xs mx-1"
+                                                            onclick="Expected_Exp_View('{{key}}','{{project_id}}')">
+                                                        <i class="fa fa-eye" aria-hidden="true"></i>
+                                                    </button>
+                                                    <button class="btn btn-primary btn-xs mx-1"
+                                                            onclick="Expected_Exp_Exl('{{key}}','{{project_id}}')">
+                                                        <i
+                                                                class="fas fa-file-download" aria-hidden="true"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- /.card-body -->
+                </div>
+
+                <div class="card card-info">
+                    <div class="card-header">
+                        <h3 class="card-title">Top IPC</h3>
+                        <div class="card-tools">
+                            <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                            <button type="button" class="btn btn-tool" data-card-widget="remove">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <!-- Chart (70%) -->
+                            <div class="col-md-8">
+                                <div class="chart">
+                                    <canvas id="horizontal-stacker-bar-chart"
+                                            style="width:100%;max-width:100%;height:350px;">
+                                    </canvas>
+                                </div>
+                            </div>
+                            <!-- Table (30%) -->
+                            <div class="col-md-4">
+                                <div style="max-height: 300px; overflow-y: auto;">
+                                    <table class="table table-sm table-bordered">
+                                        <thead style="background-color: #808080">
+                                        <tr>
+                                            <th class="text-center small">IPC</th>
+                                            <th class="text-center small">Count</th>
+                                            <th class="text-center small">Actions</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        {% for key, val in get_ipc_counts.items %}
+                                        <tr>
+                                            <td class="text-center small">{{ key }}</td>
+                                            <td class="text-center small">{{ val }}</td>
+                                            <td class="text-center small">
+                                                <div class="d-flex justify-content-center">
+                                                    <button class="btn btn-secondary btn-xs mx-1"
+                                                            onclick="indIpcDataView('{{key}}','{{project_id}}')">
+                                                        <i class="fa fa-eye" aria-hidden="true"></i>
+                                                    </button>
+                                                    <button class="btn btn-primary btn-xs mx-1"
+                                                            onclick="downloadIpcExcelFile('{{key}}','{{project_id}}')">
+                                                        <i
+                                                                class="fas fa-file-download" aria-hidden="true"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="text-center mt-2">
+                                    <button class="btn btn-secondary btn-xs"
+                                            onclick="openIpcDataView('{{project_id}}')">View
+                                    </button>
+                                    <button class="btn btn-primary btn-xs"
+                                            onclick="downloadTopIPC('{{project_id}}')">
+                                        Download
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- /.card-body -->
+                </div>
+                <!--TOP IPC-->
+                <div class="card card-info">
+                    <div class="card-header">
+                        <h3 class="card-title">Top CPC</h3>
+                        <div class="card-tools">
+                            <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                            <button type="button" class="btn btn-tool" data-card-widget="remove">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <!-- Chart (70%) -->
+                            <div class="col-md-8">
+                                <div class="chart">
+                                    <canvas id="horizontal-stacker-bar-chart_cpc"
+                                            style="width:100%;max-width:100%;height:350px;"></canvas>
+                                </div>
+                            </div>
+                            <!-- Table (30%) -->
+                            <div class="col-md-4">
+                                <div style="max-height: 300px; overflow-y: auto;">
+                                    <table class="table table-sm table-bordered">
+                                        <thead style="background-color: #808080">
+                                        <tr>
+                                            <th class="text-center small">CPC</th>
+                                            <th class="text-center small">Count</th>
+                                            <th class="text-center small">Actions</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        {% for key, val in get_cpc_counts_from_db.items %}
+                                        <tr>
+                                            <td class="text-center small">{{ key }}</td>
+                                            <td class="text-center small">{{ val }}</td>
+                                            <td class="text-center small">
+                                                <div class="d-flex justify-content-center">
+                                                    <button class="btn btn-secondary btn-xs mx-1"
+                                                            onclick="indCpcDataView('{{key}}','{{project_id}}')">
+                                                        <i class="fa fa-eye" aria-hidden="true"></i>
+                                                    </button>
+                                                    <button class="btn btn-primary btn-xs mx-1"
+                                                            onclick="downloadIndCpc('{{key}}','{{project_id}}')"><i
+                                                            class="fas fa-file-download" aria-hidden="true"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="text-center mt-2">
+                                    <button class="btn btn-secondary btn-xs"
+                                            onclick="openCpcDataView('{{project_id}}')">View
+                                    </button>
+                                    <button class="btn btn-primary btn-xs"
+                                            onclick="downloadTopCPC('{{project_id}}')">
+                                        Download
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- /.card-body -->
+                </div>
+            </div>
+        </section>
+    </div>
+    {% else %}
+    <img id="logo" src="{% static 'img/No data-amico.svg' %}" width="100%" height="70%">
+    <div style="text-align: center;">
+        <b>No Data Found! Please contact the Project Manager!</b>
+    </div>
+    {% endif %}
+    <!-- /.row (main row) -->
     </div><!-- /.container-fluid -->
 </section>
 

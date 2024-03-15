@@ -1816,11 +1816,12 @@ def bibliographic_charts(req, project_id):
     """
     context = {}
     try:
-        project_code_qs = Project.objects.filter(id=project_id).first().code
-        process_excel_data(context, req=req, project_id=project_code_qs)
+        project_code_qs = Project.objects.filter(id=project_id).first()
+        process_excel_data(context, req=req, project_id=project_code_qs.code)
         user_instance = CustomUser.objects.get(id=req.session.get('logged_in_user_id'))
         context['user_instance'] = user_instance
         context['project_id'] = project_id
+        context['project_name'] = project_code_qs.name
         if req.method == 'POST':
             uploaded_media = req.FILES.get('patient_data')
             if uploaded_media:
@@ -1831,8 +1832,8 @@ def bibliographic_charts(req, project_id):
                     df = pd.read_excel(uploaded_media, engine='openpyxl')
                     patent_data_rows = []
                     user_instance = CustomUser.objects.get(id=user_id)
-                    if PatentData.objects.filter(project_code=project_code_qs):
-                        PatentData.objects.filter(project_code=project_code_qs).delete()
+                    if PatentData.objects.filter(project_code=project_code_qs.code):
+                        PatentData.objects.filter(project_code=project_code_qs.code).delete()
                     for index, row in df.iterrows():
                         # print(row['Priority Country'])
                         application_date_str = row['Application Dates']
@@ -1874,14 +1875,14 @@ def bibliographic_charts(req, project_id):
                             'cpc': row['CPC'],
                             'ipc': row['IPC'],
                             'e_fan': row['EFAN'],
-                            'project_code': project_code_qs,
+                            'project_code': project_code_qs.code,
                             # 'priority_country': row['Priority Country']
                         }
                         patent_data_rows.append(patent_data_dict)
                     PatentData.objects.bulk_create([
                         PatentData(**data) for data in patent_data_rows
                     ])
-                    process_excel_data(context, req=req, project_id=project_code_qs)
+                    process_excel_data(context, req=req, project_id=project_code_qs.code)
                 except Exception as e:
                     print(f"Error processing uploaded file: {str(e)}")
                     return HttpResponseServerError("Error processing uploaded file. Please try again.")
