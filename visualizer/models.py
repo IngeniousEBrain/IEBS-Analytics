@@ -208,9 +208,12 @@ class ClientProjectAssociation(models.Model):
     client = models.ForeignKey('CustomUser', on_delete=models.CASCADE,
                                related_name='client_project_associations')
     projects = models.ManyToManyField(Project)
-    assigned_by = models.ForeignKey('CustomUser', on_delete=models.CASCADE,
-                               related_name='assigned_by_project')
-    assigned_time = models.DateTimeField(auto_now=True)
+    allocated_by = models.ForeignKey('CustomUser', on_delete=models.CASCADE,
+                               related_name='allocated_by_project')
+    deallocated_by = models.ForeignKey('CustomUser', on_delete=models.CASCADE,
+                                     related_name='deallocated_by_project')
+    allocation_time = models.DateTimeField(auto_now=True)
+    deallocation_time = models.DateTimeField(null=True, blank=True)
     updated_assigned_time = models.DateTimeField(auto_now=True)
 
     def __str__(self):

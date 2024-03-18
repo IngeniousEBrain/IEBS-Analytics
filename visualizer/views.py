@@ -306,7 +306,15 @@ def delete_project(request):
         project_id = request.POST.get('project_id')
         user_id = request.session.get('logged_in_user_id')
         try:
-            user_associations = UserProjectAssociation.objects.filter(user_id=user_id)
+            user_qs = get_object_or_404(CustomUser, id=user_id)
+            user_associations = {}
+            if user_qs.roles == 'client':
+                user_associations = ClientProjectAssociation.objects.filter(client_id=user_id)
+            elif user_qs.roles == 'project_manager':
+                user_associations = UserProjectAssociation.objects.filter(user_id=user_id)
+            elif user_qs.roles == 'key_account_holder':
+                user_associations = KeyAccountManagerProjectAssociation.objects.filter(key_account_manager_id=user_id)
+
             project_to_deallocate = Project.objects.get(id=project_id)
             for user_association in user_associations:
                 user_association.projects.remove(project_to_deallocate)
@@ -2126,7 +2134,6 @@ def get_year_wise_excel(req, project_id):
 
 def get_top_citing_count(req, project_id):
     citing_patents_dict = {}
-    user_id_to_filter = req.session.get('logged_in_user_id')
     top_ten_citing_patents = PatentData.objects.filter(
         project_code=project_id
     ).exclude(
@@ -2148,7 +2155,6 @@ def get_top_citing_count(req, project_id):
 
 def get_top_cited_count(req, project_id):
     cited_patents_dict = {}
-    user_id_to_filter = req.session.get('logged_in_user_id')
     top_ten_cited_patents = PatentData.objects.filter(
         project_code=project_id
     ).exclude(
@@ -2169,7 +2175,6 @@ def get_top_cited_count(req, project_id):
 
 
 def get_year_with_publication(req, project_id):
-    user_id = req.session.get('logged_in_user_id')
     year_counts = PatentData.objects.filter(project_code=project_id).annotate(
         publication_year=ExtractYear('publication_dates')
     ).values('publication_year').annotate(
@@ -2180,7 +2185,6 @@ def get_year_with_publication(req, project_id):
 
 
 def get_year_with_exp_date(req, project_id):
-    user_id = req.session.get('logged_in_user_id')
     year_counts = PatentData.objects.filter(
         Q(expected_expiry_dates__isnull=False) | Q(expected_expiry_dates__isnull=True),
         project_code=project_id
@@ -2189,14 +2193,11 @@ def get_year_with_exp_date(req, project_id):
     ).values('expected_expiry_date').annotate(count=Count('id'))
 
     year_wise_exp_date = defaultdict(int)
-
     for item in year_counts:
         # Skip processing if expected_expiry_date is None or invalid
         if item['expected_expiry_date'] is None:
             continue
-
         year_wise_exp_date[item['expected_expiry_date']] += item['count']
-
     return dict(year_wise_exp_date)
 
 
@@ -2210,7 +2211,6 @@ def process_assignees(req, project_code):
 
 
 def process_assignees_last_five_years(request, project_id):
-    user_id = request.session.get('logged_in_user_id')
     current_year = datetime.now().year
     last_five_years_start = current_year - 5
 
@@ -2296,7 +2296,7 @@ def project_client_association(req):
             project_ids = req.POST.getlist('projects')
             client = get_object_or_404(CustomUser, username=client_username, roles=CustomUser.CLIENT)
             projects = [get_object_or_404(Project, id=int(project_id)) for project_id in project_ids[0].split(',')]
-            client_project_association = ClientProjectAssociation.objects.create(client=client, assigned_by=user_qs)
+            client_project_association = ClientProjectAssociation.objects.create(client=client, allocated_by=user_qs)
             client_project_association.projects.set(projects)
         return render(req, 'pages/projects/project_client_association.html',
                       {'clients': clients, 'associated_projects': associated_projects,
