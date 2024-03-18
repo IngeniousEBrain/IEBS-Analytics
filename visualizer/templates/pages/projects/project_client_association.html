@@ -124,11 +124,14 @@
 
             // Reset all checkboxes
             $('input[name="projectCheckbox"]').prop('checked', false);
-
+            var csrfToken = getCookie('csrftoken');
             // Fetch associated project IDs for the selected client from the backend
             $.ajax({
-                url: '/get_associated_projects/',  // Updated URL
+                url: '/get_associated_projects/',
                 method: 'GET',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                },
                 data: {
                     'client': selectedClient
                 },

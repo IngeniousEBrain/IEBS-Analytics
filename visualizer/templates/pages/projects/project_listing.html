@@ -121,7 +121,7 @@
                                     <a href="{% url 'edit_project' project.id %}">
                                     <i class="fas fa-edit" style="color: rgb(87, 151, 87);" title="Edit Project"></i>
                                     </a>
-                                    {% if chart_type == 'bibliographic' or  chart_type == 'common' %}
+                                    {% if chart_type == 'bibliographic' or  chart_type == 'common' or  'completed_project_list' in request.get_full_path or 'in_progress_project_list' in request.get_full_path %}
                                     <a href="{% url 'bibliographic_charts' project_id=project.id %}">
                                         <i class="fas fa-chart-bar" aria-hidden="true" title="Projects Analytics"></i>
                                     </a>

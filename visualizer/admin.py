@@ -12,7 +12,7 @@ Classes:
 """
 from django.contrib.auth.models import Group, User
 from django.contrib import admin
-from .models import CustomUser, Project, UserProjectAssociation
+from .models import CustomUser, Project, UserProjectAssociation, ClientProjectAssociation, KeyAccountManagerProjectAssociation
 
 
 @admin.register(CustomUser)
@@ -76,7 +76,27 @@ class UserProjectAssociationAdmin(admin.ModelAdmin):
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 
+class ClientProjectAssociationAdmin(admin.ModelAdmin):
+    model = ClientProjectAssociation
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == "client":
+            kwargs["queryset"] = CustomUser.objects.filter(roles=CustomUser.CLIENT)
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+
+class KeyAccountManagerProjectAssociationAdmin(admin.ModelAdmin):
+    model = KeyAccountManagerProjectAssociation
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == "key_account_manager":
+            kwargs["queryset"] = CustomUser.objects.filter(roles=CustomUser.KEY_ACCOUNT_HOLDER)
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+
 admin.site.register(UserProjectAssociation, UserProjectAssociationAdmin)
+admin.site.register(ClientProjectAssociation, ClientProjectAssociationAdmin)
+admin.site.register(KeyAccountManagerProjectAssociation, KeyAccountManagerProjectAssociationAdmin)
 
 # Unregister default Group and User models from admin
 admin.site.unregister(Group)

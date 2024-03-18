@@ -29,7 +29,8 @@ from django.http import HttpResponseServerError
 from django.db.models import Q
 from django.db.models.functions import ExtractYear
 # Local imports
-from .models import CustomUser, Project, PatentData, UserProjectAssociation
+from .models import CustomUser, Project, PatentData, UserProjectAssociation, ClientProjectAssociation, \
+    KeyAccountManagerProjectAssociation
 from .packages import request
 from django.db.models import Count
 from .tasks import process_excel_data_task
@@ -257,20 +258,21 @@ def get_user_project_data(user_id):
     """
     user_qs = CustomUser.objects.filter(id=user_id).first()
     if user_qs.roles == 'client':
-        total = Project.objects.filter(Q(project_manager=user_id) |
-                                                     Q(clients=user_id) |
-                                                     Q(key_account_managers=user_id))
+        client_projects = ClientProjectAssociation.objects.filter(client=user_qs).values_list('projects', flat=True)
+        total = Project.objects.filter(id__in=client_projects)
+        completed_projects = total.filter(status__exact='Completed')
+        in_progress_projects = total.filter(status__exact='In Progress')
+    elif user_qs.roles == 'project_manager':
+        manager_projects = UserProjectAssociation.objects.filter(user=user_qs).values_list('projects', flat=True)
+        total = Project.objects.filter(id__in=manager_projects).distinct()
         completed_projects = total.filter(status__exact='Completed')
         in_progress_projects = total.filter(status__exact='In Progress')
     else:
-        total = Project.objects.filter(userprojectassociation__user_id=user_id)
-        completed_projects = Project.objects.filter(
-            userprojectassociation__user_id=user_id, status__exact='Completed'
-        )
-        in_progress_projects = Project.objects.filter(
-            userprojectassociation__user_id=user_id, status__exact='In Progress'
-        )
-
+        kam_projects = KeyAccountManagerProjectAssociation.objects.filter(key_account_manager=user_qs).values_list(
+            'projects', flat=True)
+        total = Project.objects.filter(id__in=kam_projects).distinct()
+        completed_projects = total.filter(status__exact='Completed')
+        in_progress_projects = total.filter(status__exact='In Progress')
     return {
         'user': user_qs,
         'total': total,
@@ -282,31 +284,19 @@ def get_user_project_data(user_id):
 @request.validator
 def project_list(req, chart_type):
     """
-    Renders the 'project_listing.html' template with a list of projects associated
-    with the logged-in user.
 
-    Args:
-        req (HttpRequest): The HTTP request object.
 
-    Returns:
-        HttpResponse: Rendered response containing the project listing for the user.
-
-    Example:
-        The function fetches the logged-in user's ID from the session, retrieves the user object,
-        and queries for projects associated with the user. The project data is then passed to the
-        'project_listing.html' template for rendering.
-
-    Note:
-        This function assumes the presence of a 'user_id' key in the session to
-        identify the logged-in user.
-
-    """
+     """
     user_id = req.session.get('logged_in_user_id')
     user_qs = get_object_or_404(CustomUser, id=user_id)
-    projects_as_manager = Project.objects.filter(project_manager=user_qs)
-    projects_as_client = Project.objects.filter(clients=user_qs)
-    projects_as_kam = Project.objects.filter(key_account_managers=user_qs)
-    projects = (projects_as_manager | projects_as_client | projects_as_kam).distinct()
+
+    if user_qs.roles == 'client':
+        projects = Project.objects.filter(clientprojectassociation__client=user_qs)
+    elif user_qs.roles == 'project_manager':
+        projects = Project.objects.filter(userprojectassociation__user=user_qs).distinct()
+    elif user_qs.roles == 'key_account_holder':
+        projects = Project.objects.filter(keyaccountmanagerprojectassociation__key_account_manager=user_qs)
+
     context = {'projects_data': projects, 'user_qs': user_qs, 'chart_type': chart_type}
     return render(req, 'pages/projects/project_listing.html', context)
 
@@ -340,28 +330,19 @@ def edit_project(request, project_id):
 @request.validator
 def completed_project_list(req):
     """
-    Renders the 'project_listing.html' template with a list of projects associated
-    with the logged-in user.
-
-    Args:
-        req (HttpRequest): The HTTP request object.
-
-    Returns:
-        HttpResponse: Rendered response containing the project listing for the user.
-
-    Example:
-        The function fetches the logged-in user's ID from the session, retrieves the user object,
-        and queries for projects associated with the user. The project data is then passed to the
-        'project_listing.html' template for rendering.
-
-    Note:
-        This function assumes the presence of a 'user_id' key in the session to
-        identify the logged-in user.
-
+        This Function is filtering out the completed projects
+        which are associated to the logged in user.
     """
     user_id = req.session.get('logged_in_user_id')
     user_qs = get_object_or_404(CustomUser, id=user_id)
-    projects = Project.objects.filter(userprojectassociation__user_id=user_id, status='Completed')
+    projects = Project.objects.filter(status='Completed')
+    if user_qs.roles == 'client':
+        projects = projects.filter(clientprojectassociation__client=user_qs)
+    elif user_qs.roles == 'project_manager':
+        projects = projects.filter(userprojectassociation__user=user_qs)
+    elif user_qs.roles == 'key_account_holder':
+        projects = projects.filter(keyaccountmanagerprojectassociation__key_account_manager=user_qs)
+
     context = {'projects_data': projects, 'user_qs': user_qs}
     return render(req, 'pages/projects/project_listing.html', context)
 
@@ -390,7 +371,16 @@ def in_progress_project_list(req):
     """
     user_id = req.session.get('logged_in_user_id')
     user_qs = get_object_or_404(CustomUser, id=user_id)
-    projects = Project.objects.filter(userprojectassociation__user_id=user_id, status='In Progress')
+
+    projects = Project.objects.filter(status='In Progress')
+
+    if user_qs.roles == 'client':
+        projects = projects.filter(clientprojectassociation__client=user_qs)
+    elif user_qs.roles == 'project_manager':
+        projects = projects.filter(userprojectassociation__user=user_qs)
+    elif user_qs.roles == 'key_account_holder':
+        projects = projects.filter(keyaccountmanagerprojectassociation__key_account_manager=user_qs)
+
     context = {'projects_data': projects, 'user_qs': user_qs}
     return render(req, 'pages/projects/project_listing.html', context)
 
@@ -440,10 +430,9 @@ def tech_charts(req, project_id):
     """
     logic for tech charts
     """
-    print("tech", project_id)
     # ================================
-    proj_name = Project.objects.filter(id = project_id).first().name
-    context = {'project_id': project_id, 'proj_name':proj_name}
+    proj_name = Project.objects.filter(id=project_id).first().name
+    context = {'project_id': project_id, 'proj_name': proj_name}
     return render(req, 'pages/charts/technical_chart.html', context)
 
 
@@ -455,6 +444,7 @@ def get_q_object(assignee, partner):
 
 @csrf_exempt
 def competitor_colab_view(request, proj_code):
+    code = Project.objects.filter(id=proj_code).first().code
     try:
         if request.method == 'POST':
             if 'patent_data' in request.session:
@@ -471,7 +461,8 @@ def competitor_colab_view(request, proj_code):
             if data.get('assignee_standardized') and data.get('legal_status'):
                 assignee_list = [data.get('assignee_standardized')]
                 lega_status = PatentData.objects.filter(assignee_standardized__in=assignee_list,
-                                                        legal_status=data.get('legal_status'), project_code=proj_code)
+                                                        legal_status=data.get('legal_status'), project_code=code)
+
                 if data.get('type') == 'display':
                     ass_legal_status_qs = serialize('json', lega_status)
                     context = {'ass_legal_status_qs': json.loads(ass_legal_status_qs)}
@@ -509,7 +500,7 @@ def competitor_colab_view(request, proj_code):
             elif data.get('assignee') and data.get('publication'):
                 year_wise_count = PatentData.objects.filter(assignee_standardized__icontains=data.get('assignee'),
                                                             publication_number=data.get('publication'),
-                                                            project_code=proj_code,
+                                                            project_code=code,
                                                             )
                 if data.get('type') == 'display':
                     ass_pub_date_qs = serialize('json', year_wise_count)
@@ -549,7 +540,7 @@ def competitor_colab_view(request, proj_code):
             elif data.get('assignee') and data.get('year'):
                 year_wise_count = PatentData.objects.filter(assignee_standardized__icontains=data.get('assignee'),
                                                             application_dates__year=data.get('year'),
-                                                            project_code=proj_code,
+                                                            project_code=code,
                                                             )
                 if data.get('type') == 'display':
                     partner_app_date_qs = serialize('json', year_wise_count)
@@ -588,7 +579,7 @@ def competitor_colab_view(request, proj_code):
             elif data.get('type') == 'allCitedDisplay':
                 user_id = request.session.get('logged_in_user_id')
                 filtered_data = PatentData.objects.filter(citing_patents_count__isnull=False,
-                                                          project_code=proj_code)
+                                                          project_code=code)
                 top_ten_highest_citing = filtered_data.order_by('-citing_patents_count')[:10]
                 top_ten_highest_citing_qs = serialize('json', top_ten_highest_citing)
                 context = {'top_ten_highest_citing_qs': json.loads(top_ten_highest_citing_qs)}
@@ -601,7 +592,7 @@ def competitor_colab_view(request, proj_code):
             elif data.get('type') == 'allCitedFile':
                 user_id = request.session.get('logged_in_user_id')
                 filtered_data = PatentData.objects.filter(citing_patents_count__isnull=False,
-                                                          project_code=proj_code)
+                                                          project_code=code)
                 top_ten_highest_citing = filtered_data.order_by('-citing_patents_count')[:10]
                 data_list = []
                 for patent_data in top_ten_highest_citing:
@@ -639,7 +630,7 @@ def competitor_colab_view(request, proj_code):
                 if data.get('type') == 'display':
                     for partner in partners_list:
                         q_obj = get_q_object(assignee, partner)
-                        patents = PatentData.objects.filter(q_obj, project_code=proj_code)
+                        patents = PatentData.objects.filter(q_obj, project_code=code)
                         patents_data = serialize('json', patents)
                         patents_list = json.loads(patents_data)
                         patent_data[f"{assignee}_{partner}"] = patents_list
@@ -654,7 +645,7 @@ def competitor_colab_view(request, proj_code):
                 if data.get('type') == 'file':
                     for partner in partners_list:
                         q_obj = get_q_object(assignee, partner)
-                        patents = PatentData.objects.filter(q_obj, project_code=proj_code)
+                        patents = PatentData.objects.filter(q_obj, project_code=code)
                         for patent_data in patents:
                             data = {
                                 'Publication Number': patent_data.publication_number,
@@ -709,12 +700,27 @@ def competitor_colab_view(request, proj_code):
 
 @request.validator
 def competitor_charts(req, project_id):
-    project_qs = Project.objects.filter(id=project_id).first()
-    project_id_template = project_qs.id
-    code = project_qs.code
-    project_name = project_qs.name
+    user_id = req.session.get('logged_in_user_id')
+    user_qs = get_object_or_404(CustomUser, id=user_id)
+    project = get_object_or_404(Project, id=project_id)
+    # Check if the user is authorized to access the project
+    if not (
+            UserProjectAssociation.objects.filter(user=user_qs, projects=project).exists() or
+            ClientProjectAssociation.objects.filter(client=user_qs, projects=project).exists() or
+            KeyAccountManagerProjectAssociation.objects.filter(key_account_manager=user_qs, projects=project).exists()
+    ):
+        # User is not associated with the project
+        return HttpResponse("You are not authorized to view competitor charts for this project.")
+
+    # Continue processing for authorized user
+    project_id_template = project.id
+    code = project.code
+    project_name = project.name
+
+    # Fetch patent data for the project
     data = PatentData.objects.filter(project_code=code)
     data1 = data.values('assignee_standardized').annotate(count=Count('assignee_standardized')).order_by('-count')[:10]
+
     result = []
     for item in data1:
         assignee_name = item['assignee_standardized']
@@ -908,7 +914,7 @@ def competitor_charts(req, project_id):
     div6 = fig6.to_html(full_html=False)
     context = {'plot_div1': div1, 'plot_div2': div2, 'plot_div3': div3, 'plot_div4': div4,
                'plot_div6': div6, 'data1': data1, 'result': res, 'data': data, 'proj_code': code,
-               'project_id': project_id_template,'project_name':project_name,
+               'project_id': project_id_template, 'project_name': project_name,
                'table_data': table_data, 'legal_status_counts': legal_status_counts}
     return render(req, 'pages/charts/competitor_charts.html', context)
 
@@ -971,7 +977,6 @@ def download_publication_exl(request, year, project_id):
         return response
 
 
-
 def download_exp_exl(request, year, project_id):
     data_list = []
     user_id_to_filter = request.session.get('logged_in_user_id')
@@ -1021,7 +1026,6 @@ def download_exp_exl(request, year, project_id):
         response['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 
         return response
-
 
 
 def download_legal_status_exl(request, status, project_id):
@@ -1075,7 +1079,6 @@ def download_legal_status_exl(request, status, project_id):
         return response
 
 
-
 def individual_cpc_exl(request, cpc, project_id):
     data_list = []
     user_id_to_filter = request.session.get('logged_in_user_id')
@@ -1125,7 +1128,6 @@ def individual_cpc_exl(request, cpc, project_id):
         response['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 
         return response
-
 
 
 def individual_ipc_exl(request, ipc, project_id):
@@ -1181,7 +1183,6 @@ def individual_ipc_exl(request, ipc, project_id):
         return response
 
 
-
 def download_innovative_exl(request, country, project_id):
     data_list = []
     user_id_to_filter = request.session.get('logged_in_user_id')
@@ -1231,7 +1232,6 @@ def download_innovative_exl(request, country, project_id):
         response['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 
         return response
-
 
 
 def download_ind_citing_excel(request, patent, project_id):
@@ -1564,7 +1564,6 @@ def top_ten_recent_ass_exl(request, project_id):
         return response
 
 
-
 def top_ten_ass_exl(request, project_id):
     user_id_to_filter = request.session.get('logged_in_user_id')
     code = Project.objects.filter(id=project_id).first().code
@@ -1779,27 +1778,6 @@ def fetch_data_view(request):
 
 @request.validator
 def bibliographic_charts(req, project_id):
-    """
-    Renders bibliographic charts based on the data provided in an uploaded Excel file.
-
-    Args:
-        req (HttpRequest): The HTTP request object.
-
-    Returns:
-        HttpResponse: Rendered response containing bibliographic charts.
-
-    Example:
-        The function reads an Excel file uploaded via POST, processes the data
-        to generate various charts,
-        and renders the 'bibliographic_charts.html' template with the generated data.
-
-    Note:
-        The function expects an Excel file with specific columns such as
-        'Assignee - Standardized',
-        'Earliest Patent Priority Date', 'Legal Status', 'Cited Patents - Count',
-         'Citing Patents - Count', etc.
-
-    """
     context = {}
     try:
         project_code_qs = Project.objects.filter(id=project_id).first()
@@ -1887,10 +1865,21 @@ def process_excel_data(context, req, project_id):
         context (dict): The context dictionary to store chart data.
 
     """
-    user_id = req.session.get('logged_in_user_id')
+
+    user_qs = get_object_or_404(CustomUser, id=req.session.get('logged_in_user_id'))
+    # Check if the user is project manager, client, or key account manager of the project
+    project = get_object_or_404(Project, id=project_id)
+    if not (
+            UserProjectAssociation.objects.filter(user=user_qs, projects=project).exists() or
+            ClientProjectAssociation.objects.filter(client=user_qs, projects=project).exists() or
+            KeyAccountManagerProjectAssociation.objects.filter(key_account_manager=user_qs, projects=project).exists()
+    ):
+        # User is not associated with the project
+        return HttpResponse("You are not authorized to view data for this project.")
+
+    # Continue processing data for authorized user
     data = PatentData.objects.filter(project_code=project_id)
     data = data.values('assignee_standardized').annotate(count=Count('assignee_standardized')).order_by('-count')[:10]
-    # top recent assignees
     current_year = datetime.now().year
     last_five_years_start = current_year - 5
     top_assignees_last_five_years = (
@@ -2290,31 +2279,34 @@ def project_client_association(req):
     """
     User Profile
     """
+    project_association = {}
     user_id = req.session.get('logged_in_user_id')
-    clients = CustomUser.objects.filter(roles=CustomUser.CLIENT, is_superuser=False)
-    project_association = UserProjectAssociation.objects.get(user=user_id)
-    associated_projects = project_association.projects.all()
-    associated_project_ids = [project.id for project in associated_projects]
+    user_qs = CustomUser.objects.get(id=user_id)
+    if user_qs.roles != 'Client':
+        clients = CustomUser.objects.filter(roles=CustomUser.CLIENT, is_superuser=False)
+        if user_qs.roles == 'project_manager':
+            project_association = UserProjectAssociation.objects.get(user=user_id)
+        if user_qs.roles == 'key_account_holder':
+            project_association = KeyAccountManagerProjectAssociation.objects.get(user=user_id)
+        associated_projects = project_association.projects.all()
+        associated_project_ids = [project.id for project in associated_projects]
 
-    if req.method == 'POST':
-        client_username = req.POST.get('client')
-        project_ids = req.POST.getlist('projects')
-        client = get_object_or_404(CustomUser, username=client_username, roles=CustomUser.CLIENT)
-        for project_id in project_ids[0].split(','):
-            project = get_object_or_404(Project, id=int(project_id),
-                                        project_manager=req.session.get('logged_in_user_id'))
-            project.clients.add(client)
-            project.save()
-    return render(req, 'pages/projects/project_client_association.html',
-                  {'clients': clients, 'associated_projects': associated_projects,
-                   'associated_project_ids': associated_project_ids})
+        if req.method == 'POST':
+            client_username = req.POST.get('client')
+            project_ids = req.POST.getlist('projects')
+            client = get_object_or_404(CustomUser, username=client_username, roles=CustomUser.CLIENT)
+            projects = [get_object_or_404(Project, id=int(project_id)) for project_id in project_ids[0].split(',')]
+            client_project_association = ClientProjectAssociation.objects.create(client=client, assigned_by=user_qs)
+            client_project_association.projects.set(projects)
+        return render(req, 'pages/projects/project_client_association.html',
+                      {'clients': clients, 'associated_projects': associated_projects,
+                       'associated_project_ids': associated_project_ids})
 
 
 @request.validator
 def get_associated_projects(req):
     selected_client = req.GET.get('client')
-    associated_projects = Project.objects.filter(clients__username=selected_client)
-    print(associated_projects)
-
-    associated_project_ids = [project.id for project in associated_projects]
+    associated_projects = ClientProjectAssociation.objects.filter(client__username=selected_client).values_list(
+        'projects', flat=True)
+    associated_project_ids = [project for project in associated_projects]
     return JsonResponse({'associated_projects': associated_project_ids})
