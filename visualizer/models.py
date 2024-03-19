@@ -137,30 +137,10 @@ class Project(models.Model):
         (IN_PROGRESS, 'In Progress')
     ]
 
-    code = models.CharField(max_length=100 , unique=True)
+    code = models.CharField(max_length=100, unique=True)
     name = models.CharField(max_length=255, unique=True)
     description = RichTextField()
     scope = RichTextField(default="")
-    project_manager = models.ForeignKey(
-        CustomUser,
-        on_delete=models.CASCADE,
-        related_name='managed_projects',
-        limit_choices_to={'roles': CustomUser.PROJECT_MANAGER}
-    )
-
-    clients = models.ManyToManyField(
-        CustomUser,
-        related_name='assigned_projects',
-        limit_choices_to={'roles': CustomUser.CLIENT},
-        blank=True,
-    )
-
-    key_account_managers = models.ManyToManyField(
-        CustomUser,
-        related_name='assigned_projects_KAM',
-        limit_choices_to={'roles': CustomUser.KEY_ACCOUNT_HOLDER},
-        blank=True,
-    )
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=IN_PROGRESS)
     created_date = models.DateTimeField(default=timezone.now)
     updated_date = models.DateTimeField(auto_now=True)
@@ -196,7 +176,6 @@ class UserProjectAssociation(models.Model):
     assigned_time = models.DateTimeField(auto_now=True)
     updated_assigned_time = models.DateTimeField(auto_now=True)
 
-
     def __str__(self):
         """
         Return a string representation of the UserProjectAssociation.
@@ -210,6 +189,81 @@ class UserProjectAssociation(models.Model):
         user_username = str(self.user.username) if self.user else "None"
         project_names = [str(project.name) for project in self.projects.all()]
         return f"Manager: {user_username} || Projects: {', '.join(project_names)}"
+
+
+class ClientProjectAssociation(models.Model):
+    """
+    Model representing the association between a client and multiple projects.
+
+    Attributes:
+        client (CustomUser): The client associated with the projects.
+        projects (ManyToManyField): The projects associated with the client.
+        assigned_time (DateTimeField): The timestamp when the association was initially created.
+        updated_assigned_time (DateTimeField): The timestamp when the association was last updated.
+
+    Methods:
+        __str__(): String representation of the ClientProjectAssociation instance.
+
+    """
+    client = models.ForeignKey('CustomUser', on_delete=models.CASCADE,
+                               related_name='client_project_associations')
+    projects = models.ManyToManyField(Project)
+    allocated_by = models.ForeignKey('CustomUser', on_delete=models.CASCADE,
+                               related_name='allocated_by_project',null= True, blank=True)
+    deallocated_by = models.ForeignKey('CustomUser', on_delete=models.CASCADE,
+                                     related_name='deallocated_by_project', null= True, blank=True)
+    allocation_time = models.DateTimeField(auto_now=True,null=True, blank=True)
+    deallocation_time = models.DateTimeField(null=True, blank=True)
+    updated_assigned_time = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        """
+        Return a string representation of the ClientProjectAssociation.
+
+        The string includes the username of the associated client and the names of
+        the associated projects.
+
+        Returns:
+            str: String representation of the ClientProjectAssociation.
+        """
+        client_username = str(self.client.username) if self.client else "None"
+        project_names = [str(project.name) for project in self.projects.all()]
+        return f"Client: {client_username} || Projects: {', '.join(project_names)}"
+
+
+class KeyAccountManagerProjectAssociation(models.Model):
+    """
+    Model representing the association between a key account manager and multiple projects.
+
+    Attributes:
+        key_account_manager (CustomUser): The key account manager associated with the projects.
+        projects (ManyToManyField): The projects associated with the key account manager.
+        assigned_time (DateTimeField): The timestamp when the association was initially created.
+        updated_assigned_time (DateTimeField): The timestamp when the association was last updated.
+
+    Methods:
+        __str__(): String representation of the KeyAccountManagerProjectAssociation instance.
+
+    """
+    key_account_manager = models.ForeignKey('CustomUser', on_delete=models.CASCADE,
+                                            related_name='key_account_manager_project_associations')
+    projects = models.ManyToManyField(Project)
+    assigned_time = models.DateTimeField(auto_now=True)
+    updated_assigned_time = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        """
+        Return a string representation of the KeyAccountManagerProjectAssociation.
+
+        The string includes the username of the associated key account manager and the names of
+        the associated projects.
+
+        Returns:
+            str: String representation of the KeyAccountManagerProjectAssociation.
+        """
+        kam_username = str(self.key_account_manager.username) if self.key_account_manager else "None"
+        project_names = [str(project.name) for project in self.projects.all()]
+        return f"Key Account Manager: {kam_username} || Projects: {', '.join(project_names)}"
 
 
 class PatentData(models.Model):

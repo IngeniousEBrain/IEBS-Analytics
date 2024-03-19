@@ -7,15 +7,9 @@
 <!-- Main content -->
 <section class="content">
     <div class="container-fluid">
-        <div class="row">
-            <div class="col-12">
-                <h4 class="mb-2">Bibliographic Charts - <b>({{ project_name }})</b></h4>
-            </div>
-        </div>
-
         {% if top_citing_patents %}
         <div class="row">
-            <div class="col-12">
+            <div class="col-lg-12 d-flex justify-content-center">
                 <div class="tab-container">
                     <a href="{% url 'competitor_charts' project_id %}" class="tab-link active">
                         <span class="tab-icon">&#8592;</span>
@@ -29,6 +23,9 @@
             </div>
         </div>
         {% endif %}
+        <div class="col-lg-12 d-flex">
+            <h5 class="mb-2">Bibliographic Charts - <b>({{ project_name }})</b></h5>
+        </div>
 
         <div class="row align-items-center">
             <div class="col-lg-8">
@@ -50,7 +47,7 @@
             </div>
 
             {% if user_instance.roles == 'project_manager' %}
-            <div class="col-lg-4 text-lg-right">
+            <div class="col-lg-4">
                 <form method="post" action="/bibliographic_charts/{{ project_id }}/" enctype="multipart/form-data"
                       class="mb-2">
                     {% csrf_token %}
@@ -58,8 +55,9 @@
                         <div class="custom-file">
                             <input type="file" accept=".xlsx,.xls" class="custom-file-input" id="patientData"
                                    name="patient_data">
-                            <label class="custom-file-label"  for="patientData"
-                                   style="white-space: nowrap; overflow: visible; margin-left: 162px;">Choose file</label>
+                            <label class="custom-file-label" for="patientData"
+                                   style="white-space: nowrap; overflow: visible; margin-left: 90px;">Choose
+                                file</label>
                         </div>
                         <div class="input-group-append">
                             <button type="submit" class="btn btn-primary btn-round ml-2">
@@ -130,8 +128,7 @@
                                                         <div class="d-flex justify-content-center">
                                                             <button class="btn btn-secondary btn-xs mx-1"
                                                                     onclick="IndCitingView('{{patent}}','{{project_id}}')">
-                                                                <i
-                                                                        class="fa fa-eye" aria-hidden="true"></i>
+                                                                <i class="fa fa-eye" aria-hidden="true"></i>
                                                             </button>
                                                             <button class="btn btn-primary btn-xs mx-1"
                                                                     onclick="download_ind_citingExl('{{patent}}','{{project_id}}')">
@@ -204,8 +201,7 @@
                                                         <div class="d-flex justify-content-center">
                                                             <button class="btn btn-secondary btn-xs mx-1"
                                                                     onclick="ViewIndCited('{{ patent }}','{{project_id}}')">
-                                                                <i
-                                                                        class="fa fa-eye" aria-hidden="true"></i>
+                                                                <i class="fa fa-eye" aria-hidden="true"></i>
                                                             </button>
                                                             <button class="btn btn-primary btn-xs mx-1"
                                                                     onclick="downloadIndCitedExcel('{{ patent }}','{{project_id}}')">
