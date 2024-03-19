@@ -209,10 +209,10 @@ class ClientProjectAssociation(models.Model):
                                related_name='client_project_associations')
     projects = models.ManyToManyField(Project)
     allocated_by = models.ForeignKey('CustomUser', on_delete=models.CASCADE,
-                               related_name='allocated_by_project')
+                               related_name='allocated_by_project',null= True, blank=True)
     deallocated_by = models.ForeignKey('CustomUser', on_delete=models.CASCADE,
-                                     related_name='deallocated_by_project')
-    allocation_time = models.DateTimeField(auto_now=True)
+                                     related_name='deallocated_by_project', null= True, blank=True)
+    allocation_time = models.DateTimeField(auto_now=True,null=True, blank=True)
     deallocation_time = models.DateTimeField(null=True, blank=True)
     updated_assigned_time = models.DateTimeField(auto_now=True)
 

@@ -440,8 +440,32 @@ def tech_charts(req, project_id):
     """
     # ================================
     proj_name = Project.objects.filter(id=project_id).first().name
+    if req.method == 'POST':
+        uploaded_media = req.FILES.get('technical_excel')
+        if uploaded_media:
+            df = pd.read_excel(uploaded_media)
+            nested_data = dataframe_to_nested_dict(df.copy())
+            print(nested_data)
+
     context = {'project_id': project_id, 'proj_name': proj_name}
     return render(req, 'pages/charts/technical_chart.html', context)
+
+
+def dataframe_to_nested_dict(df):
+    """
+    THIS FUNCTION IS READING THE EXCEL FILE AND PROVIDING
+    CATEGORY WISE DATA DICTIONARY FOR TECHNICAL CHARTS.
+    """
+    nested_dict = {}
+    parent_col_name = ''
+    for col in df.columns:
+        if 'Unnamed' not in col:
+            parent_col_name = col
+            nested_dict[col] = df[col].tolist()
+        else:
+            subcolumn_index = col.split('.')[-1]
+            nested_dict[f"{parent_col_name}{subcolumn_index}"] = list(df[col])
+    return nested_dict
 
 
 # ===========================data view and download==============
@@ -2289,13 +2313,16 @@ def project_client_association(req):
         if user_qs.roles == 'key_account_holder':
             project_association = KeyAccountManagerProjectAssociation.objects.get(user=user_id)
         associated_projects = project_association.projects.all()
+        print(associated_projects)
         associated_project_ids = [project.id for project in associated_projects]
 
         if req.method == 'POST':
             client_username = req.POST.get('client')
             project_ids = req.POST.getlist('projects')
+            print(project_ids)
             client = get_object_or_404(CustomUser, username=client_username, roles=CustomUser.CLIENT)
             projects = [get_object_or_404(Project, id=int(project_id)) for project_id in project_ids[0].split(',')]
+            print(projects)
             client_project_association = ClientProjectAssociation.objects.create(client=client, allocated_by=user_qs)
             client_project_association.projects.set(projects)
         return render(req, 'pages/projects/project_client_association.html',
