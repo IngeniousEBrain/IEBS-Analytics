@@ -1899,8 +1899,7 @@ def process_excel_data(context, req, project_id):
     """
 
     user_qs = get_object_or_404(CustomUser, id=req.session.get('logged_in_user_id'))
-    # Check if the user is project manager, client, or key account manager of the project
-    project = get_object_or_404(Project, id=project_id)
+    project = get_object_or_404(Project, code=project_id)
     if not (
             UserProjectAssociation.objects.filter(user=user_qs, projects=project).exists() or
             ClientProjectAssociation.objects.filter(client=user_qs, projects=project).exists() or
@@ -2226,7 +2225,6 @@ def get_year_with_exp_date(req, project_id):
 
 
 def process_assignees(req, project_code):
-    user_id = req.session.get('logged_in_user_id')
     data = PatentData.objects.filter(project_code=project_code).exclude(
         assignee_standardized__isnull=True)
     data = data.values('assignee_standardized').annotate(count=Count('assignee_standardized')).order_by('-count')[:10]
