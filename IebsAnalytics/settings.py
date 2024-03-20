@@ -102,7 +102,7 @@ PASSWORD_HASHERS = [
 
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
-CSRF_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = False
 
 DATABASES = {
     'default': {

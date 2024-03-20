@@ -18,7 +18,8 @@
     {% endif %}
 
 
-    <form action="{{ app_path }}" method="post" id="login-form">{% csrf_token %}
+    <form action="{{ app_path }}" method="post" id="login-form">
+        {% csrf_token %}
         <div class="form-group has-feedback">
             <input type="text" id="id_username" name="username" class="form-control" placeholder="Username">
             <span class="glyphicon glyphicon-user form-control-feedback"></span>
