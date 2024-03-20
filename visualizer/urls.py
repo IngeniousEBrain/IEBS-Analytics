@@ -52,6 +52,7 @@ urlpatterns = [
     # ==========================competitive chart data===========================================
     path('competitor_colab_view/<str:proj_code>/', views.competitor_colab_view, name='competitor_colab_view'),
     path('get_associated_projects/', views.get_associated_projects, name='get_associated_projects'),
+    path('doc_upload/', views.doc_upload, name='doc_upload'),
 
 
 ]

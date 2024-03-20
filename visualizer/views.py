@@ -2335,3 +2335,6 @@ def get_associated_projects(req):
         'projects', flat=True)
     associated_project_ids = [project for project in associated_projects]
     return JsonResponse({'associated_projects': associated_project_ids})
+
+def doc_upload(req):
+    return render(req, 'pages/projects/upload_documents.html')

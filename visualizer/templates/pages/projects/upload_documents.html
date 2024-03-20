@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block head %}
+{% endblock %}
+{% block content %}
+{% load custom_filters %}
+<div class="container my-5">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="upload-section">
+                <h3>Upload File 1</h3>
+                <input type="file" class="form-control-file">
+                <button class="btn btn-primary">Upload</button>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="upload-section">
+                <h3>Upload File 2</h3>
+                <input type="file" class="form-control-file">
+                <button class="btn btn-primary">Upload</button>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="upload-section">
+                <h3>Upload File 3</h3>
+                <input type="file" class="form-control-file">
+                <button class="btn btn-primary">Upload</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+<aside class="control-sidebar control-sidebar-dark"></aside>
+{% block scripts %}
+{{ block.super }}
+{% endblock %}

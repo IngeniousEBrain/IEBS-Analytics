@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>IEBS|Analytics</title>
+    <title>IE-Brain | Patent Pulse</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="{% static 'plugins/datatables-bs4/css/dataTables.bootstrap4.min.css' %}">
     <link rel="stylesheet" href="{% static 'plugins/fontawesome-free/css/all.min.css' %}">
@@ -132,7 +132,7 @@
         <a href="https://www.iebrain.com/" target="_blank" class="brand-link">
             <img  src="{% static 'img/e_logo.svg' %}" alt="I-EB Logo"
                  class="brand-image img-circle elevation-0" style="opacity: .8">
-            <span class="brand-text font-weight-light">IE-Brain Analytics</span>
+            <span class="brand-text font-weight-light">IE-Brain Patent Pulse</span>
         </a>
         <!-- Sidebar -->
         <div class="sidebar">
@@ -172,6 +172,18 @@
                         </a>
                     </li>
                     {% endif %}
+                     {% if request.session.user_role == 'project_manager' %}
+                    <li class="nav-item has-treeview {% if '/doc_upload' in request.get_full_path %} menu-open {% endif %}">
+                        <a href="{% url 'doc_upload' %}"
+                           class="nav-link {% if '/doc_upload' in request.get_full_path%} active {% endif %}">
+
+                            <i class="nav-icon fa fa-file"></i>
+                            <p>
+                               Upload Documents
+                            </p>
+                        </a>
+                    </li>
+                    {% endif %}
                     <li class="nav-item has-treeview {% if '/bibliographic_charts' in request.get_full_path or '/competitor_charts' in request.get_full_path or '/tech_charts' in request.get_full_path or '/bibliographic/' in request.get_full_path or '/competitive/' in request.get_full_path  or '/technical/' in request.get_full_path %} menu-open {% endif %}">
                         <a href="#"
                            class="nav-link {% if '/bibliographic_charts' in request.get_full_path or '/competitor_charts' in request.get_full_path or '/tech_charts' in request.get_full_path  or 'project-list/competitive/' in request.get_full_path or '/project-list/bibliographic/' in request.get_full_path or '/project-list/technical/' in request.get_full_path %} active {% endif %}">
@@ -203,6 +215,7 @@
                                     <p>Technical Charts</p>
                                 </a>
                             </li>
+
                         </ul>
                     </li>
                 </ul>
@@ -298,8 +311,6 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.0.1/dist/chart.umd.min.js"></script>
 <!-- Sparkline -->
 <script src="{% static 'plugins/sparklines/sparkline.js' %}"></script>
-
-
 {% endblock %}
 </body>
 </html>
