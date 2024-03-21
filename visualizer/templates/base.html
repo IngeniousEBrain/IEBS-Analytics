@@ -113,6 +113,8 @@
     #saveButton:hover {
         background-color: #0056b3;
     }
+
+
     </style>
 </head>
 <body class="hold-transition sidebar-mini layout-fixed">
@@ -151,9 +153,9 @@
                 <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu"
                     data-accordion="false">
                     <!-- Add icons to the links using the .nav-icon class with font-awesome or any other icon font library -->
-                    <li class="nav-item has-treeview {% if '/index' in request.get_full_path or '/profile' in request.get_full_path or '/project-list' in request.get_full_path%} menu-open {% endif %}">
+                    <li class="nav-item has-treeview {% if '/index' in request.get_full_path or '/profile' in request.get_full_path or '/common' in request.get_full_path%} menu-open {% endif %}">
                         <a href="{% url 'index' %}"
-                           class="nav-link {% if '/index' in request.get_full_path or '/profile' in request.get_full_path or '/project-list/common/' in request.get_full_path %} active {% endif %}">
+                           class="nav-link {% if '/index' in request.get_full_path or '/profile' in request.get_full_path or '/common/' in request.get_full_path %} active {% endif %}">
                             <i class="nav-icon fas fa-tachometer-alt"></i>
                             <p>
                                 Dashboard
@@ -161,7 +163,7 @@
                         </a>
                     </li>
                     {% if request.session.user_role == 'project_manager' %}
-                    <li class="nav-item has-treeview {% if '/project_client_association' in request.get_full_path or '/profile' in request.get_full_path or '/project-list' in request.get_full_path%} menu-open {% endif %}">
+                    <li class="nav-item has-treeview {% if '/project_client_association' in request.get_full_path or '/profile' in request.get_full_path %} menu-open {% endif %}">
                         <a href="{% url 'project_client_association' %}"
                            class="nav-link {% if '/project_client_association' in request.get_full_path%} active {% endif %}">
 
@@ -173,13 +175,13 @@
                     </li>
                     {% endif %}
                      {% if request.session.user_role == 'project_manager' %}
-                    <li class="nav-item has-treeview {% if '/doc_upload' in request.get_full_path %} menu-open {% endif %}">
-                        <a href="{% url 'doc_upload' %}"
-                           class="nav-link {% if '/doc_upload' in request.get_full_path%} active {% endif %}">
+                    <li class="nav-item has-treeview {% if '/report/' in request.get_full_path %} menu-open {% endif %}">
+                        <a href="{% url 'project-list' 'report' %}"
+                           class="nav-link {% if '/report' in request.get_full_path%} active {% endif %}">
 
                             <i class="nav-icon fa fa-file"></i>
                             <p>
-                               Upload Documents
+                               Project Reports
                             </p>
                         </a>
                     </li>

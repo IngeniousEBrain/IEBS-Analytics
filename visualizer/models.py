@@ -209,10 +209,10 @@ class ClientProjectAssociation(models.Model):
                                related_name='client_project_associations')
     projects = models.ManyToManyField(Project)
     allocated_by = models.ForeignKey('CustomUser', on_delete=models.CASCADE,
-                               related_name='allocated_by_project',null= True, blank=True)
+                                     related_name='allocated_by_project', null=True, blank=True)
     deallocated_by = models.ForeignKey('CustomUser', on_delete=models.CASCADE,
-                                     related_name='deallocated_by_project', null= True, blank=True)
-    allocation_time = models.DateTimeField(auto_now=True,null=True, blank=True)
+                                       related_name='deallocated_by_project', null=True, blank=True)
+    allocation_time = models.DateTimeField(auto_now=True, null=True, blank=True)
     deallocation_time = models.DateTimeField(null=True, blank=True)
     updated_assigned_time = models.DateTimeField(auto_now=True)
 
@@ -290,6 +290,18 @@ class PatentData(models.Model):
 
     def __str__(self):
         return f"{self.assignee_standardized} - {self.publication_number}"
+
+
+class ProjectReports(models.Model):
+    file = models.FileField(upload_to='uploaded_files/')
+    file_name = models.CharField(max_length=255)
+    file_type = models.CharField(max_length=50)
+    uploaded_by = models.ForeignKey('CustomUser', on_delete=models.CASCADE, related_name='uploaded_files')
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='uploaded_files')
+
+    def __str__(self):
+        return self.file_name
 
 
 class Technical_node(models.Model):

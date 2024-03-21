@@ -29,8 +29,7 @@ from django.http import HttpResponseServerError
 from django.db.models import Q
 from django.db.models.functions import ExtractYear
 # Local imports
-from .models import CustomUser, Project, PatentData, UserProjectAssociation, ClientProjectAssociation, \
-    KeyAccountManagerProjectAssociation
+from .models import *
 from .packages import request
 from django.db.models import Count
 from .tasks import process_excel_data_task
@@ -2311,16 +2310,13 @@ def project_client_association(req):
         if user_qs.roles == 'key_account_holder':
             project_association = KeyAccountManagerProjectAssociation.objects.get(user=user_id)
         associated_projects = project_association.projects.all()
-        print(associated_projects)
         associated_project_ids = [project.id for project in associated_projects]
 
         if req.method == 'POST':
             client_username = req.POST.get('client')
             project_ids = req.POST.getlist('projects')
-            print(project_ids)
             client = get_object_or_404(CustomUser, username=client_username, roles=CustomUser.CLIENT)
             projects = [get_object_or_404(Project, id=int(project_id)) for project_id in project_ids[0].split(',')]
-            print(projects)
             client_project_association = ClientProjectAssociation.objects.create(client=client, allocated_by=user_qs)
             client_project_association.projects.set(projects)
         return render(req, 'pages/projects/project_client_association.html',
@@ -2336,5 +2332,53 @@ def get_associated_projects(req):
     associated_project_ids = [project for project in associated_projects]
     return JsonResponse({'associated_projects': associated_project_ids})
 
-def doc_upload(req):
-    return render(req, 'pages/projects/upload_documents.html')
+
+def doc_upload(request, project_id):
+    uploaded_by = request.session.get('logged_in_user_id')
+    project_name = Project.objects.filter(id=project_id).first().name
+    user_role = CustomUser.objects.filter(id=uploaded_by).first().roles
+    uploaded_files = ProjectReports.objects.filter(project_id=project_id)
+    if request.method == 'POST':
+        if request.FILES.get('proposal_report'):
+            proposal_file = request.FILES['proposal_report']
+            ProjectReports.objects.create(
+                file=proposal_file,
+                file_name=proposal_file.name,
+                file_type='Proposal',
+                uploaded_by_id=uploaded_by,
+                project_id=project_id
+            )
+
+        if request.FILES.get('interim_report'):
+            interim_file = request.FILES['interim_report']
+            ProjectReports.objects.create(
+                file=interim_file,
+                file_name=interim_file.name,
+                file_type='Interim Report',
+                uploaded_by_id=uploaded_by,
+                project_id=project_id
+            )
+
+        if request.FILES.get('final_report'):
+            final_file = request.FILES['final_report']
+            ProjectReports.objects.create(
+                file=final_file,
+                file_name=final_file.name,
+                file_type='Final Report',
+                uploaded_by_id=uploaded_by,
+                project_id=project_id
+            )
+        return redirect('doc_upload', project_id=project_id)
+    return render(request, 'pages/projects/upload_documents.html',
+                  {"project_name": project_name, "uploaded_files": uploaded_files, "user_role": user_role})
+
+
+def download_file(request, project_id):
+    # Retrieve the file object from the database
+    uploaded_file = get_object_or_404(ProjectReports, id=project_id)
+
+    # Prepare the response to send the file as an attachment
+    response = HttpResponse(uploaded_file.file, content_type='application/octet-stream')
+    response['Content-Disposition'] = f'attachment; filename="{uploaded_file.file_name}"'
+
+    return response
