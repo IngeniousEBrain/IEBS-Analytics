@@ -12,7 +12,8 @@ Classes:
 """
 from django.contrib.auth.models import Group, User
 from django.contrib import admin
-from .models import CustomUser, Project, UserProjectAssociation, ClientProjectAssociation, KeyAccountManagerProjectAssociation
+from .models import CustomUser, Project, UserProjectAssociation, ClientProjectAssociation, \
+    KeyAccountManagerProjectAssociation, ProjectReports
 
 
 @admin.register(CustomUser)
@@ -92,6 +93,14 @@ class KeyAccountManagerProjectAssociationAdmin(admin.ModelAdmin):
         if db_field.name == "key_account_manager":
             kwargs["queryset"] = CustomUser.objects.filter(roles=CustomUser.KEY_ACCOUNT_HOLDER)
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+
+@admin.register(ProjectReports)
+class ProjectReportsAdmin(admin.ModelAdmin):
+    list_display = ('file_name', 'file_type', 'uploaded_by', 'uploaded_at', 'project')
+    search_fields = ('file_name', 'file_type', 'uploaded_by__username', 'project__name')
+    list_filter = ('uploaded_at', 'project')
+    date_hierarchy = 'uploaded_at'
 
 
 admin.site.register(UserProjectAssociation, UserProjectAssociationAdmin)

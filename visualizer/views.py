@@ -2334,6 +2334,7 @@ def get_associated_projects(req):
 
 
 def doc_upload(request, project_id):
+    print(project_id)
     uploaded_by = request.session.get('logged_in_user_id')
     project_name = Project.objects.filter(id=project_id).first().name
     user_role = CustomUser.objects.filter(id=uploaded_by).first().roles
