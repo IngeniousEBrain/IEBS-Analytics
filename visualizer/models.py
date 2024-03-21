@@ -303,6 +303,10 @@ class ProjectReports(models.Model):
     def __str__(self):
         return self.file_name
 
+    class Meta:
+        verbose_name = 'Project Report'
+        verbose_name_plural = 'Project Reports'
+
 
 class Technical_node(models.Model):
     name = models.CharField(max_length=50)
