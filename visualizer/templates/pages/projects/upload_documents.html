@@ -4,32 +4,161 @@
 {% endblock %}
 {% block content %}
 {% load custom_filters %}
+ <div class="col-lg-12 d-flex">
+            <h5 class="mb-2">Project Report - <b>({{ project_name }})</b></h5>
+        </div>
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
 <div class="container my-5">
-    <div class="row">
-        <div class="col-md-4">
-            <div class="upload-section">
-                <h3>Upload File 1</h3>
-                <input type="file" class="form-control-file">
-                <button class="btn btn-primary">Upload</button>
+    <div class="row justify-content-center">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Proposals</h5>
+                     {% if user_role != 'client' %}
+                    <h5 class="mb-0">Upload Proposals</h5>
+                    <div class="upload-section">
+                        <input type="file" accept=".xlsx,.xls,.xlsm,.ppt,.txt,.doc,.pptx,.docx" name="proposal_report"
+                               class="form-control-file" style="display: inline-block; width: auto;">
+                        <button class="btn btn-success ms-2">Upload</button>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                        <table class="table table-bordered table-hover">
+                            <thead class="bg-light">
+                            <tr>
+                                <th class="text-center small">Proposal</th>
+                                <th class="text-center small">Date</th>
+                                <th class="text-center small">Actions</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                           {% for file in uploaded_files %}
+                           {% if file.file_type == 'Proposal' %}
+                            <tr>
+                                <td class="text-center small">{{ file.file_name }}</td>
+                                <td class="text-center small">{{ file.uploaded_at }}</td>
+                                <td class="text-center small">
+                                    <div class="d-flex justify-content-center">
+<!--                                        <button class="btn btn-secondary btn-sm mx-1" onclick="">-->
+<!--                                            <i class="fa fa-eye" aria-hidden="true"></i>-->
+<!--                                        </button>-->
+                                       <a href="{% url 'download_file' file.id %}" class="btn btn-secondary btn-sm mx-1">
+                                            <i class="fas fa-file-download" aria-hidden="true"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endif %}
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
-        </div>
-        <div class="col-md-4">
-            <div class="upload-section">
-                <h3>Upload File 2</h3>
-                <input type="file" class="form-control-file">
-                <button class="btn btn-primary">Upload</button>
+
+            <!-- Additional Upload Options and Tables -->
+            <div class="card mt-4">
+
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Interim Report</h5>
+                    {% if user_role != 'client' %}
+                    <h5 class="mb-0">Upload Interim Report</h5>
+                    <div class="upload-section">
+                        <input type="file" accept=".xlsx,.xls,.xlsm,.ppt,.txt,.doc,.pptx,.docx" name="interim_report"
+                               class="form-control-file" style="display: inline-block; width: auto;">
+                        <button class="btn btn-success ms-2">Upload</button>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="card-body">
+                    <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                        <table class="table table-bordered table-hover">
+                            <thead class="bg-light">
+                           <tr>
+                                <th class="text-center small">File</th>
+                                <th class="text-center small">Date</th>
+                                <th class="text-center small">Actions</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                             {% for file in uploaded_files %}
+                           {% if file.file_type == 'Interim Report' %}
+                            <tr>
+                                <td class="text-center small">{{ file.file_name }}</td>
+                                <td class="text-center small">{{ file.uploaded_at }}</td>
+                                <td class="text-center small">
+                                    <div class="d-flex justify-content-center">
+<!--                                        <button class="btn btn-secondary btn-sm mx-1" onclick="">-->
+<!--                                            <i class="fa fa-eye" aria-hidden="true"></i>-->
+<!--                                        </button>-->
+                                        <a href="{% url 'download_file' file.id %}" class="btn btn-secondary btn-sm mx-1">
+                                            <i class="fas fa-file-download" aria-hidden="true"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                             {% endif %}
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
-        </div>
-        <div class="col-md-4">
-            <div class="upload-section">
-                <h3>Upload File 3</h3>
-                <input type="file" class="form-control-file">
-                <button class="btn btn-primary">Upload</button>
+
+            <div class="card mt-4">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Final Report</h5>
+                    {% if user_role != 'client' %}
+                    <h5 class="mb-0">Upload Final Report</h5>
+                    <div class="upload-section">
+                        <input type="file" accept=".xlsx,.xls,.xlsm,.ppt,.txt,.doc,.pptx,.docx" name="final_report"
+                               class="form-control-file" style="display: inline-block; width: auto;">
+                        <button class="btn btn-success ms-2">Upload</button>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                        <table class="table table-bordered table-hover">
+                            <thead class="bg-light">
+                            <tr>
+                                <th class="text-center small">File</th>
+                                <th class="text-center small">Date</th>
+                                <th class="text-center small">Actions</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                              {% for file in uploaded_files %}
+                           {% if file.file_type == 'Final Report' %}
+                            <tr>
+                                <td class="text-center small">{{ file.file_name }}</td>
+                                <td class="text-center small">{{ file.uploaded_at }}</td>
+                                <td class="text-center small">
+                                    <div class="d-flex justify-content-center">
+<!--                                        <button class="btn btn-secondary btn-sm mx-1" onclick="">-->
+<!--                                            <i class="fa fa-eye" aria-hidden="true"></i>-->
+<!--                                        </button>-->
+                                        <a href="{% url 'download_file' file.id %}" class="btn btn-secondary btn-sm mx-1">
+                                            <i class="fas fa-file-download" aria-hidden="true"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                              {% endif %}
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
-
+</form>
 {% endblock %}
 <aside class="control-sidebar control-sidebar-dark"></aside>
 {% block scripts %}

@@ -136,11 +136,16 @@
                                         <i class="fas fa-chart-bar" aria-hidden="true" title="Projects Analytics"></i>
                                     </a>
                                     {% endif %}
+                                    {% if chart_type == 'report' or  user_qs.roles == 'client' %}
+                                    <a href="{% url 'doc_upload' project_id=project.id %}">
+                                        <i class="nav-icon fa fa-file" aria-hidden="true" title="Projects Reports"></i>
+                                    </a>
+                                    {% endif %}
 <!--                                    <i class="fa fa-eye" aria-hidden="true" title="Project Details"-->
 <!--                                       style="color: rgb(27, 124, 180);"></i>-->
 
                                     <!-- Trash icon -->
-                                    {% if not user_qs.roles == 'client'%}
+                                    {% if not user_qs.roles == 'client' %}
                                     <i class="fa fa-trash" aria-hidden="true" style="color: rgb(219, 77, 77);"
                                        title="Delete"
                                        data-toggle="modal" data-target="#confirmDeleteModal{{project.id}}"></i>

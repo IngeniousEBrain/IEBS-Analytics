@@ -17,7 +17,7 @@ local_settings.py
 
 # Static files
 static/
-
+upload_files/
 # Media files
 media/
 
