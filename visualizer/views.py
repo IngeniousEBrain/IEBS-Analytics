@@ -1,41 +1,39 @@
 """
 Views for the 'visualizer' app.
 """
+import collections
 import json
+import math
+from collections import Counter
+# Django imports
+from collections import defaultdict
 # Third-party imports
 from datetime import datetime
-import collections
-from collections import Counter
+from io import BytesIO
+from urllib.parse import unquote
+
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from plotly.subplots import make_subplots
-import numpy as np
-from io import BytesIO
-from urllib.parse import unquote
-from django.core.serializers import serialize
-from django.urls import reverse
-
-# Django imports
-from collections import defaultdict
-from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.hashers import check_password
-from django.http import JsonResponse
-from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.sessions.models import Session
-from django.utils import timezone
-from django.http import HttpResponse
-from django.http import HttpResponseServerError
+from django.core.exceptions import ObjectDoesNotExist
+from django.core.serializers import serialize
+from django.db.models import Count
 from django.db.models import Q
 from django.db.models.functions import ExtractYear
+from django.http import HttpResponse
+from django.http import HttpResponseServerError
+from django.http import JsonResponse
+from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse
+from django.views.decorators.csrf import csrf_exempt
+from openpyxl import Workbook
+from plotly.subplots import make_subplots
+
 # Local imports
 from .models import *
 from .packages import request
-from django.db.models import Count
-from .tasks import process_excel_data_task
-from django.views.decorators.csrf import csrf_exempt
-import math
-from openpyxl import Workbook
 
 
 def ie_analytics_home(req):
@@ -290,11 +288,11 @@ def project_list(req, chart_type):
     user_qs = get_object_or_404(CustomUser, id=user_id)
 
     if user_qs.roles == 'client':
-        projects = Project.objects.filter(clientprojectassociation__client=user_qs)
+        projects = Project.objects.filter(clientprojectassociation__client=user_qs).distinct()
     elif user_qs.roles == 'project_manager':
         projects = Project.objects.filter(userprojectassociation__user=user_qs).distinct()
     elif user_qs.roles == 'key_account_holder':
-        projects = Project.objects.filter(keyaccountmanagerprojectassociation__key_account_manager=user_qs)
+        projects = Project.objects.filter(keyaccountmanagerprojectassociation__key_account_manager=user_qs).distinct()
 
     context = {'projects_data': projects, 'user_qs': user_qs, 'chart_type': chart_type}
     return render(req, 'pages/projects/project_listing.html', context)
@@ -1984,7 +1982,6 @@ def get_ipc_counts(req, project_id):
         ipc_values = patent_data.ipc.split('|') if patent_data.ipc else []
 
         for ipc_value in ipc_values:
-            # Skip processing if the ipc_value is 'nan'
             if ipc_value.strip().upper() == 'NAN':
                 continue
 
@@ -1994,7 +1991,6 @@ def get_ipc_counts(req, project_id):
     ipc_counts_dict_ws = dict(ipc_counts_from_db)
     sorted_ipc_counts = dict(sorted(ipc_counts_dict_ws.items(), key=lambda item: item[1], reverse=True))
     ipc_counts_dict = dict(list(sorted_ipc_counts.items())[:10])
-
     return ipc_counts_dict
 
 
@@ -2024,10 +2020,8 @@ def get_country_code_counts_from_db(req, project_id):
         publication_number = patent_data.publication_number
         if publication_number is None or len(publication_number) < 2:
             continue
-
         country_code = publication_number[:2]
         country_code_counts_from_db[country_code] += 1
-
     country_code_counts_dict = dict(country_code_counts_from_db)
     return country_code_counts_dict
 
@@ -2043,7 +2037,6 @@ def get_legal_status_count(req, project_id):
 
 
 def download_excel_file(request, project_id):
-    user_id_to_filter = request.session.get('logged_in_user_id')
     project_code = Project.objects.filter(id=project_id).first().code
     top_ten_cited_patents = PatentData.objects.filter(project_code=project_code).exclude(
         cited_patents_count__isnull=True
@@ -2112,7 +2105,6 @@ def download_citing_excel_file(request, project_id):
             df.to_excel(writer, index=False, sheet_name='top ten citing')
             workbook = writer.book
             worksheet = writer.sheets['top ten citing']
-            # Set the column widths
             for i, col in enumerate(df.columns):
                 max_len = max(df[col].astype(str).apply(len).max(), len(col))
                 worksheet.set_column(i, i, max_len)
@@ -2163,7 +2155,6 @@ def get_top_citing_count(req, project_id):
     ).order_by('-citing_patents_count')[:10]
 
     for patent_data in top_ten_citing_patents:
-        # Skip processing if citing_patents_count is None
         if patent_data.citing_patents_count is None:
             continue
 
@@ -2216,7 +2207,6 @@ def get_year_with_exp_date(req, project_id):
 
     year_wise_exp_date = defaultdict(int)
     for item in year_counts:
-        # Skip processing if expected_expiry_date is None or invalid
         if item['expected_expiry_date'] is None:
             continue
         year_wise_exp_date[item['expected_expiry_date']] += item['count']
@@ -2334,7 +2324,6 @@ def get_associated_projects(req):
 
 
 def doc_upload(request, project_id):
-    print(project_id)
     uploaded_by = request.session.get('logged_in_user_id')
     project_name = Project.objects.filter(id=project_id).first().name
     user_role = CustomUser.objects.filter(id=uploaded_by).first().roles
@@ -2375,11 +2364,7 @@ def doc_upload(request, project_id):
 
 
 def download_file(request, project_id):
-    # Retrieve the file object from the database
     uploaded_file = get_object_or_404(ProjectReports, id=project_id)
-
-    # Prepare the response to send the file as an attachment
     response = HttpResponse(uploaded_file.file, content_type='application/octet-stream')
     response['Content-Disposition'] = f'attachment; filename="{uploaded_file.file_name}"'
-
     return response

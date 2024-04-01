@@ -271,7 +271,7 @@ class PatentData(models.Model):
                              related_name='patent_user')
     project_code = models.CharField(max_length=50)
     publication_number = models.CharField(max_length=50)
-    assignee_standardized = models.CharField(max_length=200)
+    assignee_standardized = models.CharField(max_length=512)
     legal_status = models.CharField(max_length=50)
     expected_expiry_dates = models.DateField(null=True, blank=True)
     remaining_life = models.PositiveIntegerField(null=True, blank=True)
@@ -308,9 +308,24 @@ class ProjectReports(models.Model):
         verbose_name_plural = 'Project Reports'
 
 
-class Technical_node(models.Model):
-    name = models.CharField(max_length=50)
-    parent = models.ForeignKey('self', null=True, blank=True, on_delete=models.CASCADE)
+class Category(models.Model):
+    name = models.CharField(max_length=255)
+    parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True)
 
     def __str__(self):
         return self.name
+
+class Element(models.Model):
+    name = models.CharField(max_length=255)
+    category = models.ForeignKey(Category, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.name
+
+class Data(models.Model):
+    category = models.ForeignKey(Category, on_delete=models.CASCADE)
+    element = models.ForeignKey(Element, on_delete=models.CASCADE)
+    value = models.CharField(max_length=255)
+
+    def __str__(self):
+        return f"{self.category.name} - {self.element.name}: {self.value}"
