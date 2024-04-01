@@ -13,32 +13,37 @@
                   <!-- User image -->
                   <li class="user-header bg-primary">
                     <img src="{%avatar_url size=160 %}" class="img-circle elevation-2" alt="User Image">
-        
+
                     <p>
                         {% firstof request.user.get_short_name request.user.get_username %} - {% firstof request.user.get_role %}
                       <small>Member since : {{ request.user.date_joined }}</small>
                     </p>
                   </li>
                   <!-- Menu Body -->
-                  <li class="user-body">
-                    <div class="row">
-                      <div class="col-4 text-center">
-                        <a href="#">Profile</a>
-                      </div>
-                      <div class="col-4 text-center">
-                        <a href="#">Team</a>
-                      </div>
-                      <div class="col-4 text-center">
-                        <a href="#">Friends</a>
-                      </div>
-                    </div>
+<!--                  <li class="user-body">-->
+<!--                    <div class="row">-->
+<!--                      <div class="col-4 text-center">-->
+<!--                        <a href="#">Profile</a>-->
+<!--                      </div>-->
+<!--                      <div class="col-4 text-center">-->
+<!--                        <a href="#">Team</a>-->
+<!--                      </div>-->
+<!--                      <div class="col-4 text-center">-->
+<!--                        <a href="#">Friends</a>-->
+<!--                      </div>-->
+<!--                    </div>-->
                     <!-- /.row -->
-                  </li>
+<!--                  </li>-->
                   <!-- Menu Footer-->
-                  <li class="user-footer">
-                    <a href="{% block change_password_url %}{% url 'admin:password_change' %}{% endblock %}" class="btn btn-default btn-flat">{% trans 'Change Password'%}</a>
-                    <a href="{% block logout_url %}{% logout_url %}{% endblock %}" class="btn btn-default btn-flat float-right">{% trans 'Sign Out'%}<a>
-                  </li>
+          <li class="user-footer">
+    <a href="{% url 'admin:password_change' %}" class="btn btn-default btn-flat">{% trans 'Change Password' %}</a>
+    <form id="logout-form" action="{% logout_url %}" method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-default btn-flat float-right" style="margin-top:-15%;">{% trans 'Sign Out' %}</button>
+    </form>
+</li>
+
+
                 </ul>
               </li>
             {% endif %}
