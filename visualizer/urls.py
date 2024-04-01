@@ -39,13 +39,16 @@ urlpatterns = [
          name='download_ind_cited_excel'),
     path('individual_cpc_exl/<str:cpc>/<str:project_id>/', views.individual_cpc_exl, name='individual_cpc_exl'),
     path('individual_ipc_exl/<str:ipc>/<str:project_id>/', views.individual_ipc_exl, name='individual_ipc_exl'),
-    path('download_innovative_exl/<str:country>/<str:project_id>/', views.download_innovative_exl, name='download_innovative_exl'),
+    path('download_innovative_exl/<str:country>/<str:project_id>/', views.download_innovative_exl,
+         name='download_innovative_exl'),
     path('download_top_assignee_exl/<str:assignee>/<str:project_id>/', views.download_top_assignee_exl,
          name='download_top_assignee_exl'),
     path('download_recent_assignee_exl/<str:assignee>/<str:project_id>/', views.download_recent_assignee_exl,
          name='download_recent_assignee_exl'),
-    path('download_legal_status_exl/<str:status>/<str:project_id>/', views.download_legal_status_exl, name='download_legal_status_exl'),
-    path('download_publication_exl/<str:year>/<str:project_id>/', views.download_publication_exl, name='download_publication_exl'),
+    path('download_legal_status_exl/<str:status>/<str:project_id>/', views.download_legal_status_exl,
+         name='download_legal_status_exl'),
+    path('download_publication_exl/<str:year>/<str:project_id>/', views.download_publication_exl,
+         name='download_publication_exl'),
     path('download_exp_exl/<str:year>/<str:project_id>/', views.download_exp_exl, name='download_exp_exl'),
     path('download_excel/', views.download_excel_view, name='download_excel'),
     path('fetch_data/', views.fetch_data_view, name='fetch_data'),
@@ -55,5 +58,8 @@ urlpatterns = [
     path('doc_upload/<int:project_id>/', views.doc_upload, name='doc_upload'),
     path('download_file/<int:project_id>/', views.download_file, name='download_file'),
 
+    #     NEW ADMIN PORTAL
 
+    path('admin_login/', views.admin_login, name='admin_login'),
+    path('add_Project/', views.add_Project, name='add_Project'),
 ]

@@ -30,10 +30,11 @@ from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
 from openpyxl import Workbook
 from plotly.subplots import make_subplots
-
+from django.contrib.auth import authenticate
 # Local imports
 from .models import *
 from .packages import request
+from django.contrib.auth.models import User
 
 
 def ie_analytics_home(req):
@@ -89,6 +90,38 @@ def login(req):
             'message': 'Invalid username or password'
         })
     return render(req, 'pages/onboard/login.html')
+
+
+def admin_login(req):
+    if req.method == 'POST':
+        username = req.POST.get('username')
+        password = req.POST.get('password')
+        if not all([username, password]):
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Please insert all the required fields'
+            })
+        try:
+            user = User.objects.get(username=username, is_superuser=True)
+            req.session['logged_in_user_id'] = user.id
+            req.session['user_name'] = username
+            req.session['user_role'] = 'superAdmin'
+        except ObjectDoesNotExist:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Invalid username or password'
+            })
+        if check_password(password, user.password):
+            return JsonResponse({
+                'status': 'success',
+                'redirect_url': '/index'
+            })
+        return JsonResponse({
+            'status': 'error',
+            'message': 'Invalid username or password'
+        })
+
+    return render(req, 'pages/superadmin/adminlogin.html')
 
 
 def forgot_password(req):
@@ -779,10 +812,14 @@ def competitor_charts(req, project_id):
             font=dict(size=20)
         )
     else:
+        truncated_assignees = [assignee[:25] + '...' if len(assignee) > 30 else assignee for assignee in assignees]
+        truncated_partners = [partner[:25] + '...' if len(partner) > 30 else partner for partner in partners]
+
+        # Update the x and y-axis labels with truncated labels
         fig1 = go.Figure(data=go.Heatmap(
             z=partner_count_matrix,
-            x=partners,
-            y=assignees,
+            x=truncated_partners,
+            y=truncated_assignees,
             hoverinfo='none',
             colorscale='PuBuGn',
             colorbar=dict(title='Partner Count'),
@@ -2316,6 +2353,10 @@ def project_client_association(req):
 
 @request.validator
 def get_associated_projects(req):
+    """
+
+
+    """
     selected_client = req.GET.get('client')
     associated_projects = ClientProjectAssociation.objects.filter(client__username=selected_client).values_list(
         'projects', flat=True)
@@ -2324,6 +2365,10 @@ def get_associated_projects(req):
 
 
 def doc_upload(request, project_id):
+    """
+
+
+    """
     uploaded_by = request.session.get('logged_in_user_id')
     project_name = Project.objects.filter(id=project_id).first().name
     user_role = CustomUser.objects.filter(id=uploaded_by).first().roles
@@ -2364,7 +2409,22 @@ def doc_upload(request, project_id):
 
 
 def download_file(request, project_id):
+    """
+
+
+    """
     uploaded_file = get_object_or_404(ProjectReports, id=project_id)
     response = HttpResponse(uploaded_file.file, content_type='application/octet-stream')
     response['Content-Disposition'] = f'attachment; filename="{uploaded_file.file_name}"'
     return response
+
+
+# ======================NEW ADMIN PANNEL==========
+def add_Project(request):
+    """
+
+
+    """
+    user_obj = CustomUser.objects.filter(is_superuser=True)
+
+    return render(request, 'pages/superadmin/add_project.html', {'user_obj': user_obj})
