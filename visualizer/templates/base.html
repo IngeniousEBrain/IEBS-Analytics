@@ -149,6 +149,7 @@
                 {% endblock %}
             </div>
             <!-- Sidebar Menu -->
+            {% if not request.session.user_role == 'superAdmin' %}
             <nav class="mt-2">
                 <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu"
                     data-accordion="false">
@@ -222,6 +223,34 @@
                     </li>
                 </ul>
             </nav>
+            {% else %}
+            <nav class="mt-2">
+                <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu"
+                    data-accordion="false">
+                    <!-- Add icons to the links using the .nav-icon class with font-awesome or any other icon font library -->
+                    <li class="nav-item has-treeview {% if '/index' in request.get_full_path or '/profile' in request.get_full_path or '/common' in request.get_full_path%} menu-open {% endif %}">
+                        <a href="{% url 'index' %}"
+                           class="nav-link {% if '/index' in request.get_full_path or '/profile' in request.get_full_path or '/common/' in request.get_full_path %} active {% endif %}">
+                            <i class="nav-icon fas fa-tachometer-alt"></i>
+                            <p>
+                                Dashboard
+                            </p>
+                        </a>
+                    </li>
+                    <li class="nav-item has-treeview {% if '/project_client_association' in request.get_full_path or '/profile' in request.get_full_path %} menu-open {% endif %}">
+                        <a href="{% url 'add_Project' %}"
+                           class="nav-link {% if '/add_Project' in request.get_full_path%} active {% endif %}">
+
+                            <i class="nav-icon fas fa-cog"></i>
+                            <p>
+                                Projects
+                            </p>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+            {% endif %}
+
             <!-- /.sidebar-menu -->
         </div>
         <!-- /.sidebar -->
