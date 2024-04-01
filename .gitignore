@@ -20,7 +20,7 @@ static/
 upload_files/
 # Media files
 media/
-
+nginx/
 # Virtual environment
 venv/
 .venv/
