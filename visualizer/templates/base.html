@@ -132,8 +132,8 @@
     <aside class="main-sidebar sidebar-dark-primary elevation-4" style="border-right: 5px solid aqua;">
         <!-- Brand Logo -->
         <a href="https://www.iebrain.com/" target="_blank" class="brand-link">
-            <img  src="{% static 'img/e_logo.svg' %}" alt="I-EB Logo"
-                 class="brand-image img-circle elevation-0" style="opacity: .8">
+            <img  src="{% static 'img/IeB PPtool icon 1.svg' %}" alt="I-EB Logo"
+                 class="brand-image  elevation-0" style="opacity: .8">
             <span class="brand-text font-weight-light">IE-Brain Patent Pulse</span>
         </a>
         <!-- Sidebar -->
@@ -237,16 +237,34 @@
                             </p>
                         </a>
                     </li>
-                    <li class="nav-item has-treeview {% if '/project_client_association' in request.get_full_path or '/profile' in request.get_full_path %} menu-open {% endif %}">
-                        <a href="{% url 'add_Project' %}"
-                           class="nav-link {% if '/add_Project' in request.get_full_path%} active {% endif %}">
+                      <li class="nav-item has-treeview {% if '/add_user/' in request.get_full_path %} menu-open {% endif %}">
+                        <a href="{% url 'add_user' %}"
+                           class="nav-link {% if '/add_user' in request.get_full_path%} active {% endif %}">
 
-                            <i class="nav-icon fas fa-cog"></i>
+                            <i class="nav-icon fa fa-users"></i>
+                            <p>Create Users</p>
+                        </a>
+                    </li>
+                    <li class="nav-item has-treeview {% if '/add_project' in request.get_full_path %} menu-open {% endif %}">
+                        <a href="{% url 'add_project' %}"
+                           class="nav-link {% if '/add_project' in request.get_full_path%} active {% endif %}">
+
+                            <i class="nav-icon fas fa-project-diagram"></i>
                             <p>
                                 Projects
                             </p>
                         </a>
                     </li>
+                     <li class="nav-item has-treeview {% if '/report/' in request.get_full_path %} menu-open {% endif %}">
+                        <a href="{% url 'project-list' 'report' %}"
+                           class="nav-link {% if '/report' in request.get_full_path%} active {% endif %}">
+
+                            <i class="nav-icon fas fa-link"></i>
+                            <p>Project User Association</p>
+                        </a>
+                    </li>
+
+
                 </ul>
             </nav>
             {% endif %}
