@@ -2420,11 +2420,28 @@ def download_file(request, project_id):
 
 
 # ======================NEW ADMIN PANNEL==========
-def add_Project(request):
+def add_project(request):
     """
 
 
     """
     user_obj = CustomUser.objects.filter(is_superuser=True)
-
     return render(request, 'pages/superadmin/add_project.html', {'user_obj': user_obj})
+
+
+def add_user(request):
+    """
+
+
+    """
+    user_obj = CustomUser.objects.filter(is_superuser=True)
+    return render(request, 'pages/superadmin/create_user.html', {'user_obj': user_obj})
+
+
+def user_project_association(request):
+    """
+
+
+    """
+    user_obj = CustomUser.objects.filter(is_superuser=True)
+    return render(request, 'pages/superadmin/User_project_assocition.html', {'user_obj': user_obj})

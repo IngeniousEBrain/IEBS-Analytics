@@ -85,6 +85,16 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         (PROJECT_MANAGER, 'project_manager'),
         (KEY_ACCOUNT_HOLDER, 'key_account_holder'),
     ]
+    HI_IP = 'HI_IP'
+    HC_IP = 'HC_IP'
+    HC_BI = 'HC_BI'
+    CFH = 'CFH'
+    BU_CHOICES = [
+        (HI_IP, 'HI_IP'),
+        (HC_IP, 'HC_IP'),
+        (HC_BI, 'HC_BI'),
+        (CFH, 'CFH'),
+    ]
     groups = models.ManyToManyField(
         'auth.Group',
         verbose_name='groups',
@@ -95,6 +105,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         related_query_name='user'
     )
     roles = models.CharField(max_length=20, choices=ROLE_CHOICES, default=CLIENT)
+    business_unit = models.CharField(max_length=50, choices=BU_CHOICES, default=HI_IP)
     user_permissions = models.ManyToManyField(
         'auth.Permission',
         verbose_name='user permissions',
@@ -285,7 +296,7 @@ class PatentData(models.Model):
     cpc = models.TextField()
     ipc = models.TextField()
     e_fan = models.CharField(max_length=100)
-    priority_country = models.CharField(max_length=100, null=True, blank=True)
+    priority_country = models.CharField(max_length=255, null=True, blank=True)
     created_date = models.DateTimeField(default=timezone.now, blank=True, null=True)
 
     def __str__(self):

@@ -61,5 +61,7 @@ urlpatterns = [
     #     NEW ADMIN PORTAL
 
     path('admin_login/', views.admin_login, name='admin_login'),
-    path('add_Project/', views.add_Project, name='add_Project'),
+    path('add_project/', views.add_project, name='add_project'),
+    path('add_user/', views.add_user, name='add_user'),
+    path('user_project_association/', views.user_project_association, name='user_project_association'),
 ]

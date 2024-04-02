@@ -1,10 +1,131 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+{% extends 'base.html' %}
+{% load static %}
+{% block head %}
+{{ block.super }}
+<style>
+    body {
+        font-family: 'Raleway', sans-serif;
+        background-color: #f8f8f8;
+        color: #333;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+    }
 
-</body>
-</html>
+    form {
+        max-width: 500px;
+        background-color: #fff;
+        padding: 40px;
+        border-radius: 10px;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+        text-align: center;
+        color: #2c3e50;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        margin-bottom: 30px;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    label {
+        display: block;
+        font-weight: bold;
+        color: #2c3e50;
+        margin-bottom: 5px;
+    }
+
+    input[type="text"],
+    textarea,
+    select,
+    input[type="date"] {
+        width: 100%;
+        padding: 15px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        box-sizing: border-box;
+        font-family: inherit;
+        font-size: 18px; /* Increased font size */
+    }
+
+    textarea {
+        height: 150px;
+    }
+
+    input[type="submit"] {
+        background-color: #2ecc71;
+        color: #fff;
+        padding: 15px 30px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 18px;
+        transition: background-color 0.3s ease;
+        margin-top: 20px;
+        display: block;
+        width: 100%;
+    }
+
+    input[type="submit"]:hover {
+        background-color: #27ae60;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<form>
+    {% csrf_token %}
+    <h1>Add User</h1>
+
+    <div class="form-group">
+        <label for="userName">User Name</label>
+        <input class="form-control" type="text" id="userName" name="userName" placeholder="Enter user name" required>
+    </div>
+
+    <div class="form-group">
+        <label for="userEmail">User Email</label>
+        <input class="form-control" type="email" id="userEmail" name="userEmail" placeholder="Enter user email"
+               required>
+    </div>
+
+    <div class="form-group">
+        <label for="userPassword">User Password</label>
+        <input class="form-control" type="password" id="userPassword" name="userPassword"
+               placeholder="Enter user Password" required>
+
+    </div>
+
+    <div class="form-group">
+        <label for="projectStatus">User Roles</label>
+        <select id="projectStatus" class="form-control" name="projectStatus" required>
+            <option value="CLIENT">Client</option>
+            <option value="PROJECT_MANAGER">Project Manager</option>
+            <option value="KEY_ACCOUNT_HOLDER">Key Account Manager</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label for="business_unit">Business Unit</label>
+        <select id="business_unit" class="form-control" name="business_unit" required>
+            <option value="HI_IP">HT-IP</option>
+            <option value="HC_IP">HC-IP</option>
+            <option value="HC_BI">HC-BI</option>
+            <option value="CFH">CFH</option>
+        </select>
+    </div>
+    <input type="submit" value="Submit">
+</form>
+
+<aside class="control-sidebar control-sidebar-dark">
+    <!-- Control sidebar content goes here -->
+</aside>
+{% endblock %}
+
+{% block scripts %}
+{{ block.super }}
+{% endblock %}
