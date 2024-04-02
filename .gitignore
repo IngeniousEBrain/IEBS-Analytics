@@ -16,7 +16,7 @@ local_settings.py
 ../db.sqlite3
 
 # Static files
-static/
+
 upload_files/
 # Media files
 media/
