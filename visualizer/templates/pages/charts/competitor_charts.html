@@ -202,11 +202,11 @@
                 <td class="text-center small">
                     <div class="action-buttons">
                         <button class="btn btn-secondary btn-xs"
-                                onclick="LegalStatusView('{{ row.assignee_standardized }}', '{{ row.legal_status }}', {{proj_code}}, 'display')">
+                                onclick="LegalStatusView('{{ row.assignee_standardized }}', '{{ row.legal_status }}', '{{ proj_code }}', 'display')">
                             <i class="fa fa-eye" aria-hidden="true"></i>
                         </button>
                         <button class="btn btn-primary btn-xs"
-                                onclick="LegalStatusView('{{ row.assignee_standardized }}', '{{ row.legal_status }}', {{proj_code}},'file')">
+                                onclick="LegalStatusView('{{ row.assignee_standardized }}', '{{ row.legal_status }}', '{{ proj_code }}', 'file')">
                             <i class="fas fa-file-download" aria-hidden="true"></i>
                         </button>
                     </div>
@@ -492,7 +492,7 @@ function AllPartnerDataView(type, proj_code) {
 }
 
 //====================LegalStatusView==========
-     function LegalStatusView(assignee_standardized, legal_status, proj_code, type) {
+   function LegalStatusView(assignee_standardized, legal_status, proj_code, type) {
      // Prepare the data to be sent in the request body
      var data = {
          assignee_standardized: assignee_standardized,
@@ -535,6 +535,7 @@ function AllPartnerDataView(type, proj_code) {
    console.error('Error:', error);
 });
 }
+
 
 </script>
 {{ block.super }}
