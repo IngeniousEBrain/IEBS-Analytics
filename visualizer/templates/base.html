@@ -237,17 +237,17 @@
                             </p>
                         </a>
                     </li>
-                      <li class="nav-item has-treeview {% if '/add_user/' in request.get_full_path %} menu-open {% endif %}">
-                        <a href="{% url 'add_user' %}"
-                           class="nav-link {% if '/add_user' in request.get_full_path%} active {% endif %}">
+                      <li class="nav-item has-treeview {% if '/add_user/' in request.get_full_path or '/user_listing' in request.get_full_path %} menu-open {% endif %}">
+                        <a href="{% url 'user_listing' %}"
+                           class="nav-link {% if '/add_user' in request.get_full_path or '/user_listing' in request.get_full_path %} active {% endif %}">
 
                             <i class="nav-icon fa fa-users"></i>
-                            <p>Create Users</p>
+                            <p>Users</p>
                         </a>
                     </li>
-                    <li class="nav-item has-treeview {% if '/add_project' in request.get_full_path %} menu-open {% endif %}">
-                        <a href="{% url 'add_project' %}"
-                           class="nav-link {% if '/add_project' in request.get_full_path%} active {% endif %}">
+                    <li class="nav-item has-treeview {% if '/add_project' in request.get_full_path or 'user_project_association' in request.get_full_path or 'admin_project_listing' in request.get_full_path %} menu-open {% endif %}">
+                        <a href="{% url 'admin_project_listing' %}"
+                           class="nav-link {% if '/add_project' in request.get_full_path or 'user_project_association' in request.get_full_path or 'admin_project_listing' in request.get_full_path %} active {% endif %}">
 
                             <i class="nav-icon fas fa-project-diagram"></i>
                             <p>
@@ -255,14 +255,14 @@
                             </p>
                         </a>
                     </li>
-                     <li class="nav-item has-treeview {% if '/report/' in request.get_full_path %} menu-open {% endif %}">
-                        <a href="{% url 'project-list' 'report' %}"
-                           class="nav-link {% if '/report' in request.get_full_path%} active {% endif %}">
+<!--                     <li class="nav-item has-treeview {% if '/user_project_association/' in request.get_full_path %} menu-open {% endif %}">-->
+<!--                        <a href="{% url 'user_project_association' %}"-->
+<!--                           class="nav-link {% if '/report' in request.get_full_path%} active {% endif %}">-->
 
-                            <i class="nav-icon fas fa-link"></i>
-                            <p>Project User Association</p>
-                        </a>
-                    </li>
+<!--                            <i class="nav-icon fas fa-link"></i>-->
+<!--                            <p>Project User Association</p>-->
+<!--                        </a>-->
+<!--                    </li>-->
 
 
                 </ul>

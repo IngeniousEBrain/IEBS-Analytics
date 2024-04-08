@@ -78,46 +78,47 @@
 {% endblock %}
 
 {% block content %}
-<form id="add-user-form">
+<form method="post" action="{% url 'edit_user' user_obj.id %}">
     {% csrf_token %}
     <h1>Add User</h1>
 
     <div class="form-group">
         <label for="userName">User Name</label>
-        <input class="form-control" type="text" id="userName" name="userName" placeholder="Enter user name" required>
+        <input class="form-control" type="text" value = "{{user_obj.username}}" id="userName" name="userName" placeholder="Enter user name" required>
     </div>
 
     <div class="form-group">
         <label for="userEmail">User Email</label>
-        <input class="form-control" type="email" id="userEmail" name="userEmail" placeholder="Enter user email"
+        <input class="form-control" type="email" value=" {{user_obj.email}}" id="userEmail" name="userEmail" placeholder="Enter user email"
                required>
     </div>
 
     <div class="form-group">
         <label for="userPassword">User Password</label>
-        <input class="form-control" type="password" id="userPassword" name="userPassword"
+        <input class="form-control" value="{{user_obj.password}}" type="password" id="userPassword" name="userPassword"
                placeholder="Enter user Password" required>
     </div>
 
     <div class="form-group">
         <label for="userRoles">User Roles</label>
-        <select id="userRoles" class="form-control" name="userRoles" required>
-            <option value="client">Client</option>
-            <option value="project_manager">Project Manager</option>
-            <option value="key_account_holder">Key Account Manager</option>
-        </select>
+       <select id="userRoles" class="form-control" name="userRoles" required>
+        <option value="client" {% if user_obj.roles == 'client' %}selected{% endif %}>Client</option>
+        <option value="project_manager" {% if user_obj.roles == 'project_manager' %}selected{% endif %}>Project Manager</option>
+        <option value="key_account_holder" {% if user_obj.roles == 'key_account_holder' %}selected{% endif %}>Key Account Manager</option>
+    </select>
     </div>
 
     <div class="form-group">
         <label for="businessUnit">Business Unit</label>
         <select id="businessUnit" class="form-control" name="businessUnit" required>
-            <option value="HI_IP">HT-IP</option>
-            <option value="HC_IP">HC-IP</option>
-            <option value="HC_BI">HC-BI</option>
-            <option value="CFH">CFH</option>
-        </select>
+        <option value="HI_IP" {% if user_obj.business_unit == 'HI_IP' %}selected{% endif %}>HT-IP</option>
+        <option value="HC_IP" {% if user_obj.business_unit == 'HC_IP' %}selected{% endif %}>HC-IP</option>
+        <option value="HC_BI" {% if user_obj.business_unit == 'HC_BI' %}selected{% endif %}>HC-BI</option>
+        <option value="CFH" {% if user_obj.business_unit == 'CFH' %}selected{% endif %}>CFH</option>
+    </select>
     </div>
-    <input type="submit" value="Submit">
+    <button type="submit" >Save</button>
+
 </form>
 
 {% endblock %}
@@ -125,22 +126,6 @@
 {% block scripts %}
 {{ block.super }}
 <script>
-    $(document).ready(function () {
-        $('#add-user-form').submit(function (event) {
-            event.preventDefault();
-            var formData = $(this).serialize();
-            $.ajax({
-                type: 'POST',
-                url: '{% url 'add_user' %}', // Update the URL with your actual endpoint
-                data: formData,
-                success: function (response) {
-                     window.location.href = "{% url 'user_listing' %}";
-                },
-                error: function (xhr, errmsg, err) {
-                    // Handle error response
-                }
-            });
-        });
-    });
+
 </script>
 {% endblock %}
