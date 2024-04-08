@@ -78,7 +78,8 @@
 {% endblock %}
 
 {% block content %}
-<form>
+<form id="add-project-form">
+    {% csrf_token %}
     <h1>Add Project</h1>
 
     <div class="form-group">
@@ -104,17 +105,17 @@
     <div class="form-group">
         <label for="projectStatus">Project Status</label>
         <select id="projectStatus" class="form-control" name="projectStatus">
-            <option value="new">New</option>
-            <option value="inProgress">In Progress</option>
-            <option value="completed">Completed</option>
-            <option value="onHold">On Hold</option>
+
+            <option value="In Progress">In Progress</option>
+            <option value="Completed">Completed</option>
+
         </select>
     </div>
 
-    <div class="form-group">
-        <label for="createdDate">Created Date</label>
-        <input  type="date" id="createdDate" name="createdDate">
-    </div>
+<!--    <div class="form-group">-->
+<!--        <label for="createdDate">Created Date</label>-->
+<!--        <input  type="date" id="createdDate" name="createdDate">-->
+<!--    </div>-->
 
     <input type="submit" value="Submit">
 </form>
@@ -126,4 +127,27 @@
 
 {% block scripts %}
 {{ block.super }}
+<script>
+$(document).ready(function () {
+        $('#add-project-form').submit(function (event) {
+            event.preventDefault(); // Prevent default form submission
+            var formData = $(this).serialize(); // Serialize form data
+            $.ajax({
+                type: 'POST',
+                url: '{% url 'add_project' %}', // URL to the add_project view
+                data: formData,
+                success: function (response) {
+                    // Handle success response
+                    alert('Project created successfully');
+                    // Optionally, redirect to another page
+                    window.location.href = '{% url 'admin_project_listing' %}';
+                },
+                error: function (xhr, errmsg, err) {
+                    // Handle error response
+                    alert('Error creating project');
+                }
+            });
+        });
+    });
+</script>
 {% endblock %}

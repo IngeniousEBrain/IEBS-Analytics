@@ -1,0 +1,184 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block head %}
+<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+{% endblock %}
+{% block content %}
+{% load custom_filters %}
+<section class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1>Associated User Listing</h1>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Main content -->
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <!-- /.card -->
+                <div class="card">
+                    <!-- /.card-header -->
+                    {% if clients %}
+                    <div class="card-body">
+                        <h5>Clients</h5>
+                        <table class="table table-sm table-bordered">
+                            <thead style="background-color: #808080">
+                            <tr>
+                                <th class="text-center small">S .No</th>
+                                <th class="text-center small">User Name</th>
+                                <th class="text-center small">Email</th>
+                                <th class="text-center small">Roles</th>
+                                <th class="text-center small">Actions</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for user in clients %}
+                            <tr>
+                                <td class="text-center small">{{ forloop.counter }}</td>
+                                <td class="text-center small">{{ user.username }}</td>
+                                <td class="text-center small">{{ user.email }}</td>
+                                <td class="text-center small">
+                                    {% if user.roles == 'client' %} Client {% endif %}
+                                </td>
+                                <td class="text-center small">
+                                    <button type="button" title="Remove User" class="btn btn-xs btn-danger"
+                                            onclick="removeManager('{{ user.id }}')">
+                                        <i class="fas fa-minus"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% endif %}
+                    <!--======================== MANAGER LISTING  ======================-->
+                    {% if managers %}
+                    <div class="card-body">
+                        <h5>Managers</h5>
+                        <table class="table table-sm table-bordered">
+                            <thead style="background-color: #808080">
+                            <tr>
+                                <th class="text-center small">S .No</th>
+                                <th class="text-center small">User Name</th>
+                                <th class="text-center small">Email</th>
+                                <th class="text-center small">Roles</th>
+                                <th class="text-center small">Actions</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for user in managers %}
+                            <tr>
+                                <td class="text-center small">{{ forloop.counter }}</td>
+                                <td class="text-center small">{{ user.username }}</td>
+                                <td class="text-center small">{{ user.email }}</td>
+                                <td class="text-center small">
+                                    {% if user.roles == 'project_manager' or user.roles == 'PROJECT_MANAGER' %}
+                                    Project Manager
+                                    {% endif %}
+                                </td>
+                                <td class="text-center small">
+                                    <button type="button" title="Remove User" class="btn btn-xs btn-danger"
+                                            onclick="removeManager('{{ user.id }}')">
+                                        <i class="fas fa-minus"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% endif %}
+                    <!--======================== KAM LISTING  ======================-->
+                    {% if kams %}
+                    <div class="card-body">
+                        <h5>Key Account Manager</h5>
+                        <table class="table table-sm table-bordered">
+                            <thead style="background-color: #808080">
+                            <tr>
+                                <th class="text-center small">S .No</th>
+                                <th class="text-center small">User Name</th>
+                                <th class="text-center small">Email</th>
+                                <th class="text-center small">Roles</th>
+                                <th class="text-center small">Actions</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for user in kams %}
+                            <tr>
+                                <td class="text-center small">{{ forloop.counter }}</td>
+                                <td class="text-center small">{{ user.username }}</td>
+                                <td class="text-center small">{{ user.email }}</td>
+                                <td class="text-center small">{% if user.roles == 'key_account_holder' %}Key Account
+                                    Manager{% endif %}
+                                </td>
+                                <td class="text-center small">
+                                    <button type="button" title="Remove User" class="btn btn-xs btn-danger"
+                                            onclick="removeManager('{{ user.id }}')">
+                                        <i class="fas fa-minus"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% endif %}
+                    <!--======================== KAM LISTING END ======================-->
+                </div>
+                <!-- /.card-body -->
+            </div>
+            <!-- /.card -->
+        </div>
+        <!-- /.col -->
+    </div>
+    <!-- /.row -->
+    </div>
+    <!-- /.container-fluid -->
+</section>
+<!-- /.content -->
+{% endblock %}
+<!-- Control Sidebar -->
+<aside class="control-sidebar control-sidebar-dark">
+    <!-- Control sidebar content goes here -->
+</aside>
+{% block scripts %}
+{{ block.super }}
+{% csrf_token %}
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+<script>
+    function getProjectIdFromUrl() {
+        var url = window.location.href;
+        var parts = url.split('/');
+        return parts[parts.length - 2]; // Assuming project ID is the second-to-last part of the URL
+    }
+
+    function removeManager(managerId) {
+    var csrftoken = '{{ csrf_token }}';
+    var projectId = getProjectIdFromUrl();
+    $.ajax({
+        url: '{% url 'deallocate_users_ajax' %}',
+        type: 'POST',
+        headers: {
+            'X-CSRFToken': csrftoken
+        },
+        data: {
+            project_id: projectId,
+            manager_id: managerId
+        },
+        success: function(response) {
+            location.reload();
+        },
+        error: function(xhr, status, error) {
+            // Handle error
+            console.error('Error removing manager:', error);
+        }
+    });
+}
+</script>
+{% endblock %}
