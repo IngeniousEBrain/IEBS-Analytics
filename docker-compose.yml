@@ -27,3 +27,4 @@ services:
       - .env
     environment:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
+      PGHOST: ${DB_HOST}
