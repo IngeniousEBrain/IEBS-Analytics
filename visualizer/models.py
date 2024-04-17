@@ -307,7 +307,7 @@ class ProjectReports(models.Model):
     file = models.FileField(upload_to='uploaded_files/')
     file_name = models.CharField(max_length=255)
     file_type = models.CharField(max_length=50)
-    uploaded_by = models.ForeignKey('CustomUser', on_delete=models.CASCADE, related_name='uploaded_files')
+    uploaded_by = models.ForeignKey('CustomUser', on_delete=models.CASCADE, related_name='uploaded_files', null=True,blank=True)
     uploaded_at = models.DateTimeField(auto_now_add=True)
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='uploaded_files')
 

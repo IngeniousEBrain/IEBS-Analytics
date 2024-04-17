@@ -2634,3 +2634,47 @@ def deallocate_users_ajax(request):
         return JsonResponse({'status': 'success', 'message': 'Association removed successfully.'})
     else:
         return JsonResponse({'status': 'error', 'message': 'Invalid request method.'}, status=405)
+
+
+def reports_listing(request, project_id):
+    """
+
+
+    """
+    uploaded_by = User.objects.filter(is_superuser=True).first().id
+    project_name = Project.objects.filter(id=project_id).first().name
+    user_role = 'superadmin'
+    uploaded_files = ProjectReports.objects.filter(project_id=project_id)
+    if request.method == 'POST':
+        if request.FILES.get('proposal_report'):
+            proposal_file = request.FILES['proposal_report']
+            ProjectReports.objects.create(
+                file=proposal_file,
+                file_name=proposal_file.name,
+                file_type='Proposal',
+                # uploaded_by_id=uploaded_by,
+                project_id=project_id
+            )
+
+        if request.FILES.get('interim_report'):
+            interim_file = request.FILES['interim_report']
+            ProjectReports.objects.create(
+                file=interim_file,
+                file_name=interim_file.name,
+                file_type='Interim Report',
+                # uploaded_by_id=uploaded_by,
+                project_id=project_id
+            )
+
+        if request.FILES.get('final_report'):
+            final_file = request.FILES['final_report']
+            ProjectReports.objects.create(
+                file=final_file,
+                file_name=final_file.name,
+                file_type='Final Report',
+                # uploaded_by_id=uploaded_by,
+                project_id=project_id
+            )
+        return redirect('reports_listing', project_id=project_id)
+    return render(request, 'pages/superadmin/reports_listing.html',
+                  {"project_name": project_name, "uploaded_files": uploaded_files, "user_role": user_role})
