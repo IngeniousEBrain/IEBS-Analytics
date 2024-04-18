@@ -114,7 +114,7 @@ def admin_login(req):
         if check_password(password, user.password):
             return JsonResponse({
                 'status': 'success',
-                'redirect_url': '/index'
+                'redirect_url': '/admin_index/'
             })
         return JsonResponse({
             'status': 'error',
@@ -276,6 +276,22 @@ def index(req):
     return render(req, 'index.html', context)
 
 
+@request.validator
+def admin_index(req):
+    context = {}
+    user_id = User.objects.filter(is_superuser=True)
+    total = Project.objects.all()
+    completed_projects = total.filter(status='Completed')
+    in_progress_projects = total.filter(status='In Progress')
+    context.update({
+        'user': user_id,
+        'total': total,
+        'completed_projects': completed_projects,
+        'in_progress_projects': in_progress_projects,
+    })
+    return render(req, 'pages/superadmin/admin_index.html', context)
+
+
 def get_user_project_data(user_id):
     """
     Fetches user-related project data.
@@ -319,7 +335,6 @@ def project_list(req, chart_type):
      """
     user_id = req.session.get('logged_in_user_id')
     user_qs = get_object_or_404(CustomUser, id=user_id)
-
     if user_qs.roles == 'client':
         projects = Project.objects.filter(clientprojectassociation__client=user_qs).distinct()
     elif user_qs.roles == 'project_manager':
@@ -348,6 +363,20 @@ def delete_project(request):
             project_to_deallocate = Project.objects.get(id=project_id)
             for user_association in user_associations:
                 user_association.projects.remove(project_to_deallocate)
+            return JsonResponse({'status': 'success'})
+        except UserProjectAssociation.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'User association not found'})
+        except Project.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Project not found'})
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'})
+
+
+def delete_project_by_admin(request):
+    print(request.POST)
+    if request.method == 'POST':
+        project_id = request.POST.get('project_id')
+        try:
+            Project.objects.filter(id=project_id).delete()
             return JsonResponse({'status': 'success'})
         except UserProjectAssociation.DoesNotExist:
             return JsonResponse({'status': 'error', 'message': 'User association not found'})
@@ -506,7 +535,7 @@ def get_q_object(assignee, partner):
 
 @csrf_exempt
 def competitor_colab_view(request, proj_code):
-    code = Project.objects.filter(id=proj_code).first().code
+    code = Project.objects.filter(code=proj_code).first().code
     try:
         if request.method == 'POST':
             if 'patent_data' in request.session:
@@ -520,7 +549,7 @@ def competitor_colab_view(request, proj_code):
             if 'top_ten_highest_citing_qs' in request.session:
                 del request.session['top_ten_highest_citing_qs']
             data = json.loads(request.body)
-            if data.get('assignee_standardized') and data.get('legal_status'):
+            if data.get('assignee_standardized') and data.get('legal_status') and data.get('type'):
                 assignee_list = [data.get('assignee_standardized')]
                 lega_status = PatentData.objects.filter(assignee_standardized__in=assignee_list,
                                                         legal_status=data.get('legal_status'), project_code=code)
@@ -652,7 +681,6 @@ def competitor_colab_view(request, proj_code):
                      'type': 'display'})
 
             elif data.get('type') == 'allCitedFile':
-                user_id = request.session.get('logged_in_user_id')
                 filtered_data = PatentData.objects.filter(citing_patents_count__isnull=False,
                                                           project_code=code)
                 top_ten_highest_citing = filtered_data.order_by('-citing_patents_count')[:10]
@@ -773,12 +801,10 @@ def competitor_charts(req, project_id):
     ):
         # User is not associated with the project
         return HttpResponse("You are not authorized to view competitor charts for this project.")
-
     # Continue processing for authorized user
     project_id_template = project.id
     code = project.code
     project_name = project.name
-
     # Fetch patent data for the project
     data = PatentData.objects.filter(project_code=code)
     data1 = data.values('assignee_standardized').annotate(count=Count('assignee_standardized')).order_by('-count')[:10]
@@ -976,7 +1002,6 @@ def competitor_charts(req, project_id):
         height=600,
         width=995
     )
-
     div6 = fig6.to_html(full_html=False)
     context = {'plot_div1': div1, 'plot_div2': div2, 'plot_div3': div3, 'plot_div4': div4,
                'plot_div6': div6, 'data1': data1, 'result': res, 'data': data, 'proj_code': code,
@@ -994,7 +1019,6 @@ def handle_nat(dt):
 
 def download_publication_exl(request, year, project_id):
     data_list = []
-    user_id_to_filter = request.session.get('logged_in_user_id')
     code = Project.objects.filter(id=project_id).first().code
     innovators = PatentData.objects.filter(publication_dates__year=year, project_code=code)
     if request.GET.get('display'):
@@ -1026,26 +1050,18 @@ def download_publication_exl(request, year, project_id):
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         response['Content-Disposition'] = f'attachment; filename=Publication Trend.xlsx'
         with pd.ExcelWriter(response, engine='xlsxwriter') as writer:
-            # Convert the dataframe to an XlsxWriter Excel object
             df.to_excel(writer, index=False, sheet_name='Publication Trend')
-
-            # Get the xlsxwriter workbook and worksheet objects
             workbook = writer.book
             worksheet = writer.sheets['Publication Trend']
-
-            # Set the column widths
             for i, col in enumerate(df.columns):
                 max_len = max(df[col].astype(str).apply(len).max(), len(col))
                 worksheet.set_column(i, i, max_len)
-
         response['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-
         return response
 
 
 def download_exp_exl(request, year, project_id):
     data_list = []
-    user_id_to_filter = request.session.get('logged_in_user_id')
     code = Project.objects.filter(id=project_id).first().code
     exp_qs = PatentData.objects.filter(expected_expiry_dates__year=year, project_code=code)
     for patent_data in exp_qs:
@@ -1530,7 +1546,6 @@ def download_demo_excel(req):
 
 
 def download_citedExl(request, project_id):
-    user_id_to_filter = request.session.get('logged_in_user_id')
     code = Project.objects.filter(id=project_id).first().code
     top_ten_cited_patents = PatentData.objects.filter(
         prject_code=code
@@ -1573,7 +1588,6 @@ def download_citedExl(request, project_id):
 
 
 def top_ten_recent_ass_exl(request, project_id):
-    user_id_to_filter = request.session.get('logged_in_user_id')
     code = Project.objects.filter(id=project_id).first().code
     current_year = datetime.now().year
     last_five_years_start = current_year - 5
@@ -1631,7 +1645,6 @@ def top_ten_recent_ass_exl(request, project_id):
 
 
 def top_ten_ass_exl(request, project_id):
-    user_id_to_filter = request.session.get('logged_in_user_id')
     code = Project.objects.filter(id=project_id).first().code
     data = PatentData.objects.filter(project_code=code)
     data = data.values('assignee_standardized').annotate(count=Count('assignee_standardized')).order_by('-count')[:10]
@@ -1865,7 +1878,6 @@ def bibliographic_charts(req, project_id):
                     if PatentData.objects.filter(project_code=project_code_qs.code):
                         PatentData.objects.filter(project_code=project_code_qs.code).delete()
                     for index, row in df.iterrows():
-                        # print(row['Priority Country'])
                         application_date_str = row['Application Dates']
                         publication_date_str = row['Publication Dates']
                         expected_expiry_str = row['Expected Expiry Dates']
@@ -2074,7 +2086,8 @@ def get_legal_status_count(req, project_id):
 
 
 def download_excel_file(request, project_id):
-    project_code = Project.objects.filter(id=project_id).first().code
+    print(project_id)
+    project_code = Project.objects.filter(code=project_id).first().code
     top_ten_cited_patents = PatentData.objects.filter(project_code=project_code).exclude(
         cited_patents_count__isnull=True
     ).order_by('-cited_patents_count')[:10]
@@ -2420,11 +2433,248 @@ def download_file(request, project_id):
 
 
 # ======================NEW ADMIN PANNEL==========
-def add_Project(request):
+def add_project(request):
+    if request.method == 'POST':
+        project_name = request.POST.get('projectName')
+        projectDescription = request.POST.get('projectDescription')
+        projectCode = request.POST.get('projectCode')
+        projectScope = request.POST.get('projectScope')
+        projectStatus = request.POST.get('projectStatus')
+        # createdDate = request.POST.get('createdDate')
+        project = Project.objects.create(
+            name=project_name,
+            code=projectCode,
+            scope=projectScope,
+            description=projectDescription,
+            status=projectStatus,
+
+        )
+        return redirect('admin_project_listing')
+    return render(request, 'pages/superadmin/add_project.html')
+
+
+def user_listing(request):
+    user_obj = CustomUser.objects.all()
+    return render(request, 'pages/superadmin/user_listing.html', {"user_obj": user_obj})
+
+
+def association_listing(request, project_id):
+    project_obj = Project.objects.filter(id=project_id).first()
+    associations = ClientProjectAssociation.objects.filter(projects=project_obj).select_related('client')
+
+    associated_managers = UserProjectAssociation.objects.filter(projects=project_obj).select_related('user')
+
+    associated_kam = KeyAccountManagerProjectAssociation.objects.filter(projects=project_obj).select_related(
+        'key_account_manager')
+    clients = [association.client for association in associations]
+    managers = [association.user for association in associated_managers]
+    kam = [association.key_account_manager for association in associated_kam]
+    return render(request, 'pages/superadmin/association_listing.html',
+                  {"clients": clients, "managers": managers, "kams": kam})
+
+
+def add_user(request):
+    if request.method == 'POST':
+        username = request.POST.get('userName')
+        password = request.POST.get('userPassword')
+        email = request.POST.get('userEmail')
+        role = request.POST.get('userRoles')
+        business_unit = request.POST.get('businessUnit')
+        # print(username, password, email, role, business_unit)
+        try:
+            user = CustomUser.objects.create_user(username=username, email=email, password=password)
+            user.roles = role
+            user.business_unit = business_unit
+            user.save()
+            return JsonResponse({'status': 'success', 'message': 'User created successfully'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)})
+    return render(request, 'pages/superadmin/create_user.html')
+
+
+def edit_user(request, user_id):
+    user_obj = CustomUser.objects.filter(id=user_id).first()
+    if request.method == 'POST':
+        username = request.POST.get('userName')
+        useremail = request.POST.get('userEmail')
+        password = request.POST.get('userPassword')
+        roles = request.POST.get('userRoles')
+        BU = request.POST.get('businessUnit')
+
+        # Update user fields
+        user_obj.username = username
+        user_obj.email = useremail
+        user_obj.roles = roles
+        user_obj.business_unit = BU
+        if password:
+            # Check if password is provided and update it
+            user_obj.set_password(password)
+        user_obj.updated_date = timezone.now()
+
+        # Save the updated user object
+        user_obj.save()
+
+        # Redirect to a success page or render a template
+        return render(request, 'pages/superadmin/edit_user.html', {'user_obj': user_obj})
+
+    return render(request, 'pages/superadmin/edit_user.html', {'user_obj': user_obj})
+
+
+def user_project_association(request):
     """
 
 
     """
-    user_obj = CustomUser.objects.filter(is_superuser=True)
+    manager_obj = CustomUser.objects.filter(roles__in=['project_manager', 'PROJECT_MANAGER'])
+    client_obj = CustomUser.objects.filter(roles__in=['client', 'CLIENT'])
+    kam_obj = CustomUser.objects.filter(roles__in=['KEY_ACCOUNT_HOLDER', 'key_account_holder'])
+    project_obj = Project.objects.all()
+    return render(request, 'pages/superadmin/user_project_association.html',
+                  {'manager_obj': manager_obj, 'client_obj': client_obj, 'kam_obj': kam_obj,
+                   'project_obj': project_obj})
 
-    return render(request, 'pages/superadmin/add_project.html', {'user_obj': user_obj})
+
+def admin_project_listing(request):
+    project_obj = Project.objects.all()
+    return render(request, 'pages/superadmin/admin_project_listing.html', {"project_obj": project_obj})
+
+
+def get_associated_users(request, project_id):
+    project = get_object_or_404(Project, id=project_id)
+    # Get associated clients
+    associated_clients = ClientProjectAssociation.objects.filter(projects=project).values_list('client_id', flat=True)
+    # Get associated managers
+    associated_managers = UserProjectAssociation.objects.filter(projects=project).values_list('user_id', flat=True)
+
+    # Get associated key account managers
+    associated_kam = KeyAccountManagerProjectAssociation.objects.filter(projects=project).values_list(
+        'key_account_manager_id', flat=True)
+    return JsonResponse({
+        'associated_clients': list(associated_clients),
+        'associated_kam': list(associated_kam),
+        'associated_managers': list(associated_managers)
+    })
+
+
+def associate_users_with_project(request):
+    if request.method == 'POST':
+        project_id = request.POST.get('project_id')
+        try:
+            project = Project.objects.get(pk=project_id)
+        except Project.DoesNotExist:
+            return JsonResponse({'error': 'Project does not exist'}, status=404)
+
+        # Get selected clients, key account managers, and managers
+        selected_clients = request.POST.getlist('client_ids[]')
+        selected_kam = request.POST.getlist('kam_ids[]')
+        selected_managers = request.POST.getlist('manager_ids[]')
+
+        # Associate clients with the project
+        # project.clientprojectassociation_set.clear()  # Remove existing associations
+        for client_id in selected_clients:
+            client = CustomUser.objects.get(pk=client_id)
+            association, created = ClientProjectAssociation.objects.get_or_create(client=client)
+            association.projects.add(project)
+
+        # Associate key account managers with the project
+        # project.keyaccountmanagerprojectassociation_set.clear()  # Remove existing associations
+        for kam_id in selected_kam:
+            kam = CustomUser.objects.get(pk=kam_id)
+            association, created = KeyAccountManagerProjectAssociation.objects.get_or_create(key_account_manager=kam)
+            association.projects.add(project)
+
+        # Associate managers with the project
+        # project.userprojectassociation_set.clear()  # Remove existing associations
+        for manager_id in selected_managers:
+            manager = CustomUser.objects.get(pk=manager_id)
+            association, created = UserProjectAssociation.objects.get_or_create(user=manager)
+            association.projects.add(project)
+
+        return JsonResponse({'message': 'Users associated successfully'}, status=200)
+    else:
+        return JsonResponse({'error': 'Invalid request method'}, status=400)
+
+
+def delete_user(request):
+    if request.method == 'POST':
+        user_id = request.POST.get('user_id')
+        try:
+            user_qs = get_object_or_404(CustomUser, id=user_id).delete()
+            return JsonResponse({'status': 'success'})
+        except UserProjectAssociation.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'User association not found'})
+        except Project.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Project not found'})
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'})
+
+
+def deallocate_users_ajax(request):
+    if request.method == 'POST':
+        project_id = request.POST.get('project_id')
+        manager_id = request.POST.get('manager_id')
+
+        # Retrieve the project and user instances
+        project = get_object_or_404(Project, id=project_id)
+        user = get_object_or_404(CustomUser, id=manager_id)
+
+        # Determine if the user is a client or a key account manager
+        if user.client_project_associations.filter(projects=project).exists():
+            association = get_object_or_404(ClientProjectAssociation, client=user, projects=project)
+        elif user.key_account_manager_project_associations.filter(projects=project).exists():
+            association = get_object_or_404(KeyAccountManagerProjectAssociation, key_account_manager=user,
+                                            projects=project)
+        elif user.project_associations.filter(projects=project).exists():
+            association = get_object_or_404(UserProjectAssociation, user=user, projects=project)
+        else:
+            return JsonResponse({'status': 'error', 'message': 'User not associated with the project.'}, status=400)
+
+        # Delete the association
+        association.delete()
+
+        return JsonResponse({'status': 'success', 'message': 'Association removed successfully.'})
+    else:
+        return JsonResponse({'status': 'error', 'message': 'Invalid request method.'}, status=405)
+
+
+def reports_listing(request, project_id):
+    """
+
+
+    """
+    uploaded_by = User.objects.filter(is_superuser=True).first().id
+    project_name = Project.objects.filter(id=project_id).first().name
+    user_role = 'superadmin'
+    uploaded_files = ProjectReports.objects.filter(project_id=project_id)
+    if request.method == 'POST':
+        if request.FILES.get('proposal_report'):
+            proposal_file = request.FILES['proposal_report']
+            ProjectReports.objects.create(
+                file=proposal_file,
+                file_name=proposal_file.name,
+                file_type='Proposal',
+                # uploaded_by_id=uploaded_by,
+                project_id=project_id
+            )
+
+        if request.FILES.get('interim_report'):
+            interim_file = request.FILES['interim_report']
+            ProjectReports.objects.create(
+                file=interim_file,
+                file_name=interim_file.name,
+                file_type='Interim Report',
+                # uploaded_by_id=uploaded_by,
+                project_id=project_id
+            )
+
+        if request.FILES.get('final_report'):
+            final_file = request.FILES['final_report']
+            ProjectReports.objects.create(
+                file=final_file,
+                file_name=final_file.name,
+                file_type='Final Report',
+                # uploaded_by_id=uploaded_by,
+                project_id=project_id
+            )
+        return redirect('reports_listing', project_id=project_id)
+    return render(request, 'pages/superadmin/reports_listing.html',
+                  {"project_name": project_name, "uploaded_files": uploaded_files, "user_role": user_role})

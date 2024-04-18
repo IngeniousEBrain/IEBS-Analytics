@@ -16,8 +16,8 @@ local_settings.py
 ../db.sqlite3
 
 # Static files
-static/
-upload_files/
+
+uploaded_files/
 # Media files
 media/
 nginx/
@@ -34,7 +34,7 @@ env/
 # Others
 *.log
 *.swp
-
+log.txt
 *.pyc
 __pycache__/
 *.pyo

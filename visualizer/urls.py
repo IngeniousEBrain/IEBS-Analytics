@@ -61,5 +61,18 @@ urlpatterns = [
     #     NEW ADMIN PORTAL
 
     path('admin_login/', views.admin_login, name='admin_login'),
-    path('add_Project/', views.add_Project, name='add_Project'),
+    path('admin_index/', views.admin_index, name='admin_index'),
+    path('add_project/', views.add_project, name='add_project'),
+    path('add_user/', views.add_user, name='add_user'),
+    path('edit_user/<int:user_id>/', views.edit_user, name='edit_user'),
+    path('delete_user/', views.delete_user, name='delete_user'),
+    path('user_listing/', views.user_listing, name='user_listing'),
+    path('reports_listing/<int:project_id>/', views.reports_listing, name='reports_listing'),
+    path('user_project_association/', views.user_project_association, name='user_project_association'),
+    path('admin_project_listing/', views.admin_project_listing, name='admin_project_listing'),
+    path('get_associated_users/<int:project_id>/', views.get_associated_users, name='get_associated_users'),
+    path('association_listing/<int:project_id>/', views.association_listing, name='association_listing'),
+    path('associate_users_with_project/', views.associate_users_with_project, name='associate_users_with_project'),
+    path('delete_project_by_admin/', views.delete_project_by_admin, name='delete_project_by_admin'),
+    path('deallocate_users_ajax/', views.deallocate_users_ajax, name='deallocate_users_ajax'),
 ]

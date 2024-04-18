@@ -102,7 +102,7 @@ PASSWORD_HASHERS = [
 
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
-CSRF_COOKIE_SECURE = False
+CSRF_COOKIE_SECURE = os.getenv('CSRF_COOKIE_SECURE')
 
 DATABASES = {
     'default': {
@@ -172,4 +172,4 @@ AWS_S3_REGION_NAME = os.getenv('AWS_S3_REGION_NAME')
 AWS_S3_FILE_OVERWRITE = False
 AWS_DEFAULT_ACL = None
 AWS_S3_VERITY = True
-DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+DEFAULT_FILE_STORAGE = os.getenv('DEFAULT_FILE_STORAGE')
