@@ -67,6 +67,7 @@ urlpatterns = [
     path('edit_user/<int:user_id>/', views.edit_user, name='edit_user'),
     path('delete_user/', views.delete_user, name='delete_user'),
     path('user_listing/', views.user_listing, name='user_listing'),
+    path('reports_listing/<int:project_id>/', views.reports_listing, name='reports_listing'),
     path('user_project_association/', views.user_project_association, name='user_project_association'),
     path('admin_project_listing/', views.admin_project_listing, name='admin_project_listing'),
     path('get_associated_users/<int:project_id>/', views.get_associated_users, name='get_associated_users'),

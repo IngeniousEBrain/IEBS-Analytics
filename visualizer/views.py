@@ -114,7 +114,7 @@ def admin_login(req):
         if check_password(password, user.password):
             return JsonResponse({
                 'status': 'success',
-                'redirect_url': '/index'
+                'redirect_url': '/admin_index/'
             })
         return JsonResponse({
             'status': 'error',
@@ -278,28 +278,18 @@ def index(req):
 
 @request.validator
 def admin_index(req):
-    """
-    Renders the 'index.html' template with user-specific project information.
-
-    Args:
-        req (HttpRequest): The HTTP request object.
-
-    Returns:
-        HttpResponse: Rendered response containing user-specific project data.
-
-    Example:
-        The function fetches user-related data such as total projects, completed
-        projects, and in-progress projects, and renders the 'index.html' template
-        with the fetched information.
-
-    Note:
-        This function assumes the presence of a 'user_id' key in the session to
-        identify the logged-in user.
-    """
     context = {}
     user_id = User.objects.filter(is_superuser=True)
-    context = get_user_project_data(user_id)
-    return render(req, 'admin_index.html', context)
+    total = Project.objects.all()
+    completed_projects = total.filter(status='Completed')
+    in_progress_projects = total.filter(status='In Progress')
+    context.update({
+        'user': user_id,
+        'total': total,
+        'completed_projects': completed_projects,
+        'in_progress_projects': in_progress_projects,
+    })
+    return render(req, 'pages/superadmin/admin_index.html', context)
 
 
 def get_user_project_data(user_id):
@@ -2633,6 +2623,8 @@ def deallocate_users_ajax(request):
         elif user.key_account_manager_project_associations.filter(projects=project).exists():
             association = get_object_or_404(KeyAccountManagerProjectAssociation, key_account_manager=user,
                                             projects=project)
+        elif user.project_associations.filter(projects=project).exists():
+            association = get_object_or_404(UserProjectAssociation, user=user, projects=project)
         else:
             return JsonResponse({'status': 'error', 'message': 'User not associated with the project.'}, status=400)
 
@@ -2642,3 +2634,47 @@ def deallocate_users_ajax(request):
         return JsonResponse({'status': 'success', 'message': 'Association removed successfully.'})
     else:
         return JsonResponse({'status': 'error', 'message': 'Invalid request method.'}, status=405)
+
+
+def reports_listing(request, project_id):
+    """
+
+
+    """
+    uploaded_by = User.objects.filter(is_superuser=True).first().id
+    project_name = Project.objects.filter(id=project_id).first().name
+    user_role = 'superadmin'
+    uploaded_files = ProjectReports.objects.filter(project_id=project_id)
+    if request.method == 'POST':
+        if request.FILES.get('proposal_report'):
+            proposal_file = request.FILES['proposal_report']
+            ProjectReports.objects.create(
+                file=proposal_file,
+                file_name=proposal_file.name,
+                file_type='Proposal',
+                # uploaded_by_id=uploaded_by,
+                project_id=project_id
+            )
+
+        if request.FILES.get('interim_report'):
+            interim_file = request.FILES['interim_report']
+            ProjectReports.objects.create(
+                file=interim_file,
+                file_name=interim_file.name,
+                file_type='Interim Report',
+                # uploaded_by_id=uploaded_by,
+                project_id=project_id
+            )
+
+        if request.FILES.get('final_report'):
+            final_file = request.FILES['final_report']
+            ProjectReports.objects.create(
+                file=final_file,
+                file_name=final_file.name,
+                file_type='Final Report',
+                # uploaded_by_id=uploaded_by,
+                project_id=project_id
+            )
+        return redirect('reports_listing', project_id=project_id)
+    return render(request, 'pages/superadmin/reports_listing.html',
+                  {"project_name": project_name, "uploaded_files": uploaded_files, "user_role": user_role})

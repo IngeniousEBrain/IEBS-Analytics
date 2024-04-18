@@ -127,6 +127,11 @@
                                     {% endif %}
                                 </td>
                                 <td>
+                                     <a href="{% url 'reports_listing' project_id=project.id %}">
+                                    <i class="fas fa-copy" aria-hidden="true" title="Project Association"
+                                       style="color: rgb(27, 124, 180);"></i>
+                                    </a>
+
                                     <a href="{% url 'edit_project' project.id %}">
                                     <i class="fas fa-edit" style="color: rgb(87, 151, 87);" title="Edit Project"></i>
                                     </a>
@@ -147,7 +152,7 @@
                                     </a>
                                     {% endif %}
                                     {% if chart_type == 'report' or  user_qs.roles == 'client' %}
-                                    <a href="{% url 'doc_upload' project_id=project.id %}">
+                                    <a href="{% url 'reports_listing' project_id=project.id %}">
                                         <i class="nav-icon fa fa-file" aria-hidden="true" title="Projects Reports"></i>
                                     </a>
                                     {% endif %}
