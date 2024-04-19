@@ -20,7 +20,7 @@ local_settings.py
 uploaded_files/
 # Media files
 media/
-nginx/
+#nginx/
 # Virtual environment
 venv/
 .venv/
