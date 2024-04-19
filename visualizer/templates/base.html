@@ -229,7 +229,7 @@
                     data-accordion="false">
                     <!-- Add icons to the links using the .nav-icon class with font-awesome or any other icon font library -->
                     <li class="nav-item has-treeview {% if '/index' in request.get_full_path or '/profile' in request.get_full_path or '/common' in request.get_full_path%} menu-open {% endif %}">
-                        <a href="{% url 'index' %}"
+                        <a href="{% url 'admin_index' %}"
                            class="nav-link {% if '/index' in request.get_full_path or '/profile' in request.get_full_path or '/common/' in request.get_full_path %} active {% endif %}">
                             <i class="nav-icon fas fa-tachometer-alt"></i>
                             <p>
@@ -245,9 +245,9 @@
                             <p>Users</p>
                         </a>
                     </li>
-                    <li class="nav-item has-treeview {% if '/add_project' in request.get_full_path or 'user_project_association' in request.get_full_path or 'admin_project_listing' in request.get_full_path %} menu-open {% endif %}">
+                    <li class="nav-item has-treeview {% if '/admin_project_listing' in request.get_full_path or 'user_project_association' in request.get_full_path or 'admin_project_listing' in request.get_full_path %} menu-open {% endif %}">
                         <a href="{% url 'admin_project_listing' %}"
-                           class="nav-link {% if '/add_project' in request.get_full_path or 'user_project_association' in request.get_full_path or 'admin_project_listing' in request.get_full_path %} active {% endif %}">
+                           class="nav-link {% if '/add_project' in request.get_full_path or '/admin_project_listing' in request.get_full_path or 'user_project_association' in request.get_full_path or 'admin_project_listing' in request.get_full_path %} active {% endif %}">
 
                             <i class="nav-icon fas fa-project-diagram"></i>
                             <p>

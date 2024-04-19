@@ -92,6 +92,7 @@ def login(req):
     return render(req, 'pages/onboard/login.html')
 
 
+@csrf_exempt
 def admin_login(req):
     if req.method == 'POST':
         username = req.POST.get('username')
@@ -276,7 +277,7 @@ def index(req):
     return render(req, 'index.html', context)
 
 
-@request.validator
+@csrf_exempt
 def admin_index(req):
     context = {}
     user_id = User.objects.filter(is_superuser=True)
@@ -290,6 +291,27 @@ def admin_index(req):
         'in_progress_projects': in_progress_projects,
     })
     return render(req, 'pages/superadmin/admin_index.html', context)
+
+@csrf_exempt
+def admin_completed_projects(request):
+    """
+        This Function is filtering out the completed projects
+        which are associated to the logged in user.
+    """
+    projects = Project.objects.filter(status='Completed')
+    context = {'project_obj': projects}
+    return render(request, 'pages/superadmin/admin_project_listing.html', context)
+
+@csrf_exempt
+def admin_in_progress_projects(request):
+    """
+        This Function is filtering out the completed projects
+        which are associated to the logged in user.
+    """
+    projects = Project.objects.filter(status='In Progress')
+    context = {'project_obj': projects}
+    return render(request, 'pages/superadmin/admin_project_listing.html', context)
+
 
 
 def get_user_project_data(user_id):
@@ -370,7 +392,7 @@ def delete_project(request):
             return JsonResponse({'status': 'error', 'message': 'Project not found'})
     return JsonResponse({'status': 'error', 'message': 'Invalid request method'})
 
-
+@csrf_exempt
 def delete_project_by_admin(request):
     print(request.POST)
     if request.method == 'POST':
@@ -2433,6 +2455,7 @@ def download_file(request, project_id):
 
 
 # ======================NEW ADMIN PANNEL==========
+@csrf_exempt
 def add_project(request):
     if request.method == 'POST':
         project_name = request.POST.get('projectName')
@@ -2452,12 +2475,12 @@ def add_project(request):
         return redirect('admin_project_listing')
     return render(request, 'pages/superadmin/add_project.html')
 
-
+@csrf_exempt
 def user_listing(request):
     user_obj = CustomUser.objects.all()
     return render(request, 'pages/superadmin/user_listing.html', {"user_obj": user_obj})
 
-
+@csrf_exempt
 def association_listing(request, project_id):
     project_obj = Project.objects.filter(id=project_id).first()
     associations = ClientProjectAssociation.objects.filter(projects=project_obj).select_related('client')
@@ -2472,7 +2495,7 @@ def association_listing(request, project_id):
     return render(request, 'pages/superadmin/association_listing.html',
                   {"clients": clients, "managers": managers, "kams": kam})
 
-
+@csrf_exempt
 def add_user(request):
     if request.method == 'POST':
         username = request.POST.get('userName')
@@ -2491,7 +2514,7 @@ def add_user(request):
             return JsonResponse({'status': 'error', 'message': str(e)})
     return render(request, 'pages/superadmin/create_user.html')
 
-
+@csrf_exempt
 def edit_user(request, user_id):
     user_obj = CustomUser.objects.filter(id=user_id).first()
     if request.method == 'POST':
@@ -2519,7 +2542,7 @@ def edit_user(request, user_id):
 
     return render(request, 'pages/superadmin/edit_user.html', {'user_obj': user_obj})
 
-
+@csrf_exempt
 def user_project_association(request):
     """
 
@@ -2533,12 +2556,12 @@ def user_project_association(request):
                   {'manager_obj': manager_obj, 'client_obj': client_obj, 'kam_obj': kam_obj,
                    'project_obj': project_obj})
 
-
+@csrf_exempt
 def admin_project_listing(request):
     project_obj = Project.objects.all()
     return render(request, 'pages/superadmin/admin_project_listing.html', {"project_obj": project_obj})
 
-
+@csrf_exempt
 def get_associated_users(request, project_id):
     project = get_object_or_404(Project, id=project_id)
     # Get associated clients
@@ -2555,7 +2578,7 @@ def get_associated_users(request, project_id):
         'associated_managers': list(associated_managers)
     })
 
-
+@csrf_exempt
 def associate_users_with_project(request):
     if request.method == 'POST':
         project_id = request.POST.get('project_id')
@@ -2594,7 +2617,7 @@ def associate_users_with_project(request):
     else:
         return JsonResponse({'error': 'Invalid request method'}, status=400)
 
-
+@csrf_exempt
 def delete_user(request):
     if request.method == 'POST':
         user_id = request.POST.get('user_id')
@@ -2607,7 +2630,7 @@ def delete_user(request):
             return JsonResponse({'status': 'error', 'message': 'Project not found'})
     return JsonResponse({'status': 'error', 'message': 'Invalid request method'})
 
-
+@csrf_exempt
 def deallocate_users_ajax(request):
     if request.method == 'POST':
         project_id = request.POST.get('project_id')
@@ -2635,7 +2658,7 @@ def deallocate_users_ajax(request):
     else:
         return JsonResponse({'status': 'error', 'message': 'Invalid request method.'}, status=405)
 
-
+@csrf_exempt
 def reports_listing(request, project_id):
     """
 
