@@ -78,43 +78,44 @@
 {% endblock %}
 
 {% block content %}
-<form id="add-project-form">
+<form name="edit-project-form" action="/edit_project/{{project.id}}/" method="post">
     {% csrf_token %}
-    <h1>Add Project</h1>
+    <h1>Edit Project</h1>
     <div class="form-group">
-        <label for="projectName">Project Name</label>
+        <label for="projectName">Project Name*</label>
         <input class="form-control"  value= {{project.name}} type="text" id="projectName" name="projectName" placeholder="Enter project name">
     </div>
 
     <div class="form-group">
-        <label for="projectCode">Project Code</label>
+        <label for="projectCode">Project Code*</label>
         <input class="form-control" value= {{project.code}} type="text" id="projectCode" name="projectCode" placeholder="Enter project code">
     </div>
 
     <div class="form-group">
-        <label for="projectScope">Project Scope</label>
-        <textarea class="form-control"  value= {{project.scope}} rows="7" id="projectScope" name="projectScope" placeholder="Enter project scope"></textarea>
+    <label for="projectScope">Project Scope*</label>
+    <textarea class="form-control" rows="7" id="projectScope" name="projectScope" placeholder="Enter project scope">{{ project.scope|safe }}</textarea>
     </div>
 
-    <div class="form-group">
-        <label for="projectDescription">Project Description</label>
-        <textarea class="form-control"  rows="7" id="projectDescription" name="projectDescription" value = {{project.description}} placeholder="Enter project description"></textarea>
-    </div>
 
     <div class="form-group">
-        <label for="projectStatus">Project Status</label>
-        <select id="projectStatus" class="form-control" name="projectStatus">
-            <option value="In Progress">In Progress</option>
-            <option value="Completed">Completed</option>
-        </select>
+        <label for="projectDescription">Project Description*</label>
+        <textarea class="form-control" rows="7" id="projectDescription" name="projectDescription" placeholder="Enter project description">{{project.description|safe}}</textarea>
     </div>
+<div class="form-group">
+    <label for="projectStatus">Project Status*</label>
+    <select id="projectStatus" class="form-control" name="projectStatus">
+        <option value="In Progress" {% if project.status == 'In Progress' %} selected {% endif %}>In Progress</option>
+        <option value="Completed" {% if project.status == 'Completed' %} selected {% endif %}>Completed</option>
+    </select>
+</div>
+
 
 <!--    <div class="form-group">-->
 <!--        <label for="createdDate">Created Date</label>-->
 <!--        <input  type="date" id="createdDate" name="createdDate">-->
 <!--    </div>-->
 
-    <input type="submit" value="Submit">
+    <button class="btn btn-primary" type="submit">Save</button>
 </form>
 
 <aside class="control-sidebar control-sidebar-dark">
@@ -125,28 +126,6 @@
 {% block scripts %}
 {{ block.super }}
 <script>
-    var project = {{project.id}}
-    console.log("project**",project)
-    $(document).ready(function () {
-        $('#add-project-form').submit(function (event) {
-            event.preventDefault(); // Prevent default form submission
-            var formData = $(this).serialize(); // Serialize form data
-            $.ajax({
-                type: 'POST',
-                url: `/edit_project/$(project)` // URL to the add_project view
-                data: formData,
-                success: function (response) {
-                    // Handle success response
-                    alert('Project created successfully');
-                    // Optionally, redirect to another page
-                    window.location.href = '/project-list/common/';
-                },
-                error: function (xhr, errmsg, err) {
-                    // Handle error response
-                    alert('Error creating project');
-                }
-            });
-        });
-    });
+
 </script>
 {% endblock %}
