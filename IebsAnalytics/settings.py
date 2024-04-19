@@ -103,6 +103,15 @@ PASSWORD_HASHERS = [
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 CSRF_COOKIE_SECURE = os.getenv('CSRF_COOKIE_SECURE')
+# CSRF_TRUSTED_ORIGINS = ['http://127.0.0.1:8000']
+
+trusted_origins = os.getenv('CSRF_TRUSTED_ORIGINS', '')
+CSRF_TRUSTED_ORIGINS = [origion.strip() for origion in trusted_origins.split(',')]
+
+CORS_ALLOW_CREDENTIALS = os.getenv('CORS_ALLOW_CREDENTIALS')
+CORS_ORIGIN_ALLOW_ALL = os.getenv('CORS_ORIGIN_ALLOW_ALL')
+CORS_REPLACE_HTTPS_REFERER = os.getenv('CORS_REPLACE_HTTPS_REFERER')
+CORS_ORIGIN_WHITELIST = tuple(os.getenv('CORS_ORIGIN_WHITELIST', '').split(','))
 
 DATABASES = {
     'default': {
