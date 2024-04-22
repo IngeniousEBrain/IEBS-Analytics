@@ -245,15 +245,15 @@
                     </li>
                       <li class="nav-item has-treeview {% if '/add_user/' in request.get_full_path or '/user_listing' in request.get_full_path %} menu-open {% endif %}">
                         <a href="{% url 'user_listing' %}"
-                           class="nav-link {% if '/add_user' in request.get_full_path or '/user_listing' in request.get_full_path %} active {% endif %}">
+                           class="nav-link {% if '/add_user' in request.get_full_path or '/user_listing' in request.get_full_path or 'edit_user' in request.get_full_path %} active {% endif %}">
 
                             <i class="nav-icon fa fa-users"></i>
                             <p>Users</p>
                         </a>
                     </li>
-                    <li class="nav-item has-treeview {% if '/admin_project_listing' in request.get_full_path or 'user_project_association' in request.get_full_path or 'admin_project_listing' in request.get_full_path %} menu-open {% endif %}">
+                    <li class="nav-item has-treeview {% if '/admin_project_listing' in request.get_full_path or 'user_project_association' in request.get_full_path or 'admin_project_listing' in request.get_full_path or 'association_listing' in request.get_full_path %} menu-open {% endif %}">
                         <a href="{% url 'admin_project_listing' %}"
-                           class="nav-link {% if '/add_project' in request.get_full_path or '/admin_project_listing' in request.get_full_path or 'user_project_association' in request.get_full_path or 'admin_project_listing' in request.get_full_path %} active {% endif %}">
+                           class="nav-link {% if '/add_project' in request.get_full_path or '/admin_project_listing' in request.get_full_path or 'user_project_association' in request.get_full_path or 'admin_project_listing' in request.get_full_path or 'association_listing' in request.get_full_path or 'edit_project' in request.get_full_path or 'reports_listing' in request.get_full_path %} active {% endif %}">
 
                             <i class="nav-icon fas fa-project-diagram"></i>
                             <p>
