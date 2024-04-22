@@ -413,7 +413,6 @@ def delete_project_by_admin(request):
 def edit_project(request, project_id):
     project = get_object_or_404(Project, id=project_id)
     context = {'project': project}
-
     if request.method == 'POST':
         project_name = request.POST.get('projectName')
         projectDescription = request.POST.get('projectDescription')
@@ -423,7 +422,6 @@ def edit_project(request, project_id):
         valid_statuses = dict(Project.STATUS_CHOICES)
         if projectStatus not in valid_statuses:
             pass
-
         update_query = Project.objects.filter(id=project_id).update(
             code=projectCode,
             name=project_name,
@@ -450,7 +448,6 @@ def completed_project_list(req):
         projects = projects.filter(userprojectassociation__user=user_qs)
     elif user_qs.roles == 'key_account_holder':
         projects = projects.filter(keyaccountmanagerprojectassociation__key_account_manager=user_qs)
-
     context = {'projects_data': projects, 'user_qs': user_qs}
     return render(req, 'pages/projects/project_listing.html', context)
 
@@ -479,16 +476,13 @@ def in_progress_project_list(req):
     """
     user_id = req.session.get('logged_in_user_id')
     user_qs = get_object_or_404(CustomUser, id=user_id)
-
     projects = Project.objects.filter(status='In Progress')
-
     if user_qs.roles == 'client':
         projects = projects.filter(clientprojectassociation__client=user_qs)
     elif user_qs.roles == 'project_manager':
         projects = projects.filter(userprojectassociation__user=user_qs)
     elif user_qs.roles == 'key_account_holder':
         projects = projects.filter(keyaccountmanagerprojectassociation__key_account_manager=user_qs)
-
     context = {'projects_data': projects, 'user_qs': user_qs}
     return render(req, 'pages/projects/project_listing.html', context)
 
@@ -545,7 +539,7 @@ def tech_charts(req, project_id):
         if uploaded_media:
             df = pd.read_excel(uploaded_media)
             nested_data = dataframe_to_nested_dict(df.copy())
-            print(nested_data)
+            print("nested_data***", nested_data)
 
     context = {'project_id': project_id, 'proj_name': proj_name}
     return render(req, 'pages/charts/technical_chart.html', context)
@@ -2373,7 +2367,64 @@ def user_profile(req):
     """
     user_id = req.session.get('logged_in_user_id')
     user_qs = CustomUser.objects.get(id=user_id)
-    return render(req, 'pages/onboard/profile.html', {'iebs_user': user_qs})
+    if user_qs.roles == 'client':
+        client_project_associations = ClientProjectAssociation.objects.filter(client_id=user_qs.id)
+        total_projects = client_project_associations.values_list('projects', flat=True)
+        completed_projects = Project.objects.filter(id__in=total_projects, status='Completed')
+        in_progress_projects = Project.objects.filter(id__in=total_projects, status='In Progress')
+
+        completed = CustomUser.objects.filter(
+            client_project_associations__projects__in=completed_projects)
+
+        in_progress = CustomUser.objects.filter(
+            client_project_associations__projects__in=in_progress_projects)
+
+    if user_qs.roles == 'project_manager':
+        manager_project_associations = UserProjectAssociation.objects.filter(user_id=user_qs.id)
+        total_projects = manager_project_associations.values_list('projects', flat=True)
+        completed_projects = Project.objects.filter(id__in=total_projects, status='Completed')
+        in_progress_projects = Project.objects.filter(id__in=total_projects, status='In Progress')
+        completed = CustomUser.objects.filter(
+            client_project_associations__projects__in=completed_projects)
+
+        in_progress = CustomUser.objects.filter(
+            client_project_associations__projects__in=in_progress_projects)
+
+    if user_qs.roles == 'key_account_holder':
+        kam_project_associations = KeyAccountManagerProjectAssociation.objects.filter(key_account_manager_id=user_qs.id)
+        total_projects = kam_project_associations.values_list('projects', flat=True)
+        completed_projects = Project.objects.filter(id__in=total_projects, status='Completed')
+        in_progress_projects = Project.objects.filter(id__in=total_projects, status='In Progress')
+        completed = CustomUser.objects.filter(
+            client_project_associations__projects__in=completed_projects)
+
+        in_progress = CustomUser.objects.filter(
+            client_project_associations__projects__in=in_progress_projects)
+
+    context = {
+        'iebs_user': user_qs,
+        'total_projects': total_projects,
+        'completed': completed,
+        'in_prog': in_progress,
+    }
+    return render(req, 'pages/onboard/profile.html', context)
+
+@csrf_exempt
+def admin_profile(req):
+    """
+    User Profile
+    """
+    user_qs = User.objects.filter(is_superuser=True).first()
+    total_projects = Project.objects.all()
+    completed = Project.objects.filter(status='Completed')
+    in_progress = Project.objects.filter(status='In Progress')
+    context = {
+        'iebs_user': user_qs,
+        'total_projects':total_projects,
+        'completed': completed,
+        'in_prog': in_progress,
+    }
+    return render(req, 'pages/onboard/profile.html', context)
 
 
 @request.validator
