@@ -89,13 +89,13 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     HC_IP = 'HC_IP'
     HC_BI = 'HC_BI'
     CFH = 'CFH'
-    PMT = 'PMT'
+    BD = 'BD'
     SPMT = 'SPMT'
     BU_CHOICES = [
         (HI_IP, 'HI_IP'),
         (HC_IP, 'HC_IP'),
         (HC_BI, 'HC_BI'),
-        (PMT, 'PMT'),
+        (BD, 'BD'),
         (SPMT, 'SPMT'),
         (CFH, 'CFH'),
     ]
