@@ -142,9 +142,15 @@
             <div class="user-panel mt-3 pb-3 mb-3 d-flex">
                 {% block info %}
                 <div class="info text-center" style="margin-left:5%">
+                    {% if not request.session.user_role == 'superAdmin' %}
                     <a href="{% url 'profile' %}" class="d-block " style="font-weight: bold;">
                         {{ request.session.user_name|title }}
                     </a>
+                    {% else %}
+                    <a href="{% url 'admin_profile' %}" class="d-block " style="font-weight: bold;">
+                        {{ request.session.user_name|title }}
+                    </a>
+                    {% endif %}
                 </div>
                 {% endblock %}
             </div>
@@ -239,15 +245,15 @@
                     </li>
                       <li class="nav-item has-treeview {% if '/add_user/' in request.get_full_path or '/user_listing' in request.get_full_path %} menu-open {% endif %}">
                         <a href="{% url 'user_listing' %}"
-                           class="nav-link {% if '/add_user' in request.get_full_path or '/user_listing' in request.get_full_path %} active {% endif %}">
+                           class="nav-link {% if '/add_user' in request.get_full_path or '/user_listing' in request.get_full_path or 'edit_user' in request.get_full_path %} active {% endif %}">
 
                             <i class="nav-icon fa fa-users"></i>
                             <p>Users</p>
                         </a>
                     </li>
-                    <li class="nav-item has-treeview {% if '/admin_project_listing' in request.get_full_path or 'user_project_association' in request.get_full_path or 'admin_project_listing' in request.get_full_path %} menu-open {% endif %}">
+                    <li class="nav-item has-treeview {% if '/admin_project_listing' in request.get_full_path or 'user_project_association' in request.get_full_path or 'admin_project_listing' in request.get_full_path or 'association_listing' in request.get_full_path %} menu-open {% endif %}">
                         <a href="{% url 'admin_project_listing' %}"
-                           class="nav-link {% if '/add_project' in request.get_full_path or '/admin_project_listing' in request.get_full_path or 'user_project_association' in request.get_full_path or 'admin_project_listing' in request.get_full_path %} active {% endif %}">
+                           class="nav-link {% if '/add_project' in request.get_full_path or '/admin_project_listing' in request.get_full_path or 'user_project_association' in request.get_full_path or 'admin_project_listing' in request.get_full_path or 'association_listing' in request.get_full_path or 'edit_project' in request.get_full_path or 'reports_listing' in request.get_full_path %} active {% endif %}">
 
                             <i class="nav-icon fas fa-project-diagram"></i>
                             <p>

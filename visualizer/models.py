@@ -89,10 +89,14 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     HC_IP = 'HC_IP'
     HC_BI = 'HC_BI'
     CFH = 'CFH'
+    BD = 'BD'
+    SPMT = 'SPMT'
     BU_CHOICES = [
         (HI_IP, 'HI_IP'),
         (HC_IP, 'HC_IP'),
         (HC_BI, 'HC_BI'),
+        (BD, 'BD'),
+        (SPMT, 'SPMT'),
         (CFH, 'CFH'),
     ]
     groups = models.ManyToManyField(

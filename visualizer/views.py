@@ -292,6 +292,7 @@ def admin_index(req):
     })
     return render(req, 'pages/superadmin/admin_index.html', context)
 
+
 @csrf_exempt
 def admin_completed_projects(request):
     """
@@ -302,6 +303,7 @@ def admin_completed_projects(request):
     context = {'project_obj': projects}
     return render(request, 'pages/superadmin/admin_project_listing.html', context)
 
+
 @csrf_exempt
 def admin_in_progress_projects(request):
     """
@@ -311,7 +313,6 @@ def admin_in_progress_projects(request):
     projects = Project.objects.filter(status='In Progress')
     context = {'project_obj': projects}
     return render(request, 'pages/superadmin/admin_project_listing.html', context)
-
 
 
 def get_user_project_data(user_id):
@@ -392,6 +393,7 @@ def delete_project(request):
             return JsonResponse({'status': 'error', 'message': 'Project not found'})
     return JsonResponse({'status': 'error', 'message': 'Invalid request method'})
 
+
 @csrf_exempt
 def delete_project_by_admin(request):
     print(request.POST)
@@ -407,12 +409,27 @@ def delete_project_by_admin(request):
     return JsonResponse({'status': 'error', 'message': 'Invalid request method'})
 
 
-@request.validator
+@csrf_exempt
 def edit_project(request, project_id):
     project = get_object_or_404(Project, id=project_id)
     context = {'project': project}
     if request.method == 'POST':
-        pass
+        project_name = request.POST.get('projectName')
+        projectDescription = request.POST.get('projectDescription')
+        projectCode = request.POST.get('projectCode')
+        projectScope = request.POST.get('projectScope')
+        projectStatus = request.POST.get('projectStatus')
+        valid_statuses = dict(Project.STATUS_CHOICES)
+        if projectStatus not in valid_statuses:
+            pass
+        update_query = Project.objects.filter(id=project_id).update(
+            code=projectCode,
+            name=project_name,
+            description=projectDescription,
+            scope=projectScope,
+            status=projectStatus
+        )
+        return redirect('edit_project', project_id=project_id)
     return render(request, 'pages/projects/project_edit.html', context)
 
 
@@ -431,7 +448,6 @@ def completed_project_list(req):
         projects = projects.filter(userprojectassociation__user=user_qs)
     elif user_qs.roles == 'key_account_holder':
         projects = projects.filter(keyaccountmanagerprojectassociation__key_account_manager=user_qs)
-
     context = {'projects_data': projects, 'user_qs': user_qs}
     return render(req, 'pages/projects/project_listing.html', context)
 
@@ -460,16 +476,13 @@ def in_progress_project_list(req):
     """
     user_id = req.session.get('logged_in_user_id')
     user_qs = get_object_or_404(CustomUser, id=user_id)
-
     projects = Project.objects.filter(status='In Progress')
-
     if user_qs.roles == 'client':
         projects = projects.filter(clientprojectassociation__client=user_qs)
     elif user_qs.roles == 'project_manager':
         projects = projects.filter(userprojectassociation__user=user_qs)
     elif user_qs.roles == 'key_account_holder':
         projects = projects.filter(keyaccountmanagerprojectassociation__key_account_manager=user_qs)
-
     context = {'projects_data': projects, 'user_qs': user_qs}
     return render(req, 'pages/projects/project_listing.html', context)
 
@@ -526,7 +539,7 @@ def tech_charts(req, project_id):
         if uploaded_media:
             df = pd.read_excel(uploaded_media)
             nested_data = dataframe_to_nested_dict(df.copy())
-            print(nested_data)
+            print("nested_data***", nested_data)
 
     context = {'project_id': project_id, 'proj_name': proj_name}
     return render(req, 'pages/charts/technical_chart.html', context)
@@ -2354,7 +2367,64 @@ def user_profile(req):
     """
     user_id = req.session.get('logged_in_user_id')
     user_qs = CustomUser.objects.get(id=user_id)
-    return render(req, 'pages/onboard/profile.html', {'iebs_user': user_qs})
+    if user_qs.roles == 'client':
+        client_project_associations = ClientProjectAssociation.objects.filter(client_id=user_qs.id)
+        total_projects = client_project_associations.values_list('projects', flat=True)
+        completed_projects = Project.objects.filter(id__in=total_projects, status='Completed')
+        in_progress_projects = Project.objects.filter(id__in=total_projects, status='In Progress')
+
+        completed = CustomUser.objects.filter(
+            client_project_associations__projects__in=completed_projects)
+
+        in_progress = CustomUser.objects.filter(
+            client_project_associations__projects__in=in_progress_projects)
+
+    if user_qs.roles == 'project_manager':
+        manager_project_associations = UserProjectAssociation.objects.filter(user_id=user_qs.id)
+        total_projects = manager_project_associations.values_list('projects', flat=True)
+        completed_projects = Project.objects.filter(id__in=total_projects, status='Completed')
+        in_progress_projects = Project.objects.filter(id__in=total_projects, status='In Progress')
+        completed = CustomUser.objects.filter(
+            client_project_associations__projects__in=completed_projects)
+
+        in_progress = CustomUser.objects.filter(
+            client_project_associations__projects__in=in_progress_projects)
+
+    if user_qs.roles == 'key_account_holder':
+        kam_project_associations = KeyAccountManagerProjectAssociation.objects.filter(key_account_manager_id=user_qs.id)
+        total_projects = kam_project_associations.values_list('projects', flat=True)
+        completed_projects = Project.objects.filter(id__in=total_projects, status='Completed')
+        in_progress_projects = Project.objects.filter(id__in=total_projects, status='In Progress')
+        completed = CustomUser.objects.filter(
+            client_project_associations__projects__in=completed_projects)
+
+        in_progress = CustomUser.objects.filter(
+            client_project_associations__projects__in=in_progress_projects)
+
+    context = {
+        'iebs_user': user_qs,
+        'total_projects': total_projects,
+        'completed': completed,
+        'in_prog': in_progress,
+    }
+    return render(req, 'pages/onboard/profile.html', context)
+
+@csrf_exempt
+def admin_profile(req):
+    """
+    User Profile
+    """
+    user_qs = User.objects.filter(is_superuser=True).first()
+    total_projects = Project.objects.all()
+    completed = Project.objects.filter(status='Completed')
+    in_progress = Project.objects.filter(status='In Progress')
+    context = {
+        'iebs_user': user_qs,
+        'total_projects':total_projects,
+        'completed': completed,
+        'in_prog': in_progress,
+    }
+    return render(req, 'pages/onboard/profile.html', context)
 
 
 @request.validator
@@ -2475,10 +2545,12 @@ def add_project(request):
         return redirect('admin_project_listing')
     return render(request, 'pages/superadmin/add_project.html')
 
+
 @csrf_exempt
 def user_listing(request):
     user_obj = CustomUser.objects.all()
     return render(request, 'pages/superadmin/user_listing.html', {"user_obj": user_obj})
+
 
 @csrf_exempt
 def association_listing(request, project_id):
@@ -2494,6 +2566,7 @@ def association_listing(request, project_id):
     kam = [association.key_account_manager for association in associated_kam]
     return render(request, 'pages/superadmin/association_listing.html',
                   {"clients": clients, "managers": managers, "kams": kam})
+
 
 @csrf_exempt
 def add_user(request):
@@ -2513,6 +2586,7 @@ def add_user(request):
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)})
     return render(request, 'pages/superadmin/create_user.html')
+
 
 @csrf_exempt
 def edit_user(request, user_id):
@@ -2542,6 +2616,7 @@ def edit_user(request, user_id):
 
     return render(request, 'pages/superadmin/edit_user.html', {'user_obj': user_obj})
 
+
 @csrf_exempt
 def user_project_association(request):
     """
@@ -2556,10 +2631,12 @@ def user_project_association(request):
                   {'manager_obj': manager_obj, 'client_obj': client_obj, 'kam_obj': kam_obj,
                    'project_obj': project_obj})
 
+
 @csrf_exempt
 def admin_project_listing(request):
     project_obj = Project.objects.all()
     return render(request, 'pages/superadmin/admin_project_listing.html', {"project_obj": project_obj})
+
 
 @csrf_exempt
 def get_associated_users(request, project_id):
@@ -2577,6 +2654,7 @@ def get_associated_users(request, project_id):
         'associated_kam': list(associated_kam),
         'associated_managers': list(associated_managers)
     })
+
 
 @csrf_exempt
 def associate_users_with_project(request):
@@ -2617,6 +2695,7 @@ def associate_users_with_project(request):
     else:
         return JsonResponse({'error': 'Invalid request method'}, status=400)
 
+
 @csrf_exempt
 def delete_user(request):
     if request.method == 'POST':
@@ -2629,6 +2708,7 @@ def delete_user(request):
         except Project.DoesNotExist:
             return JsonResponse({'status': 'error', 'message': 'Project not found'})
     return JsonResponse({'status': 'error', 'message': 'Invalid request method'})
+
 
 @csrf_exempt
 def deallocate_users_ajax(request):
@@ -2657,6 +2737,7 @@ def deallocate_users_ajax(request):
         return JsonResponse({'status': 'success', 'message': 'Association removed successfully.'})
     else:
         return JsonResponse({'status': 'error', 'message': 'Invalid request method.'}, status=405)
+
 
 @csrf_exempt
 def reports_listing(request, project_id):
