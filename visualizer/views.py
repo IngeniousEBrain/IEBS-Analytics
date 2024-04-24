@@ -1040,7 +1040,7 @@ def competitor_charts(req, project_id):
     #     height=600,
     #     width=995
     # )
-    div6 = fig6.to_html(full_html=False)
+    # div6 = fig6.to_html(full_html=False)
     context = {'plot_div1': div1, 'plot_div2': div2, 'plot_div3': div3, 'plot_div4': div4,
                'data1': data1, 'result': res, 'data': data, 'proj_code': code,
                'project_id': project_id_template, 'project_name': project_name,
