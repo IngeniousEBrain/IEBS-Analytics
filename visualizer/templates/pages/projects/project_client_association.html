@@ -42,13 +42,13 @@
             <tr>
                 <td>{{ forloop.counter }}</td>
                 <td><input type="checkbox" title="allocate/deallocate project" name="projectCheckbox" value="{{ project.id }}"> </td>
-                <td>{{ project.name }}</td>
+                <td><a href="{% url 'edit_project' project.id %}"> {{ project.name }}</a></td>
                 <td>{{ project.code }}</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
-    <button title="Save Changes" type="button" id="saveButton" class="btn btn-primary">Save Associations</button>
+    <button title="Save Changes" type="button" id="saveButton" class="btn btn-primary">Save</button>
 </div>
 {% endblock %}
 
@@ -99,7 +99,14 @@
                     }).showToast();
                 },
                 error: function (error) {
-                    alert('invalid request');
+                    Toastify({
+                        text: 'Error: Please select both a client and a project.', // New error message
+                        duration: 3000,
+                        gravity: "top",
+                        position: 'right',
+                        backgroundColor: "linear-gradient(to right, #00b09b, #96c93d)",
+                        stopOnFocus: true
+                    }).showToast();
                 }
             });
         }
