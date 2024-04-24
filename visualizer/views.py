@@ -2437,25 +2437,47 @@ def project_client_association(req):
     project_association = {}
     user_id = req.session.get('logged_in_user_id')
     user_qs = CustomUser.objects.get(id=user_id)
+
     if user_qs.roles != 'Client':
         clients = CustomUser.objects.filter(roles=CustomUser.CLIENT, is_superuser=False)
-        if user_qs.roles == 'project_manager':
-            project_association = UserProjectAssociation.objects.get(user=user_id)
-        if user_qs.roles == 'key_account_holder':
-            project_association = KeyAccountManagerProjectAssociation.objects.get(user=user_id)
-        associated_projects = project_association.projects.all()
-        associated_project_ids = [project.id for project in associated_projects]
 
-        if req.method == 'POST':
-            client_username = req.POST.get('client')
-            project_ids = req.POST.getlist('projects')
-            client = get_object_or_404(CustomUser, username=client_username, roles=CustomUser.CLIENT)
-            projects = [get_object_or_404(Project, id=int(project_id)) for project_id in project_ids[0].split(',')]
-            client_project_association = ClientProjectAssociation.objects.create(client=client, allocated_by=user_qs)
-            client_project_association.projects.set(projects)
-        return render(req, 'pages/projects/project_client_association.html',
-                      {'clients': clients, 'associated_projects': associated_projects,
-                       'associated_project_ids': associated_project_ids})
+        # Fetch project association based on user's role
+        if user_qs.roles == 'project_manager':
+            try:
+                project_association = UserProjectAssociation.objects.get(user=user_id)
+            except UserProjectAssociation.DoesNotExist:
+                # Handle case where project manager is not associated with any project
+                project_association = None
+
+        elif user_qs.roles == 'key_account_holder':
+            try:
+                project_association = KeyAccountManagerProjectAssociation.objects.get(user=user_id)
+            except KeyAccountManagerProjectAssociation.DoesNotExist:
+                # Handle case where key account manager is not associated with any project
+                project_association = None
+
+        # Check if project_association is not None before accessing its attributes
+        if project_association:
+            associated_projects = project_association.projects.all()
+            associated_project_ids = [project.id for project in associated_projects]
+
+            if req.method == 'POST':
+                client_username = req.POST.get('client')
+                project_ids = req.POST.getlist('projects')
+                client = get_object_or_404(CustomUser, username=client_username, roles=CustomUser.CLIENT)
+                projects = [get_object_or_404(Project, id=int(project_id)) for project_id in project_ids[0].split(',')]
+                client_project_association = ClientProjectAssociation.objects.create(client=client,
+                                                                                     allocated_by=user_qs)
+                client_project_association.projects.set(projects)
+
+            return render(req, 'pages/projects/project_client_association.html',
+                          {'clients': clients, 'associated_projects': associated_projects,
+                           'associated_project_ids': associated_project_ids})
+
+        else:
+            # Handle case where user is not associated with any project
+            return render(req, 'pages/projects/project_client_association.html',
+                          {'clients': clients, 'message': 'You are not associated with any projects.'})
 
 
 @request.validator
@@ -2567,7 +2589,7 @@ def association_listing(request, project_id):
     managers = [association.user for association in associated_managers]
     kam = [association.key_account_manager for association in associated_kam]
     return render(request, 'pages/superadmin/association_listing.html',
-                  {"clients": clients, "managers": managers, "kams": kam})
+                  {"clients": clients, "managers": managers, "kams": kam, "project_obj":project_obj})
 
 
 @csrf_exempt
