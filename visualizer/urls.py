@@ -69,6 +69,7 @@ urlpatterns = [
     path('delete_user/', views.delete_user, name='delete_user'),
     path('user_listing/', views.user_listing, name='user_listing'),
     path('reports_listing/<int:project_id>/', views.reports_listing, name='reports_listing'),
+    path('delete_report/<int:file_id>/', views.delete_report, name='delete_report'),
     path('user_project_association/', views.user_project_association, name='user_project_association'),
     path('admin_project_listing/', views.admin_project_listing, name='admin_project_listing'),
     path('admin_completed_projects/', views.admin_completed_projects, name='admin_completed_projects'),

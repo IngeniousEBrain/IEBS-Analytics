@@ -559,6 +559,9 @@ def dataframe_to_nested_dict(df):
         else:
             subcolumn_index = col.split('.')[-1]
             nested_dict[f"{parent_col_name}{subcolumn_index}"] = list(df[col])
+
+    extracted_data = {key: value[:2] for key, value in nested_dict.items()}
+    print(extracted_data)
     return nested_dict
 
 
@@ -1026,20 +1029,20 @@ def competitor_charts(req, project_id):
     div4 = fig4.to_html(full_html=False)
     # ===========================================================================
 
-    df = px.data.gapminder().query("year==2007")
-    fig6 = px.choropleth(df, locations="iso_alpha",
-                         color="lifeExp",
-                         hover_name="country",
-                         color_continuous_scale=px.colors.sequential.Plasma)
+    # df = px.data.gapminder().query("year==2007")
+    # fig6 = px.choropleth(df, locations="iso_alpha",
+    #                      color="lifeExp",
+    #                      hover_name="country",
+    #                      color_continuous_scale=px.colors.sequential.Plasma)
 
     # Set the height and width of the choropleth map
-    fig6.update_layout(
-        height=600,
-        width=995
-    )
+    # fig6.update_layout(
+    #     height=600,
+    #     width=995
+    # )
     div6 = fig6.to_html(full_html=False)
     context = {'plot_div1': div1, 'plot_div2': div2, 'plot_div3': div3, 'plot_div4': div4,
-               'plot_div6': div6, 'data1': data1, 'result': res, 'data': data, 'proj_code': code,
+               'data1': data1, 'result': res, 'data': data, 'proj_code': code,
                'project_id': project_id_template, 'project_name': project_name,
                'table_data': table_data, 'legal_status_counts': legal_status_counts}
     return render(req, 'pages/charts/competitor_charts.html', context)
@@ -2087,7 +2090,6 @@ def get_cpc_counts_from_db(req, project_id):
             # Skip processing if the cpc_value is 'nan'
             if cpc_value.strip().upper() == 'NAN':
                 continue
-
             cpc_code = cpc_value.strip()[:4]
             cpc_counts_from_db[cpc_code] += 1
     cpc_counts_dict_ws = dict(cpc_counts_from_db)
@@ -2782,3 +2784,11 @@ def reports_listing(request, project_id):
         return redirect('reports_listing', project_id=project_id)
     return render(request, 'pages/superadmin/reports_listing.html',
                   {"project_name": project_name, "uploaded_files": uploaded_files, "user_role": user_role})
+
+
+def delete_report(request, file_id):
+    if request.method == 'POST':
+        ProjectReports.objects.get(id=file_id).delete()
+        return JsonResponse({'message': 'File deleted successfully'})
+    else:
+        return JsonResponse({'error': 'Invalid request method'}, status=405)
