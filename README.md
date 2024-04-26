@@ -1,4 +1,4 @@
-# IEBS Analytics Tool
+# IeB Petant Pulse Tool
 
 This project involves developing a system to streamline patent data analysis and visualization for improved business insights. The core functionality includes:
 
