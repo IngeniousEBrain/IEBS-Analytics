@@ -30,6 +30,13 @@
         <form method="post" action="/tech_charts/{{ project_id }}/" enctype="multipart/form-data">
             {% csrf_token %}
             <div class="input-group">
+                <div class="input-group-prepend">
+                    <span class="input-group-text">Level</span>
+                </div>
+                <input type="number" class="form-control" name="level" min="1" required>
+            </div>
+            <br>
+            <div class="input-group">
                 <div class="custom-file">
                     <input type="file" class="custom-file-input" id="excelFile" accept=".xlsx,.xls,.ods,.xlsm"
                            name="technical_excel">
@@ -46,6 +53,7 @@
         </form>
     </div>
 </div>
+
 {% if get_all_data %}
 <div class="text-right">
     <a href="#">
