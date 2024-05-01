@@ -160,9 +160,9 @@
                 <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu"
                     data-accordion="false">
                     <!-- Add icons to the links using the .nav-icon class with font-awesome or any other icon font library -->
-                    <li class="nav-item has-treeview {% if '/index' in request.get_full_path or '/profile' in request.get_full_path or '/common' in request.get_full_path%} menu-open {% endif %}">
+                    <li class="nav-item has-treeview {% if '/index' in request.get_full_path or '/profile' in request.get_full_path or '/common' in request.get_full_path or 'completed_project_list' in request.get_full_path %} menu-open {% endif %}">
                         <a href="{% url 'index' %}"
-                           class="nav-link {% if '/index' in request.get_full_path or '/profile' in request.get_full_path or '/common/' in request.get_full_path %} active {% endif %}">
+                           class="nav-link {% if '/index' in request.get_full_path or '/profile' in request.get_full_path or '/common/' in request.get_full_path or 'completed_project_list' in request.get_full_path or 'in_progress_project_list' in request.get_full_path %} active {% endif %}">
                             <i class="nav-icon fas fa-tachometer-alt"></i>
                             <p>
                                 Dashboard

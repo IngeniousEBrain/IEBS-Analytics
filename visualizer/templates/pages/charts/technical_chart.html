@@ -1,8 +1,17 @@
 {% extends 'base.html' %}
 {% load static %}
 {% block head %}
+{{ block.super }}
+<style>
+#chartdiv {
+    height: 450px;
+    width: 100%;
+    margin-top: 20px; /* Adjust the margin top as needed */
+}
+</style>
 {% endblock %}
 {% block content %}
+
 <div class="tab-container">
     <a href="{% url 'competitor_charts' project_id %}" class="tab-link active">
         <span class="tab-icon">&#8592;</span>
@@ -24,7 +33,7 @@
                 <div class="custom-file">
                     <input type="file" class="custom-file-input" id="excelFile" accept=".xlsx,.xls,.ods,.xlsm"
                            name="technical_excel">
-                    <label class="custom-file-label" for="excelFile">
+                    <label class="custom-file-label" for="excelFile" id="fileNameLabel">
                         Choose File
                     </label>
                 </div>
@@ -37,6 +46,7 @@
         </form>
     </div>
 </div>
+{% if get_all_data %}
 <div class="text-right">
     <a href="#">
         <i class="fas fa-file-download"></i> Download Demo Excel
@@ -51,7 +61,7 @@
                 <div class="row">
                     <!-- Chart Section (60%) -->
                     <div class="col-md-12">
-                        <div id="chartdiv" style="height: 400px; width: 100%;"></div>
+                        <div id="chartdiv" style="height: 550px; width: 100%;"></div>
                     </div>
                 </div>
             </div>
@@ -62,42 +72,42 @@
                 <div class="card">
                     <div class="card-body">
                         <div style="max-height: 300px; overflow-y: auto;">
-                            <table class="table table-sm table-bordered">
-                                <thead style="background-color: #808080">
-                                <tr>
-                                    <th class="text-center small">CPC</th>
-                                    <th class="text-center small">Count</th>
-                                    <th class="text-center small">Actions</th>
-                                </tr>
-                                </thead>
-                                <tbody>
-                                <tr>
-                                    <td class="text-center small">data</td>
-                                    <td class="text-center small">data</td>
-                                    <td class="text-center small">
-                                        <div class="d-flex justify-content-center">
-                                            <button class="btn btn-secondary btn-xs mx-1"
-                                                    onclick="indCpcDataView('{{key}}','{{project_id}}')">
-                                                <i class="fa fa-eye" aria-hidden="true"></i>
-                                            </button>
-                                            <button class="btn btn-primary btn-xs mx-1"
-                                                    onclick="downloadIndCpc('')"><i
-                                                    class="fas fa-file-download" aria-hidden="true"></i>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                                </tbody>
-                            </table>
+<!--                            <table class="table table-sm table-bordered">-->
+<!--                                <thead style="background-color: #808080">-->
+<!--                                <tr>-->
+<!--                                    <th class="text-center small">CPC</th>-->
+<!--                                    <th class="text-center small">Count</th>-->
+<!--                                    <th class="text-center small">Actions</th>-->
+<!--                                </tr>-->
+<!--                                </thead>-->
+<!--                                <tbody>-->
+<!--                                <tr>-->
+<!--                                    <td class="text-center small">data</td>-->
+<!--                                    <td class="text-center small">data</td>-->
+<!--                                    <td class="text-center small">-->
+<!--                                        <div class="d-flex justify-content-center">-->
+<!--                                            <button class="btn btn-secondary btn-xs mx-1"-->
+<!--                                                    onclick="indCpcDataView('{{key}}','{{project_id}}')">-->
+<!--                                                <i class="fa fa-eye" aria-hidden="true"></i>-->
+<!--                                            </button>-->
+<!--                                            <button class="btn btn-primary btn-xs mx-1"-->
+<!--                                                    onclick="downloadIndCpc('')"><i-->
+<!--                                                    class="fas fa-file-download" aria-hidden="true"></i>-->
+<!--                                            </button>-->
+<!--                                        </div>-->
+<!--                                    </td>-->
+<!--                                </tr>-->
+<!--                                </tbody>-->
+<!--                            </table>-->
                         </div>
                         <div class="text-center mt-2">
-                            <button class="btn btn-secondary btn-xs"
-                                    onclick="openCpcDataView('')">View
-                            </button>
-                            <button class="btn btn-primary btn-xs"
-                                    onclick="downloadTopCPC('')">
-                                Download
-                            </button>
+<!--                            <button class="btn btn-secondary btn-xs"-->
+<!--                                    onclick="openCpcDataView('')">View-->
+<!--                            </button>-->
+<!--                            <button class="btn btn-primary btn-xs"-->
+<!--                                    onclick="downloadTopCPC('')">-->
+<!--                                Download-->
+<!--                            </button>-->
                         </div>
                     </div>
                 </div>
@@ -115,9 +125,8 @@
             <h5 class="card-title"><b>Other Spatial Omics Column Segmentation</b></h5>
             <div class="card-body">
                 <div class="row">
-                    <!-- Chart Section (60%) -->
                     <div class="col-md-12">
-                        <div id="chartQdiv" style="height: 400px; width: 100%;"></div>
+                        <div id="chartQdiv" style="height: 450px; width: 100%; overflow: 'visible';"></div>
                     </div>
                 </div>
             </div>
@@ -129,42 +138,41 @@
                 <div class="card">
                     <div class="card-body">
                         <div style="max-height: 300px; overflow-y: auto;">
-                            <table class="table table-sm table-bordered">
-                                <thead style="background-color: #808080">
-                                <tr>
-                                    <th class="text-center small">CPC</th>
-                                    <th class="text-center small">Count</th>
-                                    <th class="text-center small">Actions</th>
-                                </tr>
-                                </thead>
-                                <tbody>
-                                <tr>
-                                    <td class="text-center small">data</td>
-                                    <td class="text-center small">data</td>
-                                    <td class="text-center small">
-                                        <div class="d-flex justify-content-center">
-                                            <button class="btn btn-secondary btn-xs mx-1"
-                                                    onclick="indCpcDataView('{{key}}','{{project_id}}')">
-                                                <i class="fa fa-eye" aria-hidden="true"></i>
-                                            </button>
-                                            <button class="btn btn-primary btn-xs mx-1"
-                                                    onclick="downloadIndCpc('')"><i
-                                                    class="fas fa-file-download" aria-hidden="true"></i>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                                </tbody>
-                            </table>
+<!--                            <table class="table table-sm table-bordered">-->
+<!--                                <thead style="background-color: #808080">-->
+<!--                                <tr>-->
+<!--                                    <th class="text-center small">CPC</th>-->
+<!--                                    <th class="text-center small">Count</th>-->
+<!--                                    <th class="text-center small">Actions</th>-->
+<!--                                </tr>-->
+<!--                                </thead>-->
+<!--                                <tbody>-->
+<!--                                    <tr>-->
+<!--                                        <td class="text-center small">data</td>-->
+<!--                                        <td class="text-center small">-->
+<!--                                            <div class="d-flex justify-content-center">-->
+<!--                                                <button class="btn btn-secondary btn-xs mx-1"-->
+<!--                                                        onclick="indCpcDataView('{{key}}','{{project_id}}')">-->
+<!--                                                    <i class="fa fa-eye" aria-hidden="true"></i>-->
+<!--                                                </button>-->
+<!--                                                <button class="btn btn-primary btn-xs mx-1"-->
+<!--                                                        onclick="downloadIndCpc('')"><i-->
+<!--                                                        class="fas fa-file-download" aria-hidden="true"></i>-->
+<!--                                                </button>-->
+<!--                                            </div>-->
+<!--                                        </td>-->
+<!--                                    </tr>-->
+<!--                                </tbody>-->
+<!--                            </table>-->
                         </div>
                         <div class="text-center mt-2">
-                            <button class="btn btn-secondary btn-xs"
-                                    onclick="openCpcDataView('')">View
-                            </button>
-                            <button class="btn btn-primary btn-xs"
-                                    onclick="downloadTopCPC('')">
-                                Download
-                            </button>
+<!--                            <button class="btn btn-secondary btn-xs"-->
+<!--                                    onclick="openCpcDataView('')">View-->
+<!--                            </button>-->
+<!--                            <button class="btn btn-primary btn-xs"-->
+<!--                                    onclick="downloadTopCPC('')">-->
+<!--                                Download-->
+<!--                            </button>-->
                         </div>
                     </div>
                 </div>
@@ -180,9 +188,8 @@
             <h5 class="card-title"><b>Sequencing Techniques vs Patent family count</b></h5>
             <div class="card-body">
                 <div class="row">
-                    <!-- Chart Section (60%) -->
                     <div class="col-md-12">
-                        <div id="barchartdiv" style="height: 400px; width: 100%;"></div>
+                        <div id="barchartdiv" style="height: 500px; width: 100%;"></div>
                     </div>
                 </div>
             </div>
@@ -193,42 +200,42 @@
                 <div class="card">
                     <div class="card-body">
                         <div style="max-height: 300px; overflow-y: auto;">
-                            <table class="table table-sm table-bordered">
-                                <thead style="background-color: #808080">
-                                <tr>
-                                    <th class="text-center small">CPC</th>
-                                    <th class="text-center small">Count</th>
-                                    <th class="text-center small">Actions</th>
-                                </tr>
-                                </thead>
-                                <tbody>
-                                <tr>
-                                    <td class="text-center small">data</td>
-                                    <td class="text-center small">data</td>
-                                    <td class="text-center small">
-                                        <div class="d-flex justify-content-center">
-                                            <button class="btn btn-secondary btn-xs mx-1"
-                                                    onclick="indCpcDataView('{{key}}','{{project_id}}')">
-                                                <i class="fa fa-eye" aria-hidden="true"></i>
-                                            </button>
-                                            <button class="btn btn-primary btn-xs mx-1"
-                                                    onclick="downloadIndCpc('')"><i
-                                                    class="fas fa-file-download" aria-hidden="true"></i>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                                </tbody>
-                            </table>
+<!--                            <table class="table table-sm table-bordered">-->
+<!--                                <thead style="background-color: #808080">-->
+<!--                                <tr>-->
+<!--                                    <th class="text-center small">CPC</th>-->
+<!--                                    <th class="text-center small">Count</th>-->
+<!--                                    <th class="text-center small">Actions</th>-->
+<!--                                </tr>-->
+<!--                                </thead>-->
+<!--                                <tbody>-->
+<!--                                <tr>-->
+<!--                                    <td class="text-center small">data</td>-->
+<!--                                    <td class="text-center small">data</td>-->
+<!--                                    <td class="text-center small">-->
+<!--                                        <div class="d-flex justify-content-center">-->
+<!--                                            <button class="btn btn-secondary btn-xs mx-1"-->
+<!--                                                    onclick="indCpcDataView('{{key}}','{{project_id}}')">-->
+<!--                                                <i class="fa fa-eye" aria-hidden="true"></i>-->
+<!--                                            </button>-->
+<!--                                            <button class="btn btn-primary btn-xs mx-1"-->
+<!--                                                    onclick="downloadIndCpc('')"><i-->
+<!--                                                    class="fas fa-file-download" aria-hidden="true"></i>-->
+<!--                                            </button>-->
+<!--                                        </div>-->
+<!--                                    </td>-->
+<!--                                </tr>-->
+<!--                                </tbody>-->
+<!--                            </table>-->
                         </div>
                         <div class="text-center mt-2">
-                            <button class="btn btn-secondary btn-xs"
-                                    onclick="openCpcDataView('')">View
-                            </button>
-                            <button class="btn btn-primary btn-xs"
-                                    onclick="downloadTopCPC('')">
-                                Download
-                            </button>
+<!--                            <button class="btn btn-secondary btn-xs"-->
+<!--                                    onclick="openCpcDataView('')">View-->
+<!--                            </button>-->
+<!--                            <button class="btn btn-primary btn-xs"-->
+<!--                                    onclick="downloadTopCPC('')">-->
+<!--                                Download-->
+<!--                            </button>-->
                         </div>
                     </div>
                 </div>
@@ -241,7 +248,7 @@
 <div class="row justify-content-center">
     <div class="col-md-12">
         <div class="card">
-            <h5 class="card-title"><b>Sequencing Techniques vs Patent family count</b></h5>
+            <h5 class="card-title"><b>Other Sequencing Techniques vs Patent family count</b></h5>
             <div class="card-body">
                 <div class="row">
                     <!-- Chart Section (60%) -->
@@ -257,42 +264,42 @@
                 <div class="card">
                     <div class="card-body">
                         <div style="max-height: 300px; overflow-y: auto;">
-                            <table class="table table-sm table-bordered">
-                                <thead style="background-color: #808080">
-                                <tr>
-                                    <th class="text-center small">CPC</th>
-                                    <th class="text-center small">Count</th>
-                                    <th class="text-center small">Actions</th>
-                                </tr>
-                                </thead>
-                                <tbody>
-                                <tr>
-                                    <td class="text-center small">data</td>
-                                    <td class="text-center small">data</td>
-                                    <td class="text-center small">
-                                        <div class="d-flex justify-content-center">
-                                            <button class="btn btn-secondary btn-xs mx-1"
-                                                    onclick="indCpcDataView('{{key}}','{{project_id}}')">
-                                                <i class="fa fa-eye" aria-hidden="true"></i>
-                                            </button>
-                                            <button class="btn btn-primary btn-xs mx-1"
-                                                    onclick="downloadIndCpc('')"><i
-                                                    class="fas fa-file-download" aria-hidden="true"></i>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                                </tbody>
-                            </table>
+<!--                            <table class="table table-sm table-bordered">-->
+<!--                                <thead style="background-color: #808080">-->
+<!--                                <tr>-->
+<!--                                    <th class="text-center small">CPC</th>-->
+<!--                                    <th class="text-center small">Count</th>-->
+<!--                                    <th class="text-center small">Actions</th>-->
+<!--                                </tr>-->
+<!--                                </thead>-->
+<!--                                <tbody>-->
+<!--                                <tr>-->
+<!--                                    <td class="text-center small">data</td>-->
+<!--                                    <td class="text-center small">data</td>-->
+<!--                                    <td class="text-center small">-->
+<!--                                        <div class="d-flex justify-content-center">-->
+<!--                                            <button class="btn btn-secondary btn-xs mx-1"-->
+<!--                                                    onclick="indCpcDataView('{{key}}','{{project_id}}')">-->
+<!--                                                <i class="fa fa-eye" aria-hidden="true"></i>-->
+<!--                                            </button>-->
+<!--                                            <button class="btn btn-primary btn-xs mx-1"-->
+<!--                                                    onclick="downloadIndCpc('')"><i-->
+<!--                                                    class="fas fa-file-download" aria-hidden="true"></i>-->
+<!--                                            </button>-->
+<!--                                        </div>-->
+<!--                                    </td>-->
+<!--                                </tr>-->
+<!--                                </tbody>-->
+<!--                            </table>-->
                         </div>
                         <div class="text-center mt-2">
-                            <button class="btn btn-secondary btn-xs"
-                                    onclick="openCpcDataView('')">View
-                            </button>
-                            <button class="btn btn-primary btn-xs"
-                                    onclick="downloadTopCPC('')">
-                                Download
-                            </button>
+<!--                            <button class="btn btn-secondary btn-xs"-->
+<!--                                    onclick="openCpcDataView('')">View-->
+<!--                            </button>-->
+<!--                            <button class="btn btn-primary btn-xs"-->
+<!--                                    onclick="downloadTopCPC('')">-->
+<!--                                Download-->
+<!--                            </button>-->
                         </div>
                     </div>
                 </div>
@@ -300,6 +307,12 @@
         </div>
     </div>
 </div>
+{% else %}
+<img id="logo" src="{% static 'img/No data-amico.svg' %}" width="100%" height="70%">
+    <div style="text-align: center;">
+        <b>No Data uploaded yet!</b>
+    </div>
+{% endif %}
 <!--3d pie chart ends here-->
 {% endblock %}
 {% block scripts %}
@@ -309,92 +322,79 @@
 <script src="https://cdn.amcharts.com/lib/5/index.js"></script>
 <script src="https://cdn.amcharts.com/lib/5/percent.js"></script>
 <script>
-    am4core.ready(function() {
+const data = {{ get_all_data | safe }};
+const mainCategoryData = [];
+const subCategoryData = [];
+const childCategoryData = [];
 
+Object.entries(data).forEach(([mainCategoryName, mainCategoryObj]) => {
+  // Main category
+  mainCategoryData.push({ category: mainCategoryName, value: 1 });
+
+  // Check if mainCategoryObj is an object and not empty
+  if (typeof mainCategoryObj === 'object' && Object.keys(mainCategoryObj).length > 0) {
+    Object.entries(mainCategoryObj).forEach(([subCategoryName, subCategoryObj]) => {
+      // Check if subCategoryObj is an object and not an empty dictionary
+      if (typeof subCategoryObj === 'object' && Object.keys(subCategoryObj).length > 0) {
+        // Check if subCategoryObj contains child categories
+        Object.entries(subCategoryObj).forEach(([childCategoryName, [label, value]]) => {
+          childCategoryData.push({ category: childCategoryName, label, value });
+        });
+      } else {
+        // If subCategoryObj is an empty dictionary, consider it as a subcategory
+        subCategoryData.push({ category: subCategoryName, value: 1 });
+      }
+    });
+  }
+});
+
+am4core.ready(function() {
     // Themes begin
     am4core.useTheme(am4themes_animated);
     // Themes end
 
     // Create chart instance
     var chart = am4core.create("chartdiv", am4charts.PieChart);
+    chart.height = 500;
+    chart.innerRadius = am4core.percent(30);
 
-    // Let's cut a hole in our Pie chart the size of 40% the radius
-    chart.innerRadius = am4core.percent(40);
+    // Add and configure Series for main category
+    var mainCategorySeries = chart.series.push(new am4charts.PieSeries());
+    mainCategorySeries.dataFields.value = "value";
+    mainCategorySeries.dataFields.category = "category";
+    mainCategorySeries.slices.template.strokeWidth = 0;
+    mainCategorySeries.data = mainCategoryData;
 
-    // Add data
-    chart.data = [{
-      "Metabolomics": "Lithuania",
-      "litres": 501.9,
-      "bottles": 1500
-    }, {
-      "country": "Czech Republic",
-      "litres": 301.9,
-      "bottles": 990
-    }, {
-      "country": "Ireland",
-      "litres": 201.1,
-      "bottles": 785
-    }, {
-      "country": "Germany",
-      "litres": 165.8,
-      "bottles": 255
-    }, {
-      "country": "Australia",
-      "litres": 139.9,
-      "bottles": 452
-    }, {
-      "country": "Austria",
-      "litres": 128.3,
-      "bottles": 332
-    }, {
-      "country": "UK",
-      "litres": 99,
-      "bottles": 150
-    }, {
-      "country": "Belgium",
-      "litres": 60,
-      "bottles": 178
-    }, {
-      "country": "The Netherlands",
-      "litres": 50,
-      "bottles": 50
-    }];
+    // Add and configure Series for subcategories
+    var subCategorySeries = chart.series.push(new am4charts.PieSeries());
+    subCategorySeries.dataFields.value = "value";
+    subCategorySeries.dataFields.category = "category";
+    subCategorySeries.slices.template.strokeWidth = 2;
+    subCategorySeries.radius = am4core.percent(60);
+    subCategorySeries.startAngle = 0;
+    subCategorySeries.endAngle = 360;
+    subCategorySeries.data = subCategoryData;
 
-    // Add and configure Series
-    var pieSeries = chart.series.push(new am4charts.PieSeries());
-    pieSeries.dataFields.value = "litres";
-    pieSeries.dataFields.category = "country";
-    pieSeries.slices.template.stroke = am4core.color("#fff");
-    pieSeries.slices.template.strokeWidth = 2;
-    pieSeries.slices.template.strokeOpacity = 1;
+    // Add and configure Series for child categories
+    var childCategorySeries = chart.series.push(new am4charts.PieSeries());
+    childCategorySeries.dataFields.value = "value";
+    childCategorySeries.dataFields.category = "category";
+    childCategorySeries.labels.template.text = "{category}: {value}";
+    childCategorySeries.slices.template.strokeWidth = 2;
+    childCategorySeries.radius = am4core.percent(80);
+    childCategorySeries.startAngle = 0;
+    childCategorySeries.endAngle = 360;
+    childCategorySeries.data = childCategoryData;
 
-    // Define blue color shades
-    pieSeries.colors.list = [
-        am4core.color("#b2cf5a"),
+    // Define color shades
+    mainCategorySeries.colors.list = [am4core.color("#b2cf5a")];
+    subCategorySeries.colors.list = [
         am4core.color("#8dc03c"),
         am4core.color("#94d966"),
         am4core.color("#a2d28a"),
         am4core.color("#6d9d2d")
     ];
-
-    // Disabling labels and ticks on inner circle
-    pieSeries.labels.template.disabled = true;
-    pieSeries.ticks.template.disabled = true;
-
-    // Disable sliding out of slices
-    pieSeries.slices.template.states.getKey("hover").properties.shiftRadius = 0;
-    pieSeries.slices.template.states.getKey("hover").properties.scale = 0.9;
-
-    // Add second series
-    var pieSeries2 = chart.series.push(new am4charts.PieSeries());
-    pieSeries2.dataFields.value = "bottles";
-    pieSeries2.dataFields.category = "country";
-    pieSeries2.slices.template.stroke = am4core.color("#fff");
-    pieSeries2.slices.template.strokeWidth = 2;
-    pieSeries2.slices.template.strokeOpacity = 1;
-
-    // Define green color shades
-    pieSeries2.colors.list = [
+    childCategorySeries.colors.list = [
         am4core.color("#4e79a7"),
         am4core.color("#81b1d2"),
         am4core.color("#a5c9e6"),
@@ -402,11 +402,17 @@
         am4core.color("#6f9ec0")
     ];
 
-    pieSeries2.slices.template.states.getKey("hover").properties.shiftRadius = 0;
-    pieSeries2.slices.template.states.getKey("hover").properties.scale = 1.1;
+    // Disabling labels and ticks on inner circles
+    mainCategorySeries.labels.template.disabled = true;
+    mainCategorySeries.ticks.template.disabled = true;
+    subCategorySeries.labels.template.disabled = true;
+    subCategorySeries.ticks.template.disabled = true;
 
-}); // end am4core.ready()
-
+    // Disable sliding out of slices
+    mainCategorySeries.slices.template.states.getKey("hover").properties.shiftRadius = 0;
+    subCategorySeries.slices.template.states.getKey("hover").properties.shiftRadius = 0;
+    childCategorySeries.slices.template.states.getKey("hover").properties.shiftRadius = 0;
+});
 
 <!-- Chart code -->
 am4core.ready(function() {
@@ -417,159 +423,94 @@ am4core.useTheme(am4themes_animated);
 
 var chart = am4core.create("chartQdiv", am4charts.PieChart3D);
 chart.hiddenState.properties.opacity = 0; // this creates initial fade-in
+var encodedData = '{{others_count}}';
 
-chart.data = [
-  {
-    country: "Lithuania",
-    litres: 501.9
-  },
-  {
-    country: "Czech Republic",
-    litres: 301.9
-  },
-  {
-    country: "Ireland",
-    litres: 201.1
-  },
-  {
-    country: "Germany",
-    litres: 165.8
-  },
-  {
-    country: "Australia",
-    litres: 139.9
-  },
-  {
-    country: "Austria",
-    litres: 128.3
-  }
-];
+// Create a temporary DOM element
+var tempElement = document.createElement('div');
 
+// Set its innerHTML to the encoded data
+tempElement.innerHTML = encodedData;
+
+// Get the decoded data from the innerText property
+var decodedData = tempElement.innerText;
+
+// Now you can set chart.data with the decoded data
+chart.data = JSON.parse(decodedData);
 chart.innerRadius = am4core.percent(40);
 chart.depth = 120;
-
 chart.legend = new am4charts.Legend();
-
 var series = chart.series.push(new am4charts.PieSeries3D());
 series.dataFields.value = "litres";
 series.dataFields.depthValue = "litres";
-series.dataFields.category = "country";
+series.dataFields.category = "category";
 series.slices.template.cornerRadius = 5;
 series.colors.step = 3;
 
-}); // end am4core.ready()
-    //============bar chart=================
-    am4core.ready(function() {
-
-// Themes begin
-am4core.useTheme(am4themes_animated);
-// Themes end
-
-// Create chart instance
-var chart = am4core.create("barchartdiv", am4charts.XYChart3D);
-
-// Add data
-chart.data = [{
-  "year": 2005,
-  "income": 23.5,
-  "color": chart.colors.next()
-}, {
-  "year": 2006,
-  "income": 26.2,
-  "color": chart.colors.next()
-}, {
-  "year": 2007,
-  "income": 30.1,
-  "color": chart.colors.next()
-}, {
-  "year": 2008,
-  "income": 29.5,
-  "color": chart.colors.next()
-}, {
-  "year": 2009,
-  "income": 24.6,
-  "color": chart.colors.next()
-}];
-
-// Create axes
-var categoryAxis = chart.yAxes.push(new am4charts.CategoryAxis());
-categoryAxis.dataFields.category = "year";
-categoryAxis.numberFormatter.numberFormat = "#";
-categoryAxis.renderer.inversed = true;
-
-var  valueAxis = chart.xAxes.push(new am4charts.ValueAxis());
-
-// Create series
-var series = chart.series.push(new am4charts.ColumnSeries3D());
-series.dataFields.valueX = "income";
-series.dataFields.categoryY = "year";
-series.name = "Income";
-series.columns.template.propertyFields.fill = "color";
-series.columns.template.tooltipText = "{valueX}";
-series.columns.template.column3D.stroke = am4core.color("#fff");
-series.columns.template.column3D.strokeOpacity = 0.2;
-
 });
+//============bar chart=================
+am4core.ready(function() {
+  // Themes begin
+  am4core.useTheme(am4themes_animated);
+  // Themes end
 
+  // Create chart instance
+  var chart = am4core.create("barchartdiv", am4charts.XYChart3D);  // Ensure "barchartdiv" exists in your HTML
 
-    //===================pie chart 3D===========
-    am4core.ready(function() {
+  // Reshape data (replace with your data processing logic)
+  var data = Object.entries({{all_child_categories_count|safe}});
+  data = data.map(function(entry) {
+    return {
+      "category": entry[0],
+      "value": entry[1]
+    };
+  });
 
-// Themes begin
-am4core.useTheme(am4themes_animated);
-// Themes end
+  // Assign the data to the chart's data property
+  chart.data = data;
 
-var chart = am4core.create("piechartdiv", am4charts.PieChart3D);
-chart.hiddenState.properties.opacity = 0; // this creates initial fade-in
+  // Create axes
+  var categoryAxis = chart.yAxes.push(new am4charts.CategoryAxis());
+  categoryAxis.dataFields.category = "category";
+  categoryAxis.renderer.inversed = true;
+  categoryAxis.renderer.minGridDistance = 40;  // Adjust spacing between categories (optional)
+  var valueAxis = chart.xAxes.push(new am4charts.ValueAxis());
 
-chart.legend = new am4charts.Legend();
+  // Create series
+  var series = chart.series.push(new am4charts.ColumnSeries3D());
+  series.dataFields.valueX = "value";
+  series.dataFields.categoryY = "category";
+  series.name = "Count";
+  series.columns.template.tooltipText = "{category}: {valueX}";
+  series.columns.template.column3D.stroke = am4core.color("#fff");
+  series.columns.template.column3D.strokeOpacity = 0.2;
 
-chart.data = [
-  {
-    country: "Lithuania",
-    litres: 501.9
-  },
-  {
-    country: "Czech Republic",
-    litres: 301.9
-  },
-  {
-    country: "Ireland",
-    litres: 201.1
-  },
-  {
-    country: "Germany",
-    litres: 165.8
-  },
-  {
-    country: "Australia",
-    litres: 139.9
-  },
-  {
-    country: "Austria",
-    litres: 128.3
-  },
-  {
-    country: "UK",
-    litres: 99
-  },
-  {
-    country: "Belgium",
-    litres: 60
-  },
-  {
-    country: "The Netherlands",
-    litres: 50
+  // Handle potential large number of categories (optional)
+  if (data.length > 20) {
+    // Enable horizontal scrolling for many categories
+    chart.scrollbarY = new am4core.Scrollbar();
+    chart.scrollbarY.parent = chart.rightContainer;
   }
-];
+});
 
-var series = chart.series.push(new am4charts.PieSeries3D());
-series.dataFields.value = "litres";
-series.dataFields.category = "country";
+//===================pie chart 3D===========
+am4core.ready(function() {
+    // Themes begin
+    am4core.useTheme(am4themes_animated);
+    // Themes end
+
+    var chart = am4core.create("piechartdiv", am4charts.PieChart3D);
+    chart.hiddenState.properties.opacity = 0; // this creates initial fade-in
+
+    chart.legend = new am4charts.Legend();
+
+    // Assign the data from the backend
+    chart.data = {{ others_category_count|safe }};
+    console.log(chart.data);
+
+    var series = chart.series.push(new am4charts.PieSeries3D());
+    series.dataFields.value = "litres"; // Specify the value field
+    series.dataFields.category = "child_cat_name"; // Specify the category field
 
 });
-    //===================pie chart 3D===========
-
-
 </script>
 {% endblock %}
