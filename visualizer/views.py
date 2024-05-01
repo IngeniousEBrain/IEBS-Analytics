@@ -556,7 +556,7 @@ def tech_charts(req, project_id):
                    'get_all_data': all_col_count, 'others_category_count': others_category_count,
                    "all_child_categories_count": all_child_categories_count}
     if req.method == 'POST':
-        num_header_levels = 3
+        num_header_levels = int(req.POST.get('level'))
         uploaded_media = req.FILES.get('technical_excel')
         if uploaded_media:
             df = pd.read_excel(uploaded_media, header=list(range(num_header_levels)))
