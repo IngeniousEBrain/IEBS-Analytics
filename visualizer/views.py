@@ -640,9 +640,9 @@ def get_col_tick_count(request, num_header_levels, proj_id):
 
     return counts
 
-
 # ===========================data view and download==============
 # ===========================other col split count==============
+
 def get_others_split_count(request, num_header_levels, proj_id):
     data = []
     others_child_columns = Category.objects.filter(name__icontains='Other-', level=num_header_levels - 1,
