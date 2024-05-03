@@ -1,6 +1,8 @@
 """
 Views for the 'visualizer' app.
 """
+import matplotlib.pyplot as plt
+import numpy as np
 import collections
 import json
 import math
@@ -527,6 +529,19 @@ def get_top_assignees_by_year(req, code):
     return result
 
 
+@csrf_exempt
+def create_chart_heading(request):
+    print("hit")
+    if request.method == 'POST' and request.is_ajax():
+        print(request.POST)
+        chart_id = request.POST.get('chart_id')
+        new_heading = request.POST.get('new_heading')
+        # Update or create the chart heading
+        ChartHeading.objects.update_or_create(chart_id=chart_id, defaults={'heading': new_heading})
+        return JsonResponse({'success': True})
+    return JsonResponse({'success': False, 'error': 'Invalid request'})
+
+
 @request.validator
 def tech_charts(req, project_id):
     """
@@ -540,18 +555,18 @@ def tech_charts(req, project_id):
             ClientProjectAssociation.objects.filter(client=user_qs, projects=project).exists() or
             KeyAccountManagerProjectAssociation.objects.filter(key_account_manager=user_qs, projects=project).exists()
     ):
-        # User is not associated with the project
         return HttpResponse("You are not authorized to view data for this project.")
 
     proj_obj = Project.objects.filter(id=project_id).first()
     proj_name = proj_obj.name
-    context={'project_id': project_id, 'proj_name': proj_name}
+    context = {'project_id': project_id, 'proj_name': proj_name}
     if Category.objects.filter(project_id=proj_obj.id).exists():
         num_header_levels = Category.objects.filter(project_id=proj_obj.id).first().num_header_levels
         others_count = get_others_split_count(req, num_header_levels, proj_obj.id)
         others_category_count = json.dumps(others_category_wise_count(req, num_header_levels, proj_obj.id))
         all_col_count = json.dumps(get_col_tick_count(req, num_header_levels, proj_obj.id))
         all_child_categories_count = json.dumps(barchart_tick_count(req, num_header_levels, proj_obj.id))
+        print("all_col_count", all_col_count)
         context = {'project_id': project_id, 'proj_name': proj_name, 'others_count': json.dumps(others_count),
                    'get_all_data': all_col_count, 'others_category_count': others_category_count,
                    "all_child_categories_count": all_child_categories_count}
@@ -564,6 +579,7 @@ def tech_charts(req, project_id):
             others_count = get_others_split_count(req, num_header_levels, proj_obj.id)
             others_category_count = json.dumps(others_category_wise_count(req, num_header_levels, proj_obj.id))
             all_col_count = json.dumps(get_col_tick_count(req, num_header_levels, proj_obj.id))
+
             all_child_categories_count = json.dumps(barchart_tick_count(req, num_header_levels, proj_obj.id))
             context = {'project_id': project_id, 'proj_name': proj_name, 'others_count': json.dumps(others_count),
                        'get_all_data': all_col_count, 'others_category_count': others_category_count,
@@ -597,48 +613,31 @@ def save_to_categories(df, num_header_levels, proj_obj):
 
 
 def get_col_tick_count(request, num_header_levels, proj_id):
-    ignore_keys = ['Publication Number', 'Others']
-    counts = {}
+    data = {"name": "", "children": []}
 
-    def process_category(category, category_path, category_counts):
+    def process_category(category, children_list):
         if category.value is not None:
             for key, values_list in category.value.items():
-                if key not in ignore_keys:
-                    count_p = sum(1 for value in values_list if value == 'P')
-                    category_counts.setdefault(key, [key, count_p])
+                count_p = sum(1 for value in values_list if value == 'P')
+                children_list.append({"name": key, "value": count_p})
 
         children = Category.objects.filter(parent=category, project_id=proj_id)
         if children:
             for child in children:
-                child_category_path = category_path + [child.name]
-                child_counts = {}
-                category_counts.setdefault(child.name, child_counts)
-                process_category(child, child_category_path, child_counts)
+                child_data = {"name": child.name, "children": []}
+                children_list.append(child_data)
+                process_category(child, child_data["children"])
 
     root_categories = Category.objects.filter(parent__isnull=True, project_id=proj_id)
     for root_category in root_categories:
-        root_category_path = [root_category.name]
-        root_counts = {}
-        counts[root_category.name] = root_counts
-        process_category(root_category, root_category_path, root_counts)
+        root_data = {"name": root_category.name, "children": []}
+        data["children"].append(root_data)
+        process_category(root_category, root_data["children"])
 
-    for category in Category.objects.filter(level__gt=0, level__lt=num_header_levels, project_id=proj_id):
-        parent_path = []
-        parent = category.parent
-        while parent:
-            parent_path.insert(0, parent.name)
-            parent = parent.parent
+    return data
 
-        category_path = parent_path + [category.name]
-        category_counts = counts
-        for path_part in category_path[:-1]:
-            category_counts = category_counts[path_part]
 
-        child_counts = {}
-        category_counts[category.name] = child_counts
-        process_category(category, category_path, child_counts)
 
-    return counts
 
 # ===========================data view and download==============
 # ===========================other col split count==============
@@ -646,30 +645,26 @@ def get_col_tick_count(request, num_header_levels, proj_id):
 def get_others_split_count(request, num_header_levels, proj_id):
     data = []
     others_child_columns = Category.objects.filter(name__icontains='Other-', level=num_header_levels - 1,
-                                                   project_id=proj_id)
+                                                   project_id_id=proj_id)
     if others_child_columns.exists():
         for child_column in others_child_columns:
             parent_category = child_column.parent
             if parent_category:
-                category_info = {}
-                category_info['category'] = parent_category.name
+                category_info = {'category': parent_category.name, 'litres': 0}
                 column_value = child_column.value
                 if column_value:
-                    unique_elements = set()
+                    total_count = 0  # Total count of 'P' across all splits
                     for key, value in column_value.items():
                         for ele in value:
                             if ele is not None:
                                 elements = ele.split('|')
-                                unique_elements.update(elem.strip() for elem in elements)
-                    non_none_count = len(unique_elements)
-                    category_info['litres'] = non_none_count
-                else:
-                    category_info['litres'] = 0
+                                count = sum(1 for elem in elements if elem.strip() == 'P')
+                                total_count += count
+                    category_info['litres'] = total_count
                 data.append(category_info)
     else:
         print("No child columns named 'Others' found.")
     return data
-
 
 # ===========================other column split count catgroty wise start==============
 def others_category_wise_count(request, num_header_levels, proj_id):
@@ -680,14 +675,16 @@ def others_category_wise_count(request, num_header_levels, proj_id):
         for child_column in others_child_columns:
             column_value = child_column.value
             if column_value:
+                total_count = 0
                 unique_elements = set()
                 for key, value in column_value.items():
                     for ele in value:
                         if ele is not None:
                             elements = ele.split('|')
-                            unique_elements.update(elem.strip() for elem in elements)
-                non_none_count = len(unique_elements)
-                data.append({"child_cat_name": child_column.name, "litres": non_none_count})
+                            count = sum(1 for elem in elements if elem.strip() == 'P')
+                            total_count += count
+                non_none_count = total_count
+                data.append({"child_cat_name": child_column.name, "litres": total_count})
             else:
                 data.append({"child_cat_name": child_column.name, "litres": 0})
     else:
@@ -696,8 +693,6 @@ def others_category_wise_count(request, num_header_levels, proj_id):
 
 
 # =========================== other column split count catgroty wise end==============
-
-
 def barchart_tick_count(request, num_header_levels, proj_id):
     ignore_keys = ['Publication Number', 'Other-']
     child_categories = {}
@@ -719,7 +714,6 @@ def barchart_tick_count(request, num_header_levels, proj_id):
 
     for category in Category.objects.filter(level__gt=0, level__lt=num_header_levels, project_id=proj_id):
         process_category(category)
-
     return child_categories
 
 
@@ -758,7 +752,6 @@ def competitor_colab_view(request, proj_code):
                         {'success': True, 'data': context,
                          'redirect_url': reverse('competitor_colab_view', kwargs={'proj_code': proj_code}),
                          'type': 'display'})
-
                 data_list = []
                 if data.get('type') == 'file':
                     for patent_data in lega_status:
