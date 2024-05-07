@@ -7,6 +7,7 @@ from django.utils import timezone
 from django.db.models.signals import pre_save
 from django.dispatch import receiver
 from ckeditor.fields import RichTextField
+from django.db.models import JSONField
 import logging
 
 logger = logging.getLogger(__name__)
@@ -299,7 +300,7 @@ class PatentData(models.Model):
     application_number = models.CharField(max_length=255)
     cpc = models.TextField()
     ipc = models.TextField()
-    e_fan = models.CharField(max_length=100)
+    e_fan = models.CharField(max_length=512)
     priority_country = models.CharField(max_length=255, null=True, blank=True)
     created_date = models.DateTimeField(default=timezone.now, blank=True, null=True)
 
@@ -325,22 +326,17 @@ class ProjectReports(models.Model):
 
 class Category(models.Model):
     name = models.CharField(max_length=255)
+    project_id = models.ForeignKey(Project, on_delete=models.CASCADE)
     parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True)
+    level = models.IntegerField(default=0)
+    value = models.JSONField(null=True, blank=True)
+    num_header_levels = models.IntegerField(default=2)
+    upload_date = models.DateTimeField(auto_now_add=True)
+    uploaded_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True, blank=True)
 
     def __str__(self):
         return self.name
 
-class Element(models.Model):
-    name = models.CharField(max_length=255)
-    category = models.ForeignKey(Category, on_delete=models.CASCADE)
-
-    def __str__(self):
-        return self.name
-
-class Data(models.Model):
-    category = models.ForeignKey(Category, on_delete=models.CASCADE)
-    element = models.ForeignKey(Element, on_delete=models.CASCADE)
-    value = models.CharField(max_length=255)
-
-    def __str__(self):
-        return f"{self.category.name} - {self.element.name}: {self.value}"
+class ChartHeading(models.Model):
+    chart_source_id = models.IntegerField()  # Assuming an integer identifier for chart source
+    heading = models.CharField(max_length=100)

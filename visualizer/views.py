@@ -1,6 +1,7 @@
 """
 Views for the 'visualizer' app.
 """
+import numpy as np
 import collections
 import json
 import math
@@ -11,7 +12,7 @@ from collections import defaultdict
 from datetime import datetime
 from io import BytesIO
 from urllib.parse import unquote
-
+from django.db import transaction
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -527,45 +528,192 @@ def get_top_assignees_by_year(req, code):
     return result
 
 
+@csrf_exempt
+def create_chart_heading(request):
+    print("hit")
+    if request.method == 'POST' and request.is_ajax():
+        print(request.POST)
+        chart_id = request.POST.get('chart_id')
+        new_heading = request.POST.get('new_heading')
+        # Update or create the chart heading
+        ChartHeading.objects.update_or_create(chart_id=chart_id, defaults={'heading': new_heading})
+        return JsonResponse({'success': True})
+    return JsonResponse({'success': False, 'error': 'Invalid request'})
+
+
 @request.validator
 def tech_charts(req, project_id):
     """
-    logic for tech charts
+    Logic for tech charts
     """
-    # ================================
-    proj_name = Project.objects.filter(id=project_id).first().name
+
+    user_qs = get_object_or_404(CustomUser, id=req.session.get('logged_in_user_id'))
+    project = get_object_or_404(Project, id=project_id)
+    if not (
+            UserProjectAssociation.objects.filter(user=user_qs, projects=project).exists() or
+            ClientProjectAssociation.objects.filter(client=user_qs, projects=project).exists() or
+            KeyAccountManagerProjectAssociation.objects.filter(key_account_manager=user_qs, projects=project).exists()
+    ):
+        return HttpResponse("You are not authorized to view data for this project.")
+
+    proj_obj = Project.objects.filter(id=project_id).first()
+    proj_name = proj_obj.name
+    context = {'project_id': project_id, 'proj_name': proj_name}
+    if Category.objects.filter(project_id=proj_obj.id).exists():
+        num_header_levels = Category.objects.filter(project_id=proj_obj.id).first().num_header_levels
+        others_count = get_others_split_count(req, num_header_levels, proj_obj.id)
+        others_category_count = json.dumps(others_category_wise_count(req, num_header_levels, proj_obj.id))
+        all_col_count = json.dumps(get_col_tick_count(req, num_header_levels, proj_obj.id))
+        all_child_categories_count = json.dumps(barchart_tick_count(req, num_header_levels, proj_obj.id))
+        print("all_col_count", all_col_count)
+        context = {'project_id': project_id, 'proj_name': proj_name, 'others_count': json.dumps(others_count),
+                   'get_all_data': all_col_count, 'others_category_count': others_category_count,
+                   "all_child_categories_count": all_child_categories_count}
     if req.method == 'POST':
+        num_header_levels = int(req.POST.get('level'))
         uploaded_media = req.FILES.get('technical_excel')
         if uploaded_media:
-            df = pd.read_excel(uploaded_media)
-            nested_data = dataframe_to_nested_dict(df.copy())
-            print("nested_data***", nested_data)
+            df = pd.read_excel(uploaded_media, header=list(range(num_header_levels)))
+            save_to_categories(df, num_header_levels, proj_obj)
+            others_count = get_others_split_count(req, num_header_levels, proj_obj.id)
+            others_category_count = json.dumps(others_category_wise_count(req, num_header_levels, proj_obj.id))
+            all_col_count = json.dumps(get_col_tick_count(req, num_header_levels, proj_obj.id))
 
-    context = {'project_id': project_id, 'proj_name': proj_name}
+            all_child_categories_count = json.dumps(barchart_tick_count(req, num_header_levels, proj_obj.id))
+            context = {'project_id': project_id, 'proj_name': proj_name, 'others_count': json.dumps(others_count),
+                       'get_all_data': all_col_count, 'others_category_count': others_category_count,
+                       "all_child_categories_count": all_child_categories_count}
     return render(req, 'pages/charts/technical_chart.html', context)
 
 
-def dataframe_to_nested_dict(df):
-    """
-    THIS FUNCTION IS READING THE EXCEL FILE AND PROVIDING
-    CATEGORY WISE DATA DICTIONARY FOR TECHNICAL CHARTS.
-    """
-    nested_dict = {}
-    parent_col_name = ''
-    for col in df.columns:
-        if 'Unnamed' not in col:
-            parent_col_name = col
-            nested_dict[col] = df[col].tolist()
+@transaction.atomic
+def save_to_categories(df, num_header_levels, proj_obj):
+    if Category.objects.filter(project_id=proj_obj.id).exists():
+        Category.objects.filter(project_id=proj_obj.id).delete()
+    for col_idx, column in enumerate(df.columns):
+        parent_category = None
+        for header_level in range(num_header_levels):
+            category_name = column[header_level]
+            category, created = Category.objects.get_or_create(name=category_name, parent=parent_category,
+                                                               level=header_level, project_id=proj_obj,
+                                                               num_header_levels=num_header_levels)
+            if not parent_category:
+                parent_category = category
+        child_category = Category.objects.get(name=column[num_header_levels - 1], level=num_header_levels - 1,
+                                              parent=parent_category, project_id=proj_obj.id)
+        child_column_name = column[num_header_levels - 1]
+        values = df[column].tolist()[1:]
+        values = [None if pd.isna(value) else value for value in values]
+        if child_category.value:
+            child_category.value[child_column_name] = values
         else:
-            subcolumn_index = col.split('.')[-1]
-            nested_dict[f"{parent_col_name}{subcolumn_index}"] = list(df[col])
+            child_category.value = {child_column_name: values}
+        child_category.save()
 
-    extracted_data = {key: value[:2] for key, value in nested_dict.items()}
-    print(extracted_data)
-    return nested_dict
 
+def get_col_tick_count(request, num_header_levels, proj_id):
+    data = {"name": "", "children": []}
+
+    def process_category(category, children_list):
+        if category.value is not None:
+            for key, values_list in category.value.items():
+                count_p = sum(1 for value in values_list if value == 'P')
+                children_list.append({"name": key, "value": count_p})
+
+        children = Category.objects.filter(parent=category, project_id=proj_id)
+        if children:
+            for child in children:
+                child_data = {"name": child.name, "children": []}
+                children_list.append(child_data)
+                process_category(child, child_data["children"])
+
+    root_categories = Category.objects.filter(parent__isnull=True, project_id=proj_id)
+    for root_category in root_categories:
+        root_data = {"name": root_category.name, "children": []}
+        data["children"].append(root_data)
+        process_category(root_category, root_data["children"])
+
+    return data
 
 # ===========================data view and download==============
+# ===========================other col split count==============
+
+def get_others_split_count(request, num_header_levels, proj_id):
+    data = []
+    others_child_columns = Category.objects.filter(name__icontains='Other-', level=num_header_levels - 1,
+                                                   project_id_id=proj_id)
+    if others_child_columns.exists():
+        for child_column in others_child_columns:
+            parent_category = child_column.parent
+            if parent_category:
+                category_info = {'category': parent_category.name, 'litres': 0}
+                column_value = child_column.value
+                if column_value:
+                    total_count = 0  # Total count of 'P' across all splits
+                    for key, value in column_value.items():
+                        for ele in value:
+                            if ele is not None:
+                                elements = ele.split('|')
+                                count = sum(1 for elem in elements if elem.strip() == 'P')
+                                total_count += count
+                    category_info['litres'] = total_count
+                data.append(category_info)
+    else:
+        print("No child columns named 'Others' found.")
+    return data
+
+# ===========================other column split count catgroty wise start==============
+def others_category_wise_count(request, num_header_levels, proj_id):
+    data = []
+    others_child_columns = Category.objects.filter(name__icontains='Other-', level=num_header_levels - 1,
+                                                   project_id=proj_id)
+    if others_child_columns.exists():
+        for child_column in others_child_columns:
+            column_value = child_column.value
+            if column_value:
+                total_count = 0
+                unique_elements = set()
+                for key, value in column_value.items():
+                    for ele in value:
+                        if ele is not None:
+                            elements = ele.split('|')
+                            count = sum(1 for elem in elements if elem.strip() == 'P')
+                            total_count += count
+                non_none_count = total_count
+                data.append({"child_cat_name": child_column.name, "litres": total_count})
+            else:
+                data.append({"child_cat_name": child_column.name, "litres": 0})
+    else:
+        print("No child columns named 'Others' found.")
+    return data
+
+
+# =========================== other column split count catgroty wise end==============
+def barchart_tick_count(request, num_header_levels, proj_id):
+    ignore_keys = ['Publication Number', 'Other-']
+    child_categories = {}
+
+    def process_category(category):
+        if category.value is not None:
+            for key, values_list in category.value.items():
+                if key not in ignore_keys and not any(ignore_key in key for ignore_key in ignore_keys):
+                    count_p = sum(1 for value in values_list if value == 'P')
+                    child_categories[key] = count_p
+
+        children = Category.objects.filter(parent=category, project_id=proj_id)
+        for child in children:
+            process_category(child)
+
+    root_categories = Category.objects.filter(parent__isnull=True, project_id=proj_id)
+    for root_category in root_categories:
+        process_category(root_category)
+
+    for category in Category.objects.filter(level__gt=0, level__lt=num_header_levels, project_id=proj_id):
+        process_category(category)
+    return child_categories
+
+
+# ===================================================================
 @csrf_exempt
 def get_q_object(assignee, partner):
     return Q(assignee_standardized__icontains=assignee) & Q(assignee_standardized__icontains=partner)
@@ -600,7 +748,6 @@ def competitor_colab_view(request, proj_code):
                         {'success': True, 'data': context,
                          'redirect_url': reverse('competitor_colab_view', kwargs={'proj_code': proj_code}),
                          'type': 'display'})
-
                 data_list = []
                 if data.get('type') == 'file':
                     for patent_data in lega_status:
@@ -706,7 +853,6 @@ def competitor_colab_view(request, proj_code):
                     df.to_excel(response, index=False)
                     return response
             elif data.get('type') == 'allCitedDisplay':
-                user_id = request.session.get('logged_in_user_id')
                 filtered_data = PatentData.objects.filter(citing_patents_count__isnull=False,
                                                           project_code=code)
                 top_ten_highest_citing = filtered_data.order_by('-citing_patents_count')[:10]
@@ -1131,18 +1277,13 @@ def download_exp_exl(request, year, project_id):
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         response['Content-Disposition'] = f'attachment; filename=expected_expiry_date.xlsx'
         with pd.ExcelWriter(response, engine='xlsxwriter') as writer:
-            # Convert the dataframe to an XlsxWriter Excel object
             df.to_excel(writer, index=False, sheet_name='expected_expiry_date')
-
-            # Get the xlsxwriter workbook and worksheet objects
             workbook = writer.book
             worksheet = writer.sheets['expected_expiry_date']
-
             # Set the column widths
             for i, col in enumerate(df.columns):
                 max_len = max(df[col].astype(str).apply(len).max(), len(col))
                 worksheet.set_column(i, i, max_len)
-
         response['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 
         return response
@@ -1150,7 +1291,6 @@ def download_exp_exl(request, year, project_id):
 
 def download_legal_status_exl(request, status, project_id):
     data_list = []
-    user_id_to_filter = request.session.get('logged_in_user_id')
     code = Project.objects.filter(id=project_id).first().code
     innovators = PatentData.objects.filter(legal_status=status, project_code=code)
     if request.GET.get('display'):
@@ -1201,7 +1341,6 @@ def download_legal_status_exl(request, status, project_id):
 
 def individual_cpc_exl(request, cpc, project_id):
     data_list = []
-    user_id_to_filter = request.session.get('logged_in_user_id')
     code = Project.objects.filter(id=project_id).first().code
     cpc_qs = PatentData.objects.filter(cpc__startswith=cpc, project_code=code)
     if request.GET.get('display'):
@@ -1251,7 +1390,6 @@ def individual_cpc_exl(request, cpc, project_id):
 
 
 def individual_ipc_exl(request, ipc, project_id):
-    print("individual_ipc_exl", project_id)
     data_list = []
     user_id_to_filter = request.session.get('logged_in_user_id')
     code = Project.objects.filter(id=project_id).first().code
@@ -1305,7 +1443,6 @@ def individual_ipc_exl(request, ipc, project_id):
 
 def download_innovative_exl(request, country, project_id):
     data_list = []
-    user_id_to_filter = request.session.get('logged_in_user_id')
     code = Project.objects.filter(id=project_id).first().code
     innovators = PatentData.objects.filter(publication_number__startswith=country, project_code=code)
     if request.GET.get('display'):
@@ -1356,7 +1493,6 @@ def download_innovative_exl(request, country, project_id):
 
 def download_ind_citing_excel(request, patent, project_id):
     data_list = []
-    user_id_to_filter = request.session.get('logged_in_user_id')
     code = Project.objects.filter(id=project_id).first().code
     top_ten_citing_patents = PatentData.objects.filter(
         publication_number=patent, project_code=code
@@ -1409,7 +1545,6 @@ def download_ind_citing_excel(request, patent, project_id):
 
 def download_top_assignee_exl(request, assignee, project_id):
     data_list = []
-    user_id_to_filter = request.session.get('logged_in_user_id')
     code = Project.objects.filter(id=project_id).first().code
     top_ten_assignees = PatentData.objects.filter(
         assignee_standardized=assignee, project_code=code
@@ -1464,7 +1599,6 @@ def download_recent_assignee_exl(request, assignee, project_id):
     data_list = []
     current_year = datetime.now().year
     last_five_years_start = current_year - 5
-    user_id_to_filter = request.session.get('logged_in_user_id')
     code = Project.objects.filter(id=project_id).first().code
     top_ten_assignees = PatentData.objects.filter(
         assignee_standardized=assignee, project_code=code,
@@ -1518,7 +1652,6 @@ def download_recent_assignee_exl(request, assignee, project_id):
 
 def download_ind_cited_excel(request, patent, project_id):
     data_list = []
-    user_id_to_filter = request.session.get('logged_in_user_id')
     code = Project.objects.filter(id=project_id).first().code
     top_ten_citing_patents = PatentData.objects.filter(
         publication_number=patent, project_code=code
@@ -2123,7 +2256,6 @@ def get_legal_status_count(req, project_id):
 
 
 def download_excel_file(request, project_id):
-    print(project_id)
     project_code = Project.objects.filter(code=project_id).first().code
     top_ten_cited_patents = PatentData.objects.filter(project_code=project_code).exclude(
         cited_patents_count__isnull=True
@@ -2411,6 +2543,7 @@ def user_profile(req):
     }
     return render(req, 'pages/onboard/profile.html', context)
 
+
 @csrf_exempt
 def admin_profile(req):
     """
@@ -2422,7 +2555,7 @@ def admin_profile(req):
     in_progress = Project.objects.filter(status='In Progress')
     context = {
         'iebs_user': user_qs,
-        'total_projects':total_projects,
+        'total_projects': total_projects,
         'completed': completed,
         'in_prog': in_progress,
     }
@@ -2589,7 +2722,7 @@ def association_listing(request, project_id):
     managers = [association.user for association in associated_managers]
     kam = [association.key_account_manager for association in associated_kam]
     return render(request, 'pages/superadmin/association_listing.html',
-                  {"clients": clients, "managers": managers, "kams": kam, "project_obj":project_obj})
+                  {"clients": clients, "managers": managers, "kams": kam, "project_obj": project_obj})
 
 
 @csrf_exempt
