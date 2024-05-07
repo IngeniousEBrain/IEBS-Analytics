@@ -1,7 +1,6 @@
 """
 Views for the 'visualizer' app.
 """
-import matplotlib.pyplot as plt
 import numpy as np
 import collections
 import json
@@ -635,9 +634,6 @@ def get_col_tick_count(request, num_header_levels, proj_id):
         process_category(root_category, root_data["children"])
 
     return data
-
-
-
 
 # ===========================data view and download==============
 # ===========================other col split count==============

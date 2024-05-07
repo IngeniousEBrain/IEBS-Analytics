@@ -300,7 +300,7 @@ class PatentData(models.Model):
     application_number = models.CharField(max_length=255)
     cpc = models.TextField()
     ipc = models.TextField()
-    e_fan = models.CharField(max_length=100)
+    e_fan = models.CharField(max_length=512)
     priority_country = models.CharField(max_length=255, null=True, blank=True)
     created_date = models.DateTimeField(default=timezone.now, blank=True, null=True)
 

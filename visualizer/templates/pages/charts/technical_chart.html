@@ -363,14 +363,41 @@ am5.ready(function() {
     var series = container.children.push(
         am5hierarchy.Sunburst.new(root, {
             singleBranchOnly: true,
-            downDepth: 3, // Adjust this based on your data structure
-            initialDepth: 2, // Adjust this based on your data structure
+            downDepth: 3,
+            initialDepth: 2,
             valueField: "value",
             categoryField: "name",
             childDataField: "children",
-            maxDepth: 2, // Set the maximum depth
+            maxDepth: 2,
         })
     );
+
+    // Custom label formatter
+    series.labels.template.setAll({
+        tooltipText: "{name}",
+        maxWidth: 120, // Adjust this value as needed
+        truncate: true, // Enable text truncation
+        ellipsis: "...",
+        wrap: true, // Enable text wrapping
+        textAlign: "center", // Align text to the center
+        paddingTop: 10, // Add some top padding
+        paddingBottom: 10, // Add some bottom padding
+        radius: 10, // Add some radius to the label background
+        fontSize: 12, // Adjust font size as needed
+    });
+
+    // Adjust label position based on text length
+setTimeout(function() {
+    series.labels.template.adapters.add("centerX", function(centerX, target) {
+        if (target.labelShape) {
+            const labelWidth = target.labelShape.measuredWidth;
+            const radius = target.dataItem.get("radius");
+            const adjustment = labelWidth / 2 + radius * 0.2;
+            return centerX - adjustment;
+        }
+        return centerX;
+    });
+}, 100); // Delay of 100 milliseconds
 
     // Your data
     const data = {{get_all_data|safe}}
@@ -382,7 +409,6 @@ am5.ready(function() {
     // Make stuff animate on load
     series.appear(1000, 100);
 });
-
 <!-- Chart code -->
 am4core.ready(function() {
 
