@@ -3,11 +3,16 @@
 {% block head %}
 {{ block.super }}
 <style>
-#chartdiv {
-    height: 450px;
-    width: 100%;
-    margin-top: 20px; /* Adjust the margin top as needed */
+.am5-tooltip-container {
+    display: none;
 }
+
+#fileNameLabel {
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        max-width: calc(100% - 120px); /* Adjust the maximum width to accommodate other elements */
+    }
 </style>
 {% endblock %}
 {% block content %}
@@ -39,8 +44,8 @@
             <div class="input-group">
                 <div class="custom-file">
                     <input type="file" class="custom-file-input" id="excelFile" accept=".xlsx,.xls,.ods,.xlsm"
-                           name="technical_excel">
-                    <label class="custom-file-label" for="excelFile" id="fileNameLabel">
+                           name="technical_excel" onchange="updateFileName(this)">
+                    <label class="custom-file-label" for="excelFile" id="fileNameLabel" title="Choose File">
                         Choose File
                     </label>
                 </div>
@@ -63,17 +68,22 @@
 <!--NESTED DONUT-->
 <div class="row justify-content-center">
     <div class="col-md-12">
-        <div class="card">
-            <h5 class="card-title"><b>Spatial Omics Segmentation</b></h5>
-            <div class="card-body">
-                <div class="row">
-                    <!-- Chart Section (60%) -->
-                    <div class="col-md-12">
-                        <div id="chartdiv" style="height: 550px; width: 100%;"></div>
-                    </div>
-                </div>
-            </div>
+     <div class="card">
+  <div class="card-header">
+            <!-- Render dynamic heading using Django template variable -->
+            <h5 class="card-title"><b><span id="heading-{{ chart_id }}">{{ chart_heading }}</span></b></h5>
+            <!-- Edit button to toggle between view and edit mode -->
+            <button class="btn btn-sm btn-primary edit-heading" data-chart-id="{{ chart_id }}">Edit</button>
         </div>
+  <div class="card-body">
+    <div class="row">
+      <div class="col-md-12">
+        <div id="chartdiv" style="height: 550px; overflow: auto; width: 100%;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
         <div class="row mt-4">
             <!-- Table Section (40%) -->
             <div class="col-md-12">
@@ -329,99 +339,76 @@
 <script src="https://cdn.amcharts.com/lib/4/themes/animated.js"></script>
 <script src="https://cdn.amcharts.com/lib/5/index.js"></script>
 <script src="https://cdn.amcharts.com/lib/5/percent.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/hierarchy.js"></script>
 <script>
-const data = {{ get_all_data | safe }};
-const mainCategoryData = [];
-const subCategoryData = [];
-const childCategoryData = [];
+am5.ready(function() {
+    // Create root element
+    var root = am5.Root.new("chartdiv");
 
-Object.entries(data).forEach(([mainCategoryName, mainCategoryObj]) => {
-  // Main category
-  mainCategoryData.push({ category: mainCategoryName, value: 1 });
+    // Set themes
+    root.setThemes([am5themes_Animated.new(root)]);
 
-  // Check if mainCategoryObj is an object and not empty
-  if (typeof mainCategoryObj === 'object' && Object.keys(mainCategoryObj).length > 0) {
-    Object.entries(mainCategoryObj).forEach(([subCategoryName, subCategoryObj]) => {
-      // Check if subCategoryObj is an object and not an empty dictionary
-      if (typeof subCategoryObj === 'object' && Object.keys(subCategoryObj).length > 0) {
-        // Check if subCategoryObj contains child categories
-        Object.entries(subCategoryObj).forEach(([childCategoryName, [label, value]]) => {
-          childCategoryData.push({ category: childCategoryName, label, value });
-        });
-      } else {
-        // If subCategoryObj is an empty dictionary, consider it as a subcategory
-        subCategoryData.push({ category: subCategoryName, value: 1 });
-      }
+    // Create wrapper container
+    var container = root.container.children.push(
+        am5.Container.new(root, {
+            width: am5.percent(100),
+            height: am5.percent(100),
+            layout: root.verticalLayout,
+        })
+    );
+
+    // Create series
+    var series = container.children.push(
+        am5hierarchy.Sunburst.new(root, {
+            singleBranchOnly: true,
+            downDepth: 3,
+            initialDepth: 2,
+            valueField: "value",
+            categoryField: "name",
+            childDataField: "children",
+            maxDepth: 2,
+        })
+    );
+
+    // Custom label formatter
+    series.labels.template.setAll({
+        tooltipText: "{name}",
+        maxWidth: 120, // Adjust this value as needed
+        truncate: true, // Enable text truncation
+        ellipsis: "...",
+        wrap: true, // Enable text wrapping
+        textAlign: "center", // Align text to the center
+        paddingTop: 10, // Add some top padding
+        paddingBottom: 10, // Add some bottom padding
+        radius: 10, // Add some radius to the label background
+        fontSize: 12, // Adjust font size as needed
     });
-  }
+
+    // Adjust label position based on text length
+setTimeout(function() {
+    series.labels.template.adapters.add("centerX", function(centerX, target) {
+        if (target.labelShape) {
+            const labelWidth = target.labelShape.measuredWidth;
+            const radius = target.dataItem.get("radius");
+            const adjustment = labelWidth / 2 + radius * 0.2;
+            return centerX - adjustment;
+        }
+        return centerX;
+    });
+}, 100); // Delay of 100 milliseconds
+
+    // Your data
+    const data = {{get_all_data|safe}}
+    delete data["Publication Number"];
+
+    series.data.setAll([data]);
+    series.set("selectedDataItem", series.dataItems[0]);
+
+    // Make stuff animate on load
+    series.appear(1000, 100);
 });
-
-am4core.ready(function() {
-    // Themes begin
-    am4core.useTheme(am4themes_animated);
-    // Themes end
-
-    // Create chart instance
-    var chart = am4core.create("chartdiv", am4charts.PieChart);
-    chart.height = 500;
-    chart.innerRadius = am4core.percent(30);
-
-    // Add and configure Series for main category
-    var mainCategorySeries = chart.series.push(new am4charts.PieSeries());
-    mainCategorySeries.dataFields.value = "value";
-    mainCategorySeries.dataFields.category = "category";
-    mainCategorySeries.slices.template.strokeWidth = 0;
-    mainCategorySeries.data = mainCategoryData;
-
-    // Add and configure Series for subcategories
-    var subCategorySeries = chart.series.push(new am4charts.PieSeries());
-    subCategorySeries.dataFields.value = "value";
-    subCategorySeries.dataFields.category = "category";
-    subCategorySeries.slices.template.strokeWidth = 2;
-    subCategorySeries.radius = am4core.percent(60);
-    subCategorySeries.startAngle = 0;
-    subCategorySeries.endAngle = 360;
-    subCategorySeries.data = subCategoryData;
-
-    // Add and configure Series for child categories
-    var childCategorySeries = chart.series.push(new am4charts.PieSeries());
-    childCategorySeries.dataFields.value = "value";
-    childCategorySeries.dataFields.category = "category";
-    childCategorySeries.labels.template.text = "{category}: {value}";
-    childCategorySeries.slices.template.strokeWidth = 2;
-    childCategorySeries.radius = am4core.percent(80);
-    childCategorySeries.startAngle = 0;
-    childCategorySeries.endAngle = 360;
-    childCategorySeries.data = childCategoryData;
-
-    // Define color shades
-    mainCategorySeries.colors.list = [am4core.color("#b2cf5a")];
-    subCategorySeries.colors.list = [
-        am4core.color("#8dc03c"),
-        am4core.color("#94d966"),
-        am4core.color("#a2d28a"),
-        am4core.color("#6d9d2d")
-    ];
-    childCategorySeries.colors.list = [
-        am4core.color("#4e79a7"),
-        am4core.color("#81b1d2"),
-        am4core.color("#a5c9e6"),
-        am4core.color("#8fb5d1"),
-        am4core.color("#6f9ec0")
-    ];
-
-    // Disabling labels and ticks on inner circles
-    mainCategorySeries.labels.template.disabled = true;
-    mainCategorySeries.ticks.template.disabled = true;
-    subCategorySeries.labels.template.disabled = true;
-    subCategorySeries.ticks.template.disabled = true;
-
-    // Disable sliding out of slices
-    mainCategorySeries.slices.template.states.getKey("hover").properties.shiftRadius = 0;
-    subCategorySeries.slices.template.states.getKey("hover").properties.shiftRadius = 0;
-    childCategorySeries.slices.template.states.getKey("hover").properties.shiftRadius = 0;
-});
-
 <!-- Chart code -->
 am4core.ready(function() {
 
@@ -480,7 +467,7 @@ am4core.ready(function() {
   var categoryAxis = chart.yAxes.push(new am4charts.CategoryAxis());
   categoryAxis.dataFields.category = "category";
   categoryAxis.renderer.inversed = true;
-  categoryAxis.renderer.minGridDistance = 40;  // Adjust spacing between categories (optional)
+  categoryAxis.renderer.minGridDistance = 40;
   var valueAxis = chart.xAxes.push(new am4charts.ValueAxis());
 
   // Create series
@@ -513,12 +500,44 @@ am4core.ready(function() {
 
     // Assign the data from the backend
     chart.data = {{ others_category_count|safe }};
-    console.log(chart.data);
-
     var series = chart.series.push(new am4charts.PieSeries3D());
     series.dataFields.value = "litres"; // Specify the value field
     series.dataFields.category = "child_cat_name"; // Specify the category field
 
 });
+
+  function updateFileName(input) {
+        var fileNameLabel = document.getElementById('fileNameLabel');
+        var fileName = input.files[0].name;
+        fileNameLabel.innerHTML = fileName.length > 20 ? fileName.substring(0, 20) + '...' : fileName;
+    }
+
+
+    $('.edit-heading').click(function() {
+        var chartId = $(this).data('chart-id');
+        var headingElement = $('#heading-' + chartId);
+        var currentHeading = headingElement.text().trim();
+
+        // Toggle between view and edit mode
+        if ($(this).text() === 'Edit') {
+            // Replace the span with an input field for editing
+            var inputField = $('<input type="text" class="form-control">').val(currentHeading);
+            headingElement.html(inputField);
+        } else {
+            // Switch back to view mode and update the heading
+            var newHeading = headingElement.find('input').val().trim();
+            if (newHeading !== '') {
+                headingElement.html('<span>' + newHeading + '</span>');
+                // Perform Ajax request to save the updated heading to the server
+                // Example: $.post('/create_chart_heading/', { chart_id: chartId, new_heading: newHeading });
+            } else {
+                // If input is empty, revert back to the original heading
+                headingElement.html('<span>' + currentHeading + '</span>');
+            }
+        }
+
+        // Toggle button text between "Edit" and "Save"
+        $(this).text($(this).text() === 'Edit' ? 'Save' : 'Edit');
+    });
 </script>
 {% endblock %}
