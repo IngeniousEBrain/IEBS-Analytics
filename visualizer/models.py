@@ -154,7 +154,7 @@ class Project(models.Model):
     ]
 
     code = models.CharField(max_length=100, unique=True)
-    name = models.CharField(max_length=255, unique=True)
+    name = models.CharField(max_length=255)
     description = RichTextField()
     scope = RichTextField(default="")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=IN_PROGRESS)
@@ -285,9 +285,9 @@ class KeyAccountManagerProjectAssociation(models.Model):
 class PatentData(models.Model):
     user = models.ForeignKey('CustomUser', on_delete=models.CASCADE,
                              related_name='patent_user')
-    project_code = models.CharField(max_length=50)
+    project_code = models.CharField(max_length=100)
     publication_number = models.CharField(max_length=50)
-    assignee_standardized = models.CharField(max_length=512)
+    assignee_standardized = models.CharField(max_length=1025)
     legal_status = models.CharField(max_length=50)
     expected_expiry_dates = models.DateField(null=True, blank=True)
     remaining_life = models.PositiveIntegerField(null=True, blank=True)
@@ -297,11 +297,11 @@ class PatentData(models.Model):
     earliest_patent_priority_date = models.DateField(null=True, blank=True)
     application_dates = models.DateField(null=True, blank=True)
     publication_dates = models.DateField(null=True, blank=True)
-    application_number = models.CharField(max_length=255)
+    application_number = models.CharField(max_length=1025)
     cpc = models.TextField()
     ipc = models.TextField()
-    e_fan = models.CharField(max_length=512)
-    priority_country = models.CharField(max_length=255, null=True, blank=True)
+    e_fan = models.CharField(max_length=1025)
+    priority_country = models.CharField(max_length=1025, null=True, blank=True)
     created_date = models.DateTimeField(default=timezone.now, blank=True, null=True)
 
     def __str__(self):
@@ -339,4 +339,4 @@ class Category(models.Model):
 
 class ChartHeading(models.Model):
     chart_source_id = models.IntegerField()  # Assuming an integer identifier for chart source
-    heading = models.CharField(max_length=100)
+    heading = models.CharField(max_length=512)
