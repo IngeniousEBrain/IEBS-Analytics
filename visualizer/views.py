@@ -565,10 +565,11 @@ def tech_charts(req, project_id):
         others_category_count = json.dumps(others_category_wise_count(req, num_header_levels, proj_obj.id))
         all_col_count = json.dumps(get_col_tick_count(req, num_header_levels, proj_obj.id))
         all_child_categories_count = json.dumps(barchart_tick_count(req, num_header_levels, proj_obj.id))
-        print("all_col_count", all_col_count)
+        heat_data = json.dumps(get_heatmap_data(req, num_header_levels, proj_obj.id))
+        # print(heat_data)
         context = {'project_id': project_id, 'proj_name': proj_name, 'others_count': json.dumps(others_count),
                    'get_all_data': all_col_count, 'others_category_count': others_category_count,
-                   "all_child_categories_count": all_child_categories_count}
+                   "all_child_categories_count": all_child_categories_count,'heat':heat_data}
     if req.method == 'POST':
         num_header_levels = int(req.POST.get('level'))
         uploaded_media = req.FILES.get('technical_excel')
@@ -637,6 +638,41 @@ def get_col_tick_count(request, num_header_levels, proj_id):
 
 # ===========================data view and download==============
 # ===========================other col split count==============
+def get_heatmap_data(request, num_header_levels, proj_id):
+    # Fetch data from your database or source based on proj_id and num_header_levels
+    # For now, I'll use sample data
+    publication_numbers = ["US9627507B2", "US9324733B2", "US11411096B2"]
+    single_layer_core = [None, "p", None]
+    double_layer_core = [None, "p", "p"]
+
+    # Dictionary to store counts
+    counts = {}
+
+    # Iterate through publication numbers
+    for idx, publication_number in enumerate(publication_numbers):
+        # Check if both single-layer and double-layer cores have 'p' for the same publication number
+        if single_layer_core[idx] == "p" and double_layer_core[idx] == "p":
+            # Increment the count for this publication number
+            if publication_number in counts:
+                counts[publication_number] += 1
+            else:
+                counts[publication_number] = 1
+
+    # List to store heatmap data
+    heatmap_data = []
+
+    # Iterate through counts and create heatmap data
+    for publication_number, count in counts.items():
+        entry = {
+            "publication_number": publication_number,
+            "category": "Your Category",  # Replace "Your Category" with the actual category name
+            "count": count
+        }
+        heatmap_data.append(entry)
+
+    # Return the heatmap data as JSON response
+    return heatmap_data
+
 
 def get_others_split_count(request, num_header_levels, proj_id):
     data = []
