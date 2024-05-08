@@ -210,7 +210,7 @@
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-12">
-                        <div id="barchartdiv" style="height: 500px; width: 100%;"></div>
+                        <div id="barlinechartdiv" style="height: 500px; width: 100%;"></div>
                     </div>
                 </div>
             </div>
@@ -457,10 +457,10 @@ series.colors.step = 3;
 
 // ============bar chart starts here=================
 am5.ready(function() {
-  var container = document.getElementById("barchartdiv");
-  container.style.height = "500px"; // Set the desired height here
+  var container = document.getElementById("barlinechartdiv");
+  container.style.height = "500px";
 
-  var root = am5.Root.new("barchartdiv");
+  var root = am5.Root.new("barlinechartdiv");
   root.setThemes([
     am5themes_Animated.new(root)
   ]);
