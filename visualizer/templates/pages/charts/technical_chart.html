@@ -68,21 +68,21 @@
 <!--NESTED DONUT-->
 <div class="row justify-content-center">
     <div class="col-md-12">
-     <div class="card">
-  <div class="card-header">
-            <!-- Render dynamic heading using Django template variable -->
-            <h5 class="card-title"><b><span id="heading-{{ chart_id }}">{{ chart_heading }}</span></b></h5>
-            <!-- Edit button to toggle between view and edit mode -->
-            <button class="btn btn-sm btn-primary edit-heading" data-chart-id="{{ chart_id }}">Edit</button>
+        <div class="card">
+            <div class="card-header">
+                <!-- Render dynamic heading using Django template variable -->
+                <h5 class="card-title"><b><span id="heading-{{ chart_id }}">{{ chart_heading }}</span></b></h5>
+                <!-- Edit button to toggle between view and edit mode -->
+                <button class="btn btn-sm btn-primary edit-heading" data-chart-id="{{ chart_id }}">Edit</button>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-12">
+                        <div id="chartdiv" style="height: 500px; overflow: auto; width: 100%;"></div>
+                    </div>
+                </div>
+            </div>
         </div>
-  <div class="card-body">
-    <div class="row">
-      <div class="col-md-12">
-        <div id="chartdiv" style="height: 550px; overflow: auto; width: 100%;"></div>
-      </div>
-    </div>
-  </div>
-</div>
 
         <div class="row mt-4">
             <!-- Table Section (40%) -->
@@ -90,33 +90,36 @@
                 <div class="card">
                     <div class="card-body">
                         <div style="max-height: 300px; overflow-y: auto;">
-<!--                            <table class="table table-sm table-bordered">-->
-<!--                                <thead style="background-color: #808080">-->
-<!--                                <tr>-->
-<!--                                    <th class="text-center small">CPC</th>-->
-<!--                                    <th class="text-center small">Count</th>-->
-<!--                                    <th class="text-center small">Actions</th>-->
-<!--                                </tr>-->
-<!--                                </thead>-->
-<!--                                <tbody>-->
-<!--                                <tr>-->
-<!--                                    <td class="text-center small">data</td>-->
-<!--                                    <td class="text-center small">data</td>-->
-<!--                                    <td class="text-center small">-->
-<!--                                        <div class="d-flex justify-content-center">-->
-<!--                                            <button class="btn btn-secondary btn-xs mx-1"-->
-<!--                                                    onclick="indCpcDataView('{{key}}','{{project_id}}')">-->
-<!--                                                <i class="fa fa-eye" aria-hidden="true"></i>-->
-<!--                                            </button>-->
-<!--                                            <button class="btn btn-primary btn-xs mx-1"-->
-<!--                                                    onclick="downloadIndCpc('')"><i-->
-<!--                                                    class="fas fa-file-download" aria-hidden="true"></i>-->
-<!--                                            </button>-->
-<!--                                        </div>-->
-<!--                                    </td>-->
-<!--                                </tr>-->
-<!--                                </tbody>-->
-<!--                            </table>-->
+                            <table class="table table-sm table-bordered">
+                                <thead style="background-color: #808080">
+                                <tr>
+                                    <th class="text-center small">Category</th>
+<!--                                    <th class="text-center small">Parent Category</th>-->
+                                    <th class="text-center small">Publication No.</th>
+                                    <th class="text-center small">Count</th>
+                                    <th class="text-center small">Actions</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr>
+                                    <td class="text-center small">data</td>
+                                    <td class="text-center small">data</td>
+                                    <td class="text-center small">data</td>
+                                    <td class="text-center small">
+                                        <div class="d-flex justify-content-center">
+                                            <button class="btn btn-secondary btn-xs mx-1"
+                                                    onclick="indCpcDataView('{{key}}','{{project_id}}')">
+                                                <i class="fa fa-eye" aria-hidden="true"></i>
+                                            </button>
+                                            <button class="btn btn-primary btn-xs mx-1"
+                                                    onclick="downloadIndCpc('')"><i
+                                                    class="fas fa-file-download" aria-hidden="true"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                </tbody>
+                            </table>
                         </div>
                         <div class="text-center mt-2">
 <!--                            <button class="btn btn-secondary btn-xs"-->
@@ -207,7 +210,7 @@
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-12">
-                        <div id="barchartdiv" style="height: 500px; width: 100%;"></div>
+                        <div id="barlinechartdiv" style="height: 500px; width: 100%;"></div>
                     </div>
                 </div>
             </div>
@@ -325,6 +328,13 @@
         </div>
     </div>
 </div>
+
+
+
+
+
+
+
 {% else %}
 <img id="logo" src="{% static 'img/No data-amico.svg' %}" width="100%" height="70%">
     <div style="text-align: center;">
@@ -342,6 +352,7 @@
 <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 <script src="https://cdn.amcharts.com/lib/5/hierarchy.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/xy.js"></script>
 <script>
 am5.ready(function() {
     // Create root element
@@ -442,50 +453,101 @@ series.slices.template.cornerRadius = 5;
 series.colors.step = 3;
 
 });
-//============bar chart=================
-am4core.ready(function() {
-  // Themes begin
-  am4core.useTheme(am4themes_animated);
-  // Themes end
 
-  // Create chart instance
-  var chart = am4core.create("barchartdiv", am4charts.XYChart3D);  // Ensure "barchartdiv" exists in your HTML
 
-  // Reshape data (replace with your data processing logic)
-  var data = Object.entries({{all_child_categories_count|safe}});
-  data = data.map(function(entry) {
+// ============bar chart starts here=================
+am5.ready(function() {
+  var container = document.getElementById("barlinechartdiv");
+  container.style.height = "500px";
+
+  var root = am5.Root.new("barlinechartdiv");
+  root.setThemes([
+    am5themes_Animated.new(root)
+  ]);
+  var chart = root.container.children.push(am5xy.XYChart.new(root, {
+    panX: false,
+    panY: false,
+    wheelX: "panX",
+    wheelY: "zoomX",
+    paddingLeft: 0
+  }));
+
+  chart.set("scrollbarY", am5.Scrollbar.new(root, {
+    orientation: "vertical"
+  }));
+
+  var dataFromBackend = {{all_child_categories_count|safe}};
+  var data = Object.keys(dataFromBackend).map(function(key) {
     return {
-      "category": entry[0],
-      "value": entry[1]
+      "category": key,
+      "count": dataFromBackend[key]
     };
   });
 
-  // Assign the data to the chart's data property
-  chart.data = data;
+  var yRenderer = am5xy.AxisRendererY.new(root, {
+    cellStartLocation: 0.1,
+    cellEndLocation: 0.9,
+    minorGridEnabled: true
+  });
+  yRenderer.grid.template.set("location", 1);
 
-  // Create axes
-  var categoryAxis = chart.yAxes.push(new am4charts.CategoryAxis());
-  categoryAxis.dataFields.category = "category";
-  categoryAxis.renderer.inversed = true;
-  categoryAxis.renderer.minGridDistance = 40;
-  var valueAxis = chart.xAxes.push(new am4charts.ValueAxis());
+  var yAxis = chart.yAxes.push(
+    am5xy.CategoryAxis.new(root, {
+      categoryField: "category",
+      renderer: yRenderer,
+      tooltip: am5.Tooltip.new(root, {})
+    })
+  );
 
-  // Create series
-  var series = chart.series.push(new am4charts.ColumnSeries3D());
-  series.dataFields.valueX = "value";
-  series.dataFields.categoryY = "category";
-  series.name = "Count";
-  series.columns.template.tooltipText = "{category}: {valueX}";
-  series.columns.template.column3D.stroke = am4core.color("#fff");
-  series.columns.template.column3D.strokeOpacity = 0.2;
+  yAxis.data.setAll(data);
 
-  // Handle potential large number of categories (optional)
-  if (data.length > 20) {
-    // Enable horizontal scrolling for many categories
-    chart.scrollbarY = new am4core.Scrollbar();
-    chart.scrollbarY.parent = chart.rightContainer;
-  }
+  var xAxis = chart.xAxes.push(
+    am5xy.ValueAxis.new(root, {
+      min: 0,
+      renderer: am5xy.AxisRendererX.new(root, {
+        strokeOpacity: 0.1,
+        minGridDistance: 70
+      })
+    })
+  );
+
+  var series1 = chart.series.push(am5xy.ColumnSeries.new(root, {
+    name: "Count",
+    xAxis: xAxis,
+    yAxis: yAxis,
+    valueXField: "count",
+    categoryYField: "category",
+    sequencedInterpolation: true,
+    tooltip: am5.Tooltip.new(root, {
+      pointerOrientation: "horizontal",
+      labelText: "[bold]{name}[/]\n{categoryY}: {valueX}"
+    })
+  }));
+
+  series1.columns.template.setAll({
+    height: am5.percent(70)
+  });
+
+  var legend = chart.children.push(am5.Legend.new(root, {
+    centerX: am5.p50,
+    x: am5.p50
+  }));
+
+  legend.data.setAll(chart.series.values);
+
+  var cursor = chart.set("cursor", am5xy.XYCursor.new(root, {
+    behavior: "zoomY"
+  }));
+  cursor.lineX.set("visible", false);
+
+  series1.data.setAll(data);
+
+  series1.appear();
+  chart.appear(1000, 100);
 });
+
+
+//============bar chart end here=================
 
 //===================pie chart 3D===========
 am4core.ready(function() {
@@ -539,5 +601,105 @@ am4core.ready(function() {
         // Toggle button text between "Edit" and "Save"
         $(this).text($(this).text() === 'Edit' ? 'Save' : 'Edit');
     });
+
+
+
+
+
+
+
+
+
+
+am4core.ready(function() {
+  // Themes begin
+  am4core.useTheme(am4themes_animated);
+  // Themes end
+
+  var chart = am4core.create("heatdiv", am4charts.XYChart);
+  chart.maskBullets = false;
+
+  var xAxis = chart.xAxes.push(new am4charts.CategoryAxis());
+  var yAxis = chart.yAxes.push(new am4charts.CategoryAxis());
+
+  xAxis.dataFields.category = "publication_number";
+  yAxis.dataFields.category = "category";
+
+  xAxis.renderer.grid.template.disabled = true;
+  xAxis.renderer.minGridDistance = 40;
+
+  yAxis.renderer.grid.template.disabled = true;
+  yAxis.renderer.inversed = true;
+  yAxis.renderer.minGridDistance = 30;
+
+  var series = chart.series.push(new am4charts.ColumnSeries());
+  series.dataFields.categoryX = "publication_number";
+  series.dataFields.categoryY = "category";
+  series.dataFields.value = "count";
+  series.sequencedInterpolation = true;
+  series.defaultState.transitionDuration = 3000;
+
+  var bgColor = new am4core.InterfaceColorSet().getFor("background");
+
+  var columnTemplate = series.columns.template;
+  columnTemplate.strokeWidth = 1;
+  columnTemplate.strokeOpacity = 0.2;
+  columnTemplate.stroke = bgColor;
+  columnTemplate.tooltipText = "{publication_number}, {category}: {count}";
+  columnTemplate.width = am4core.percent(100);
+  columnTemplate.height = am4core.percent(100);
+
+  series.heatRules.push({
+    target: columnTemplate,
+    property: "fill",
+    min: am4core.color(bgColor),
+    max: chart.colors.getIndex(0)
+  });
+
+  // heat legend
+  var heatLegend = chart.bottomAxesContainer.createChild(am4charts.HeatLegend);
+  heatLegend.width = am4core.percent(100);
+  heatLegend.series = series;
+  heatLegend.valueAxis.renderer.labels.template.fontSize = 9;
+  heatLegend.valueAxis.renderer.minGridDistance = 30;
+
+  // heat legend behavior
+  series.columns.template.events.on("over", function(event) {
+    handleHover(event.target);
+  })
+
+  series.columns.template.events.on("hit", function(event) {
+    handleHover(event.target);
+  })
+
+  function handleHover(column) {
+    if (!isNaN(column.dataItem.value)) {
+      heatLegend.valueAxis.showTooltipAt(column.dataItem.value)
+    }
+    else {
+      heatLegend.valueAxis.hideTooltip();
+    }
+  }
+
+  series.columns.template.events.on("out", function(event) {
+    heatLegend.valueAxis.hideTooltip();
+  })
+
+  chart.data = [
+    {
+      "publication_number": "P001",
+      "category": "Category A",
+      "count": 2990
+    },
+    {
+      "publication_number": "P001",
+      "category": "Category B",
+      "count": 2520
+    },
+    // Add more data here...
+  ];
+
+}); // end am4core.ready()
+
 </script>
 {% endblock %}
