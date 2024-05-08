@@ -154,7 +154,7 @@ class Project(models.Model):
     ]
 
     code = models.CharField(max_length=100, unique=True)
-    name = models.CharField(max_length=255)
+    name = models.CharField(max_length=512)
     description = RichTextField()
     scope = RichTextField(default="")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=IN_PROGRESS)
@@ -338,5 +338,5 @@ class Category(models.Model):
         return self.name
 
 class ChartHeading(models.Model):
-    chart_source_id = models.IntegerField()  # Assuming an integer identifier for chart source
-    heading = models.CharField(max_length=512)
+    chart_source_id = models.IntegerField()
+    heading = models.CharField(max_length=255)
