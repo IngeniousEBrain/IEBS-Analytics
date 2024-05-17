@@ -58,6 +58,7 @@ urlpatterns = [
     path('doc_upload/<int:project_id>/', views.doc_upload, name='doc_upload'),
     path('download_file/<int:project_id>/', views.download_file, name='download_file'),
     path('create_chart_heading/', views.create_chart_heading, name='create_chart_heading'),
+    path('download_tech_demo_excel/', views.download_tech_demo_excel, name='download_tech_demo_excel'),
     #     NEW ADMIN PORTAL
 
     path('admin_login/', views.admin_login, name='admin_login'),
