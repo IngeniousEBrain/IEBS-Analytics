@@ -181,7 +181,7 @@
                         </a>
                     </li>
                     {% endif %}
-                     {% if request.session.user_role == 'project_manager' %}
+                     {% if request.session.user_role == 'project_manager' or request.session.user_role == 'key_account_holder' %}
                     <li class="nav-item has-treeview {% if '/report/' in request.get_full_path %} menu-open {% endif %}">
                         <a href="{% url 'project-list' 'report' %}"
                            class="nav-link {% if '/report' in request.get_full_path%} active {% endif %}">
