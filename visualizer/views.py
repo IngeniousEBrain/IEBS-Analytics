@@ -396,7 +396,6 @@ def delete_project(request):
 
 @csrf_exempt
 def delete_project_by_admin(request):
-    print(request.POST)
     if request.method == 'POST':
         project_id = request.POST.get('project_id')
         try:
@@ -530,12 +529,40 @@ def get_top_assignees_by_year(req, code):
 @csrf_exempt
 def create_chart_heading(request):
     print("hit")
-    if request.method == 'POST' and request.is_ajax():
-        print(request.POST)
-        chart_id = request.POST.get('chart_id')
-        new_heading = request.POST.get('new_heading')
-        ChartHeading.objects.update_or_create(chart_id=chart_id, defaults={'heading': new_heading})
-        return JsonResponse({'success': True})
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            chart_id = data.get('chart_id')
+            new_heading = data.get('new_heading')
+            project_id = data.get('project_id')
+
+            print("chart_id:", chart_id)
+            print("new_heading:", new_heading)
+            print("project_id:", project_id)
+
+            # Retrieve the specific Project instance
+            project_instance = Project.objects.get(id=project_id)
+
+            # Check if a ChartHeading with the given chart_id and project_instance exists
+            chart_heading = ChartHeading.objects.filter(chart_source_id=chart_id, project=project_instance).first()
+
+            if chart_heading:
+                # Update existing ChartHeading
+                chart_heading.heading = new_heading
+                chart_heading.save()
+            else:
+                # Create new ChartHeading
+                ChartHeading.objects.create(chart_source_id=chart_id, project=project_id, heading=new_heading)
+
+            return JsonResponse({'success': True})
+        except Project.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Project not found'})
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'error': 'Invalid JSON'})
+        except Exception as e:
+            print("Exception:", str(e))
+            return JsonResponse({'success': False, 'error': str(e)})
+
     return JsonResponse({'success': False, 'error': 'Invalid request'})
 
 
@@ -556,6 +583,41 @@ def tech_charts(req, project_id):
     proj_obj = Project.objects.filter(id=project_id).first()
     proj_name = proj_obj.name
     context = {'project_id': project_id, 'proj_name': proj_name}
+    try:
+        chart_heading1_obj = ChartHeading.objects.filter(project=project_id, chart_source_id=1).first()
+        if chart_heading1_obj:
+            chart_heading1 = chart_heading1_obj.heading
+            context['chart_heading1'] = chart_heading1
+    except ChartHeading.DoesNotExist:
+        pass
+
+    try:
+        chart_heading2_obj = ChartHeading.objects.filter(project=project_id, chart_source_id=2).first()
+        if chart_heading2_obj:
+            chart_heading2 = chart_heading2_obj.heading
+            context['chart_heading2'] = chart_heading2
+    except ChartHeading.DoesNotExist:
+        pass
+
+    try:
+        chart_heading3_obj = ChartHeading.objects.filter(project=project_id, chart_source_id=3).first()
+        if chart_heading3_obj:
+            chart_heading3 = chart_heading3_obj.heading
+            context['chart_heading3'] = chart_heading3
+    except ChartHeading.DoesNotExist:
+        pass
+
+    try:
+        chart_heading4_obj = ChartHeading.objects.filter(project=project_id, chart_source_id=4).first()
+        if chart_heading4_obj:
+            chart_heading4 = chart_heading4_obj.heading
+            context['chart_heading4'] = chart_heading4
+    except ChartHeading.DoesNotExist:
+        pass
+
+    except ChartHeading.DoesNotExist:
+        pass
+    context = {'project_id': project_id, 'proj_name': proj_name}
     if Category.objects.filter(project_id=proj_obj.id).exists():
         num_header_levels = Category.objects.filter(project_id=proj_obj.id).first().num_header_levels
         level = 2
@@ -565,9 +627,13 @@ def tech_charts(req, project_id):
         others_category_count = json.dumps(others_category_wise_count(req, num_header_levels, proj_obj.id))
         all_col_count = json.dumps(get_col_tick_count(req, num_header_levels, proj_obj.id))
         all_child_categories_count = json.dumps(barchart_tick_count(req, num_header_levels, proj_obj.id))
-        context = {'project_id': project_id, 'proj_name': proj_name, 'others_count': json.dumps(others_count),
-                   'get_all_data': all_col_count, 'others_category_count': others_category_count,
-                   "all_child_categories_count": all_child_categories_count, 'top_ten_assignees': top_ten_assignees}
+        context.update({
+            'others_count': json.dumps(others_count),
+            'get_all_data': all_col_count,
+            'others_category_count': others_category_count,
+            "all_child_categories_count": all_child_categories_count,
+            'top_ten_assignees': top_ten_assignees
+        })
     if req.method == 'POST':
         num_header_levels = int(req.POST.get('level'))
         uploaded_media = req.FILES.get('technical_excel')
@@ -616,6 +682,7 @@ def save_to_categories(df, num_header_levels, proj_obj):
             child_category.value = {child_column_name: values}
         child_category.save()
         parent_stack = []
+
 
 # =============================hierarchical charts ============================
 def process_category(category, children_list, proj_id):
@@ -719,7 +786,7 @@ def get_heatmap_data(request, level, project_id):
                     matched_categories[category_name] = matched_values
                 else:
                     matched_categories[category_name] = values
-        print(json.dumps(matched_categories, indent=4))
+        # print(json.dumps(matched_categories, indent=4))
     else:
         print("No matching possible due to missing publication numbers.")
     return top_ten_assignee
@@ -775,10 +842,12 @@ def others_category_wise_count(request, num_header_levels, proj_id):
         print("No child columns named 'Others' found.")
     return data
 
+
 # =========================== other column split count category wise end==============
 def barchart_tick_count(request, num_header_levels, proj_id):
     ignore_keys = ['Publication Number', 'Other-']
     child_categories = {}
+
     def process_category(category):
         if category.value is not None:
             for key, values_list in category.value.items():
@@ -796,6 +865,7 @@ def barchart_tick_count(request, num_header_levels, proj_id):
     for category in Category.objects.filter(level__gt=0, level__lt=num_header_levels, project_id=proj_id):
         process_category(category)
     return child_categories
+
 
 # ===================================================================
 @csrf_exempt
