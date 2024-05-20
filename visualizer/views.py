@@ -1,7 +1,7 @@
 """
 Views for the 'visualizer' app.
 """
-import numpy as np
+from django.db.models import Sum, F
 import collections
 import json
 import math
@@ -365,7 +365,6 @@ def project_list(req, chart_type):
         projects = Project.objects.filter(userprojectassociation__user=user_qs).distinct()
     elif user_qs.roles == 'key_account_holder':
         projects = Project.objects.filter(keyaccountmanagerprojectassociation__key_account_manager=user_qs).distinct()
-
     context = {'projects_data': projects, 'user_qs': user_qs, 'chart_type': chart_type}
     return render(req, 'pages/projects/project_listing.html', context)
 
@@ -516,16 +515,16 @@ def get_top_assignees_by_year(req, code):
     top_assignees = PatentData.objects.filter(project_code=code).values(
         'assignee_standardized').annotate(
         count=Count('assignee_standardized')).order_by('-count')[:10]
-    result = collections.defaultdict(dict)
+    data = {}
     for assignee in top_assignees:
-        name = assignee['assignee_standardized']
-        year_wise_count = PatentData.objects.filter(assignee_standardized=name).values(
-            'application_dates__year').annotate(count=Count('id'))
-        for data in year_wise_count:
-            year = data['application_dates__year']
-            count = data['count']
-            result[name][year] = count
-    return result
+        assignee_name = assignee['assignee_standardized']
+        # Get the year-wise count for this assignee
+        year_counts = PatentData.objects.filter(
+            project_code=code, assignee_standardized=assignee_name).values(
+            year=ExtractYear('application_dates')).annotate(
+            count=Count('id')).order_by('year')
+        data[assignee_name] = {year_count['year']: year_count['count'] for year_count in year_counts}
+    return data
 
 
 @csrf_exempt
@@ -535,7 +534,6 @@ def create_chart_heading(request):
         print(request.POST)
         chart_id = request.POST.get('chart_id')
         new_heading = request.POST.get('new_heading')
-        # Update or create the chart heading
         ChartHeading.objects.update_or_create(chart_id=chart_id, defaults={'heading': new_heading})
         return JsonResponse({'success': True})
     return JsonResponse({'success': False, 'error': 'Invalid request'})
@@ -546,7 +544,6 @@ def tech_charts(req, project_id):
     """
     Logic for tech charts
     """
-
     user_qs = get_object_or_404(CustomUser, id=req.session.get('logged_in_user_id'))
     project = get_object_or_404(Project, id=project_id)
     if not (
@@ -561,29 +558,32 @@ def tech_charts(req, project_id):
     context = {'project_id': project_id, 'proj_name': proj_name}
     if Category.objects.filter(project_id=proj_obj.id).exists():
         num_header_levels = Category.objects.filter(project_id=proj_obj.id).first().num_header_levels
+        level = 2
+        heat_data = get_heatmap_data(req, level, proj_obj.id)
+        top_ten_assignees = [data['Assignee - Standardized'] for data in heat_data]
         others_count = get_others_split_count(req, num_header_levels, proj_obj.id)
         others_category_count = json.dumps(others_category_wise_count(req, num_header_levels, proj_obj.id))
         all_col_count = json.dumps(get_col_tick_count(req, num_header_levels, proj_obj.id))
         all_child_categories_count = json.dumps(barchart_tick_count(req, num_header_levels, proj_obj.id))
-        heat_data = json.dumps(get_heatmap_data(req, num_header_levels, proj_obj.id))
-        # print(heat_data)
         context = {'project_id': project_id, 'proj_name': proj_name, 'others_count': json.dumps(others_count),
                    'get_all_data': all_col_count, 'others_category_count': others_category_count,
-                   "all_child_categories_count": all_child_categories_count,'heat':heat_data}
+                   "all_child_categories_count": all_child_categories_count, 'top_ten_assignees': top_ten_assignees}
     if req.method == 'POST':
         num_header_levels = int(req.POST.get('level'))
         uploaded_media = req.FILES.get('technical_excel')
         if uploaded_media:
             df = pd.read_excel(uploaded_media, header=list(range(num_header_levels)))
             save_to_categories(df, num_header_levels, proj_obj)
+            level = 2
+            heat_data = get_heatmap_data(req, level, proj_obj.id)
+            top_ten_assignees = [data['Assignee - Standardized'] for data in heat_data]
             others_count = get_others_split_count(req, num_header_levels, proj_obj.id)
             others_category_count = json.dumps(others_category_wise_count(req, num_header_levels, proj_obj.id))
             all_col_count = json.dumps(get_col_tick_count(req, num_header_levels, proj_obj.id))
-
             all_child_categories_count = json.dumps(barchart_tick_count(req, num_header_levels, proj_obj.id))
             context = {'project_id': project_id, 'proj_name': proj_name, 'others_count': json.dumps(others_count),
                        'get_all_data': all_col_count, 'others_category_count': others_category_count,
-                       "all_child_categories_count": all_child_categories_count}
+                       "all_child_categories_count": all_child_categories_count, 'top_ten_assignees': top_ten_assignees}
     return render(req, 'pages/charts/technical_chart.html', context)
 
 
@@ -591,17 +591,22 @@ def tech_charts(req, project_id):
 def save_to_categories(df, num_header_levels, proj_obj):
     if Category.objects.filter(project_id=proj_obj.id).exists():
         Category.objects.filter(project_id=proj_obj.id).delete()
+    parent_stack = []
     for col_idx, column in enumerate(df.columns):
-        parent_category = None
+        current_level = 0
         for header_level in range(num_header_levels):
             category_name = column[header_level]
+            if current_level > 0:
+                parent_category = parent_stack[-1]
+            else:
+                parent_category = None
             category, created = Category.objects.get_or_create(name=category_name, parent=parent_category,
                                                                level=header_level, project_id=proj_obj,
                                                                num_header_levels=num_header_levels)
-            if not parent_category:
-                parent_category = category
-        child_category = Category.objects.get(name=column[num_header_levels - 1], level=num_header_levels - 1,
-                                              parent=parent_category, project_id=proj_obj.id)
+            parent_stack.append(category)
+            current_level += 1
+        child_category = category
+        parent_category = parent_stack.pop()
         child_column_name = column[num_header_levels - 1]
         values = df[column].tolist()[1:]
         values = [None if pd.isna(value) else value for value in values]
@@ -610,68 +615,114 @@ def save_to_categories(df, num_header_levels, proj_obj):
         else:
             child_category.value = {child_column_name: values}
         child_category.save()
+        parent_stack = []
+
+# =============================hierarchical charts ============================
+def process_category(category, children_list, proj_id):
+    existing_category = next((child for child in children_list if child["name"] == category.name), None)
+
+    if existing_category:
+        if category.value:
+            for key, values_list in category.value.items():
+                count_p = sum(1 for value in values_list if value == 'P')
+                existing_category["value"] = count_p if count_p > 0 else existing_category.get("value", None)
+
+        # Process children of the current category recursively
+        children = Category.objects.filter(parent=category, project_id=proj_id)
+        for child in children:
+            process_category(child, existing_category.setdefault("children", []), proj_id)
+    else:
+        category_data = {"name": category.name, "children": []}
+        if category.value:
+            for key, values_list in category.value.items():
+                count_p = sum(1 for value in values_list if value == 'P')
+                category_data["value"] = count_p if count_p > 0 else category_data.get("value", None)
+        children = Category.objects.filter(parent=category, project_id=proj_id)
+        for child in children:
+            process_category(child, category_data.setdefault("children", []), proj_id)
+        children_list.append(category_data)
 
 
 def get_col_tick_count(request, num_header_levels, proj_id):
     data = {"name": "", "children": []}
 
-    def process_category(category, children_list):
-        if category.value is not None:
-            for key, values_list in category.value.items():
-                count_p = sum(1 for value in values_list if value == 'P')
-                children_list.append({"name": key, "value": count_p})
-
-        children = Category.objects.filter(parent=category, project_id=proj_id)
-        if children:
-            for child in children:
-                child_data = {"name": child.name, "children": []}
-                children_list.append(child_data)
-                process_category(child, child_data["children"])
-
     root_categories = Category.objects.filter(parent__isnull=True, project_id=proj_id)
     for root_category in root_categories:
-        root_data = {"name": root_category.name, "children": []}
-        data["children"].append(root_data)
-        process_category(root_category, root_data["children"])
-
+        process_category(root_category, data["children"], proj_id=proj_id)
     return data
+
 
 # ===========================data view and download==============
 # ===========================other col split count==============
-def get_heatmap_data(request, num_header_levels, proj_id):
-    # Fetch data from your database or source based on proj_id and num_header_levels
-    # For now, I'll use sample data
-    publication_numbers = ["US9627507B2", "US9324733B2", "US11411096B2"]
-    single_layer_core = [None, "p", None]
-    double_layer_core = [None, "p", "p"]
 
-    # Dictionary to store counts
-    counts = {}
+def process_top_ten_assignees(req, project_code):
+    data = PatentData.objects.filter(project_code=project_code).exclude(
+        assignee_standardized__isnull=True
+    ).values('assignee_standardized').annotate(
+        count=Count('assignee_standardized')
+    ).order_by('-count')[:10]
+    result = []
+    for item in data:
+        assignee = item['assignee_standardized']
+        count = item['count']
+        publication_numbers = list(PatentData.objects.filter(
+            project_code=project_code,
+            assignee_standardized=assignee
+        ).values_list('publication_number', flat=True))
+        result.append({
+            'Assignee - Standardized': assignee,
+            'publication_numbers': publication_numbers
+        })
+    return result
 
-    # Iterate through publication numbers
-    for idx, publication_number in enumerate(publication_numbers):
-        # Check if both single-layer and double-layer cores have 'p' for the same publication number
-        if single_layer_core[idx] == "p" and double_layer_core[idx] == "p":
-            # Increment the count for this publication number
-            if publication_number in counts:
-                counts[publication_number] += 1
-            else:
-                counts[publication_number] = 1
 
-    # List to store heatmap data
-    heatmap_data = []
+def get_heatmap_data(request, level, project_id):
+    project = Project.objects.get(id=project_id)
+    code = project.code
+    top_ten_assignee = process_top_ten_assignees(request, code)
+    try:
+        category = Category.objects.get(name='Publication Number', project_id=project_id, level=level)
+        all_child = Category.objects.filter(level=2, project_id=project_id).exclude(name='Publication Number')
+    except ObjectDoesNotExist:
+        category = None
+        all_child = []
 
-    # Iterate through counts and create heatmap data
-    for publication_number, count in counts.items():
-        entry = {
-            "publication_number": publication_number,
-            "category": "Your Category",  # Replace "Your Category" with the actual category name
-            "count": count
-        }
-        heatmap_data.append(entry)
+    if category:
+        names = [cat.name for cat in all_child]
+        publication_numbers_json = category.value
+        if isinstance(publication_numbers_json, str):
+            publication_numbers = json.loads(publication_numbers_json)
+        else:
+            publication_numbers = publication_numbers_json
+        pub_numbers = publication_numbers.get('Publication Number', [])
+    else:
+        print("Category 'Publication Number' not found.")
+        pub_numbers = []
+    all_assignee_publication_numbers = []
+    if top_ten_assignee:
+        for assignee in top_ten_assignee:
+            assignee_name = assignee.get('Assignee - Standardized', 'Unknown')
+            assignee_publication_numbers = assignee.get('publication_numbers', [])
+            all_assignee_publication_numbers.extend(
+                assignee_publication_numbers)
 
-    # Return the heatmap data as JSON response
-    return heatmap_data
+    if pub_numbers:
+        pub_numbers_set1 = set(pub_numbers)
+        pub_numbers_set2 = set(all_assignee_publication_numbers)
+        matched_publication_numbers = pub_numbers_set1.intersection(pub_numbers_set2)
+        values = Category.objects.filter(level=2, project_id=project_id).values_list('value', flat=True)
+        matched_categories = {}
+        for category_data in values:
+            for category_name, values in category_data.items():
+                if category_name == 'Publication Number':
+                    matched_values = [value for value in values if value in matched_publication_numbers]
+                    matched_categories[category_name] = matched_values
+                else:
+                    matched_categories[category_name] = values
+        print(json.dumps(matched_categories, indent=4))
+    else:
+        print("No matching possible due to missing publication numbers.")
+    return top_ten_assignee
 
 
 def get_others_split_count(request, num_header_levels, proj_id):
@@ -685,7 +736,7 @@ def get_others_split_count(request, num_header_levels, proj_id):
                 category_info = {'category': parent_category.name, 'litres': 0}
                 column_value = child_column.value
                 if column_value:
-                    total_count = 0  # Total count of 'P' across all splits
+                    total_count = 0
                     for key, value in column_value.items():
                         for ele in value:
                             if ele is not None:
@@ -698,7 +749,8 @@ def get_others_split_count(request, num_header_levels, proj_id):
         print("No child columns named 'Others' found.")
     return data
 
-# ===========================other column split count catgroty wise start==============
+
+# ===========================other column split count category wise start==============
 def others_category_wise_count(request, num_header_levels, proj_id):
     data = []
     others_child_columns = Category.objects.filter(name__icontains='Other-', level=num_header_levels - 1,
@@ -723,19 +775,16 @@ def others_category_wise_count(request, num_header_levels, proj_id):
         print("No child columns named 'Others' found.")
     return data
 
-
-# =========================== other column split count catgroty wise end==============
+# =========================== other column split count category wise end==============
 def barchart_tick_count(request, num_header_levels, proj_id):
     ignore_keys = ['Publication Number', 'Other-']
     child_categories = {}
-
     def process_category(category):
         if category.value is not None:
             for key, values_list in category.value.items():
                 if key not in ignore_keys and not any(ignore_key in key for ignore_key in ignore_keys):
                     count_p = sum(1 for value in values_list if value == 'P')
                     child_categories[key] = count_p
-
         children = Category.objects.filter(parent=category, project_id=proj_id)
         for child in children:
             process_category(child)
@@ -747,7 +796,6 @@ def barchart_tick_count(request, num_header_levels, proj_id):
     for category in Category.objects.filter(level__gt=0, level__lt=num_header_levels, project_id=proj_id):
         process_category(category)
     return child_categories
-
 
 # ===================================================================
 @csrf_exempt
@@ -1013,22 +1061,17 @@ def competitor_charts(req, project_id):
     user_id = req.session.get('logged_in_user_id')
     user_qs = get_object_or_404(CustomUser, id=user_id)
     project = get_object_or_404(Project, id=project_id)
-    # Check if the user is authorized to access the project
     if not (
             UserProjectAssociation.objects.filter(user=user_qs, projects=project).exists() or
             ClientProjectAssociation.objects.filter(client=user_qs, projects=project).exists() or
             KeyAccountManagerProjectAssociation.objects.filter(key_account_manager=user_qs, projects=project).exists()
     ):
-        # User is not associated with the project
         return HttpResponse("You are not authorized to view competitor charts for this project.")
-    # Continue processing for authorized user
     project_id_template = project.id
     code = project.code
     project_name = project.name
-    # Fetch patent data for the project
     data = PatentData.objects.filter(project_code=code)
     data1 = data.values('assignee_standardized').annotate(count=Count('assignee_standardized')).order_by('-count')[:10]
-
     result = []
     for item in data1:
         assignee_name = item['assignee_standardized']
@@ -1060,8 +1103,6 @@ def competitor_charts(req, project_id):
     else:
         truncated_assignees = [assignee[:25] + '...' if len(assignee) > 30 else assignee for assignee in assignees]
         truncated_partners = [partner[:25] + '...' if len(partner) > 30 else partner for partner in partners]
-
-        # Update the x and y-axis labels with truncated labels
         fig1 = go.Figure(data=go.Heatmap(
             z=partner_count_matrix,
             x=truncated_partners,
@@ -1752,6 +1793,23 @@ def download_demo_excel(req):
     return response
 
 
+import os
+from django.http import HttpResponse, Http404
+from django.conf import settings
+
+
+def download_tech_demo_excel(request):
+    file_path = os.path.join(settings.BASE_DIR, 'static/Ingenious e-Brain - stage demo 1.xlsm')
+    if os.path.exists(file_path):
+        with open(file_path, 'rb') as fh:
+            response = HttpResponse(fh.read(),
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename=' + os.path.basename(file_path)
+            return response
+    else:
+        raise Http404("File not found")
+
+
 def download_citedExl(request, project_id):
     code = Project.objects.filter(id=project_id).first().code
     top_ten_cited_patents = PatentData.objects.filter(
@@ -1920,7 +1978,6 @@ def top_ten_cpc_exl(req, project_id):
         return render(req, 'pages/charts/top_ten_ipc.html', context)
     else:
         data = {
-            # 'Project Code': [patent.project_code for patent in top_ten_ass],
             'Publication Number': [patent.publication_number for patent in top_ten_cpc],
             'Assignee Standardized': [patent.assignee_standardized for patent in top_ten_cpc],
             'Cited Patents Count': [patent.cited_patents_count for patent in top_ten_cpc],
@@ -2028,7 +2085,6 @@ def download_excel_view(req):
         df.to_excel(writer, index=False, sheet_name=f'{status}_data')
         workbook = writer.book
         worksheet = writer.sheets[f'{status}_data']
-        # Set the column widths
         for i, col in enumerate(df.columns):
             max_len = max(df[col].astype(str).apply(len).max(), len(col))
             worksheet.set_column(i, i, max_len)
@@ -2124,8 +2180,7 @@ def bibliographic_charts(req, project_id):
                             'cpc': row['CPC'],
                             'ipc': row['IPC'],
                             'e_fan': row['EFAN'],
-                            'project_code': project_code_qs.code,
-                            # 'priority_country': row['Priority Country']
+                            'project_code': project_code_qs.code
                         }
                         patent_data_rows.append(patent_data_dict)
                     PatentData.objects.bulk_create([
@@ -2158,10 +2213,7 @@ def process_excel_data(context, req, project_id):
             ClientProjectAssociation.objects.filter(client=user_qs, projects=project).exists() or
             KeyAccountManagerProjectAssociation.objects.filter(key_account_manager=user_qs, projects=project).exists()
     ):
-        # User is not associated with the project
         return HttpResponse("You are not authorized to view data for this project.")
-
-    # Continue processing data for authorized user
     data = PatentData.objects.filter(project_code=project_id)
     data = data.values('assignee_standardized').annotate(count=Count('assignee_standardized')).order_by('-count')[:10]
     current_year = datetime.now().year
@@ -2417,7 +2469,6 @@ def get_top_citing_count(req, project_id):
             "count": patent_data.citing_patents_count,
             "assignee": patent_data.assignee_standardized
         }
-
     return citing_patents_dict
 
 
@@ -2430,15 +2481,12 @@ def get_top_cited_count(req, project_id):
     ).order_by('-cited_patents_count')[:10]
 
     for patent_data in top_ten_cited_patents:
-        # Skip processing if cited_patents_count is None
         if patent_data.cited_patents_count is None:
             continue
-
         cited_patents_dict[patent_data.publication_number] = {
             "count": patent_data.cited_patents_count,
             "assignee": patent_data.assignee_standardized
         }
-
     return cited_patents_dict
 
 
@@ -2479,7 +2527,6 @@ def process_assignees(req, project_code):
 def process_assignees_last_five_years(request, project_id):
     current_year = datetime.now().year
     last_five_years_start = current_year - 5
-
     top_assignees_last_five_years = (
         PatentData.objects
         .filter(project_code=project_id, application_dates__year__gte=last_five_years_start)
@@ -2524,7 +2571,7 @@ def logout(req):
     """
     Delete all sessions when user is logged out.
     """
-    sessions = Session.objects.filter(expire_date__gte=timezone.now())
+    sessions = Session.objects.all()
     for session in sessions:
         session.delete()
         return redirect('login')

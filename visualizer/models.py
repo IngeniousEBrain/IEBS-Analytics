@@ -339,4 +339,4 @@ class Category(models.Model):
 
 class ChartHeading(models.Model):
     chart_source_id = models.IntegerField()
-    heading = models.CharField(max_length=255)
+    heading = models.CharField(max_length=255, default='XYZ')

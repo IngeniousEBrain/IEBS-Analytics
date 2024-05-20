@@ -1,13 +1,16 @@
 # custom_filters.py
 from django import template
 from django.template.defaultfilters import striptags, linebreaksbr
+
 register = template.Library()
+
 
 @register.filter
 def dict_key_sort(value):
     if isinstance(value, dict):
         return sorted(value.items())
     return value
+
 
 @register.filter
 def slice_with_words(value, length):
