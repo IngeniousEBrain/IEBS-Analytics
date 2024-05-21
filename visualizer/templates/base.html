@@ -242,7 +242,7 @@
                             </p>
                         </a>
                     </li>
-                      <li class="nav-item has-treeview {% if '/add_user/' in request.get_full_path or '/user_listing' in request.get_full_path %} menu-open {% endif %}">
+                    <li class="nav-item has-treeview {% if '/add_user/' in request.get_full_path or '/user_listing' in request.get_full_path %} menu-open {% endif %}">
                         <a href="{% url 'user_listing' %}"
                            class="nav-link {% if '/add_user' in request.get_full_path or '/user_listing' in request.get_full_path or 'edit_user' in request.get_full_path %} active {% endif %}">
 
@@ -268,13 +268,9 @@
 <!--                            <p>Project User Association</p>-->
 <!--                        </a>-->
 <!--                    </li>-->
-
-
                 </ul>
             </nav>
             {% endif %}
-
-            <!-- /.sidebar-menu -->
         </div>
         <!-- /.sidebar -->
     </aside>
