@@ -511,19 +511,28 @@ def extract_assignee_partners(req, code):
 
 
 def get_top_assignees_by_year(req, code):
-    top_assignees = PatentData.objects.filter(project_code=code).values(
-        'assignee_standardized').annotate(
+    top_assignees = PatentData.objects.filter(project_code=code).values('assignee_standardized').annotate(
         count=Count('assignee_standardized')).order_by('-count')[:10]
     data = {}
+
     for assignee in top_assignees:
         assignee_name = assignee['assignee_standardized']
-        # Get the year-wise count for this assignee
-        year_counts = PatentData.objects.filter(
-            project_code=code, assignee_standardized=assignee_name).values(
-            year=ExtractYear('application_dates')).annotate(
-            count=Count('id')).order_by('year')
-        data[assignee_name] = {year_count['year']: year_count['count'] for year_count in year_counts}
-    return data
+        year_counts = PatentData.objects.filter(project_code=code, assignee_standardized=assignee_name).values(
+            year=ExtractYear('application_dates')).annotate(count=Count('id')).order_by('year')
+
+        for year_count in year_counts:
+            year = year_count['year']
+            count = year_count['count']
+
+            if year not in data:
+                data[year] = {}
+
+            data[year][assignee_name] = count
+
+    sorted_data = {}
+    for year in sorted(data.keys()):
+        sorted_data[year] = data[year]
+    return sorted_data
 
 
 @csrf_exempt
@@ -544,7 +553,7 @@ def create_chart_heading(request):
             project_instance = Project.objects.get(id=project_id)
 
             # Check if a ChartHeading with the given chart_id and project_instance exists
-            chart_heading = ChartHeading.objects.filter(chart_source_id=chart_id, project=project_instance).first()
+            chart_heading = ChartHeading.objects.filter(chart_source_id=chart_id, project=project_id).first()
 
             if chart_heading:
                 # Update existing ChartHeading
@@ -573,6 +582,7 @@ def tech_charts(req, project_id):
     """
     user_qs = get_object_or_404(CustomUser, id=req.session.get('logged_in_user_id'))
     project = get_object_or_404(Project, id=project_id)
+
     if not (
             UserProjectAssociation.objects.filter(user=user_qs, projects=project).exists() or
             ClientProjectAssociation.objects.filter(client=user_qs, projects=project).exists() or
@@ -583,41 +593,18 @@ def tech_charts(req, project_id):
     proj_obj = Project.objects.filter(id=project_id).first()
     proj_name = proj_obj.name
     context = {'project_id': project_id, 'proj_name': proj_name}
-    try:
-        chart_heading1_obj = ChartHeading.objects.filter(project=project_id, chart_source_id=1).first()
-        if chart_heading1_obj:
-            chart_heading1 = chart_heading1_obj.heading
-            context['chart_heading1'] = chart_heading1
-    except ChartHeading.DoesNotExist:
-        pass
 
-    try:
-        chart_heading2_obj = ChartHeading.objects.filter(project=project_id, chart_source_id=2).first()
-        if chart_heading2_obj:
-            chart_heading2 = chart_heading2_obj.heading
-            context['chart_heading2'] = chart_heading2
-    except ChartHeading.DoesNotExist:
-        pass
+    def get_chart_heading(project_id, chart_source_id):
+        print(project_id,chart_source_id)
+        heading_obj = ChartHeading.objects.filter(project=project_id, chart_source_id=chart_source_id).first()
 
-    try:
-        chart_heading3_obj = ChartHeading.objects.filter(project=project_id, chart_source_id=3).first()
-        if chart_heading3_obj:
-            chart_heading3 = chart_heading3_obj.heading
-            context['chart_heading3'] = chart_heading3
-    except ChartHeading.DoesNotExist:
-        pass
+        return heading_obj.heading if heading_obj else None
 
-    try:
-        chart_heading4_obj = ChartHeading.objects.filter(project=project_id, chart_source_id=4).first()
-        if chart_heading4_obj:
-            chart_heading4 = chart_heading4_obj.heading
-            context['chart_heading4'] = chart_heading4
-    except ChartHeading.DoesNotExist:
-        pass
+    context['chart_heading1'] = get_chart_heading(project_id, 1)
+    context['chart_heading2'] = get_chart_heading(project_id, 2)
+    context['chart_heading3'] = get_chart_heading(project_id, 3)
+    context['chart_heading4'] = get_chart_heading(project_id, 4)
 
-    except ChartHeading.DoesNotExist:
-        pass
-    context = {'project_id': project_id, 'proj_name': proj_name}
     if Category.objects.filter(project_id=proj_obj.id).exists():
         num_header_levels = Category.objects.filter(project_id=proj_obj.id).first().num_header_levels
         level = 2
@@ -627,6 +614,7 @@ def tech_charts(req, project_id):
         others_category_count = json.dumps(others_category_wise_count(req, num_header_levels, proj_obj.id))
         all_col_count = json.dumps(get_col_tick_count(req, num_header_levels, proj_obj.id))
         all_child_categories_count = json.dumps(barchart_tick_count(req, num_header_levels, proj_obj.id))
+
         context.update({
             'others_count': json.dumps(others_count),
             'get_all_data': all_col_count,
@@ -634,6 +622,7 @@ def tech_charts(req, project_id):
             "all_child_categories_count": all_child_categories_count,
             'top_ten_assignees': top_ten_assignees
         })
+
     if req.method == 'POST':
         num_header_levels = int(req.POST.get('level'))
         uploaded_media = req.FILES.get('technical_excel')
@@ -647,9 +636,15 @@ def tech_charts(req, project_id):
             others_category_count = json.dumps(others_category_wise_count(req, num_header_levels, proj_obj.id))
             all_col_count = json.dumps(get_col_tick_count(req, num_header_levels, proj_obj.id))
             all_child_categories_count = json.dumps(barchart_tick_count(req, num_header_levels, proj_obj.id))
-            context = {'project_id': project_id, 'proj_name': proj_name, 'others_count': json.dumps(others_count),
-                       'get_all_data': all_col_count, 'others_category_count': others_category_count,
-                       "all_child_categories_count": all_child_categories_count, 'top_ten_assignees': top_ten_assignees}
+
+            context.update({
+                'others_count': json.dumps(others_count),
+                'get_all_data': all_col_count,
+                'others_category_count': others_category_count,
+                "all_child_categories_count": all_child_categories_count,
+                'top_ten_assignees': top_ten_assignees
+            })
+
     return render(req, 'pages/charts/technical_chart.html', context)
 
 
@@ -1200,8 +1195,8 @@ def competitor_charts(req, project_id):
     div2 = ''
     if result_b:
         data = []
-        for assignee, yeardict in result_b.items():
-            for year, count in yeardict.items():
+        for year, assignee_dict in sorted(result_b.items()):
+            for assignee, count in assignee_dict.items():
                 data.append({'Assignee': assignee.title(), 'Year': year, 'Count': count})
         df = pd.DataFrame(data)
         fig2 = px.scatter(
