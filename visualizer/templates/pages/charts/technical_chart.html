@@ -101,7 +101,25 @@
 <div class="row justify-content-center">
     <div class="col-md-12">
         <div class="card">
-            <h5 class="card-title"><b>Other Spatial Omics Column Segmentation</b></h5>
+
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="card-title mb-0 d-flex align-items-center">
+                    <h5 class="mb-0 mr-2"><b><span id="heading1{{ chart_id }}">{{ chart_heading2 }}</span></b></h5>
+                    <input type="text" id="editHeading1{{ chart_id }}" class="form-control edit-heading-input"
+                           style="display: none;" value="{{ chart_heading }}">
+                    <button class="btn btn-sm btn-success save-heading1" data-chart-id="{{ chart_id }}"
+                            style="display: none;">Save
+                    </button>
+                    <button class="btn btn-sm btn-secondary cancel-heading1" data-chart-id="{{ chart_id }}"
+                            style="display: none;">Cancel
+                    </button>
+                </div>
+                <div class="d-flex">
+                    <button class="btn btn-sm btn-primary edit-heading1 mr-4" data-chart-id="{{ chart_id }}">Edit
+                    </button>
+
+                </div>
+            </div>
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-12">
@@ -164,7 +182,24 @@
 <div class="row justify-content-center">
     <div class="col-md-12">
         <div class="card">
-            <h5 class="card-title"><b>Sequencing Techniques vs Patent family count</b></h5>
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="card-title mb-0 d-flex align-items-center">
+                    <h5 class="mb-0 mr-2"><b><span id="heading2{{ chart_id }}">{{ chart_heading3 }}</span></b></h5>
+                    <input type="text" id="editHeading2{{ chart_id }}" class="form-control edit-heading-input"
+                           style="display: none;" value="{{ chart_heading }}">
+                    <button class="btn btn-sm btn-success save-heading2" data-chart-id="{{ chart_id }}"
+                            style="display: none;">Save
+                    </button>
+                    <button class="btn btn-sm btn-secondary cancel-heading2" data-chart-id="{{ chart_id }}"
+                            style="display: none;">Cancel
+                    </button>
+                </div>
+                <div class="d-flex">
+                    <button class="btn btn-sm btn-primary edit-heading2 mr-4" data-chart-id="{{ chart_id }}">Edit
+                    </button>
+
+                </div>
+            </div>
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-12">
@@ -227,6 +262,23 @@
 <div class="row justify-content-center">
     <div class="col-md-12">
         <div class="card">
+             <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="card-title mb-0 d-flex align-items-center">
+                    <h5 class="mb-0 mr-2"><b><span id="heading3{{ chart_id }}">{{ chart_heading4 }}</span></b></h5>
+                    <input type="text" id="editHeading3{{ chart_id }}" class="form-control edit-heading-input"
+                           style="display: none;" value="{{ chart_heading }}">
+                    <button class="btn btn-sm btn-success save-heading3" data-chart-id="{{ chart_id }}"
+                            style="display: none;">Save
+                    </button>
+                    <button class="btn btn-sm btn-secondary cancel-heading3" data-chart-id="{{ chart_id }}"
+                            style="display: none;">Cancel
+                    </button>
+                </div>
+                <div class="d-flex">
+                    <button class="btn btn-sm btn-primary edit-heading3 mr-4" data-chart-id="{{ chart_id }}">Edit
+                    </button>
+                </div>
+            </div>
             <h5 class="card-title"><b>Other Sequencing Techniques vs Patent family count</b></h5>
             <div class="card-body">
                 <div class="row">
@@ -287,68 +339,7 @@
     </div>
 </div>
 <!--HEAT chart-->
-<div class="row justify-content-center">
-    <div class="col-md-12">
-        <div class="card">
-            <h5 class="card-title"><b></b></h5>
-            <div class="card-body">
-                <div class="row">
-                    <!-- Chart Section (60%) -->
-                    <div class="col-md-12">
-                        <div id="heatdiv" style="height: 500px; width: 100%;"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="row mt-4">
-            <!-- Table Section (40%) -->
-            <div class="col-md-12">
-                <div class="card">
-                    <div class="card-body">
-                        <div style="max-height: 300px; overflow-y: auto;">
-<!--                            <table class="table table-sm table-bordered">-->
-<!--                                <thead style="background-color: #808080">-->
-<!--                                <tr>-->
-<!--                                    <th class="text-center small">CPC</th>-->
-<!--                                    <th class="text-center small">Count</th>-->
-<!--                                    <th class="text-center small">Actions</th>-->
-<!--                                </tr>-->
-<!--                                </thead>-->
-<!--                                <tbody>-->
-<!--                                <tr>-->
-<!--                                    <td class="text-center small">data</td>-->
-<!--                                    <td class="text-center small">data</td>-->
-<!--                                    <td class="text-center small">-->
-<!--                                        <div class="d-flex justify-content-center">-->
-<!--                                            <button class="btn btn-secondary btn-xs mx-1"-->
-<!--                                                    onclick="indCpcDataView('{{key}}','{{project_id}}')">-->
-<!--                                                <i class="fa fa-eye" aria-hidden="true"></i>-->
-<!--                                            </button>-->
-<!--                                            <button class="btn btn-primary btn-xs mx-1"-->
-<!--                                                    onclick="downloadIndCpc('')"><i-->
-<!--                                                    class="fas fa-file-download" aria-hidden="true"></i>-->
-<!--                                            </button>-->
-<!--                                        </div>-->
-<!--                                    </td>-->
-<!--                                </tr>-->
-<!--                                </tbody>-->
-<!--                            </table>-->
-                        </div>
-                        <div class="text-center mt-2">
-<!--                            <button class="btn btn-secondary btn-xs"-->
-<!--                                    onclick="openCpcDataView('')">View-->
-<!--                            </button>-->
-<!--                            <button class="btn btn-primary btn-xs"-->
-<!--                                    onclick="downloadTopCPC('')">-->
-<!--                                Download-->
-<!--                            </button>-->
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+
 {% else %}
 <img id="logo" src="{% static 'img/No data-amico.svg' %}" width="100%" height="70%">
     <div style="text-align: center;">
@@ -774,7 +765,7 @@ function saveChartHeading(chartId, newHeading) {
         body: JSON.stringify({
             chart_id: 1,
             new_heading: newHeading,
-            project_id: 21
+            project_id: {{project_id}}
         })
     })
     .then(response => response.json())
@@ -796,5 +787,268 @@ function saveChartHeading(chartId, newHeading) {
     });
 }
 
+    //======================================================
+document.addEventListener('DOMContentLoaded', function() {
+    // Existing code...
+
+    const editButtons1 = document.querySelectorAll('.edit-heading1');
+    const saveButtons1 = document.querySelectorAll('.save-heading1');
+    const cancelButtons1 = document.querySelectorAll('.cancel-heading1');
+
+    editButtons1.forEach(function(editButton) {
+        editButton.addEventListener('click', function() {
+            const chartId = this.dataset.chartId;
+            const headingSpan = document.getElementById(`heading1${chartId}`);
+            const editHeadingInput = document.getElementById(`editHeading1${chartId}`);
+            const saveButton = document.querySelector(`.save-heading1[data-chart-id="${chartId}"]`);
+            const cancelButton = document.querySelector(`.cancel-heading1[data-chart-id="${chartId}"]`);
+
+            headingSpan.style.display = 'none';
+            editHeadingInput.style.display = 'inline-block';
+            saveButton.style.display = 'inline-block';
+            cancelButton.style.display = 'inline-block';
+            this.style.display = 'none'; // Hide edit button
+        });
+    });
+
+    saveButtons1.forEach(function(saveButton) {
+        saveButton.addEventListener('click', function() {
+            const chartId = this.dataset.chartId;
+            const editHeadingInput = document.getElementById(`editHeading1${chartId}`);
+            const newHeading = editHeadingInput.value;
+
+            saveChartHeading1(chartId, newHeading);
+        });
+    });
+
+    cancelButtons1.forEach(function(cancelButton) {
+        cancelButton.addEventListener('click', function() {
+            const chartId = this.dataset.chartId;
+            const headingSpan = document.getElementById(`heading1${chartId}`);
+            const editHeadingInput = document.getElementById(`editHeading1${chartId}`);
+            const saveButton = document.querySelector(`.save-heading1[data-chart-id="${chartId}"]`);
+            const editButton = document.querySelector(`.edit-heading1[data-chart-id="${chartId}"]`);
+
+            headingSpan.style.display = 'inline-block';
+            editHeadingInput.style.display = 'none';
+            saveButton.style.display = 'none';
+            this.style.display = 'none'; // Hide cancel button
+            editButton.style.display = 'inline-block'; // Show edit button
+        });
+    });
+});
+
+
+
+
+function saveChartHeading1(chartId, newHeading) {
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    fetch('/create_chart_heading/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken,
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({
+            chart_id: 2, // Change this to the appropriate value for the second heading
+            new_heading: newHeading,
+            project_id: {{project_id}}
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const headingSpan = document.getElementById(`heading1${chartId}`);
+            headingSpan.textContent = newHeading;
+            headingSpan.style.display = 'inline-block';
+            document.getElementById(`editHeading1${chartId}`).style.display = 'none';
+            document.querySelector(`.save-heading1[data-chart-id="${chartId}"]`).style.display = 'none';
+            document.querySelector(`.cancel-heading1[data-chart-id="${chartId}"]`).style.display = 'none';
+            document.querySelector(`.edit-heading1[data-chart-id="${chartId}"]`).style.display = 'inline-block';
+        } else {
+            console.error('Error updating chart heading:', data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error updating chart heading:', error);
+    });
+}
+//===============================3 rd chart=============================
+document.addEventListener('DOMContentLoaded', function() {
+    // Existing code...
+
+    const editButtons2 = document.querySelectorAll('.edit-heading2');
+    const saveButtons2 = document.querySelectorAll('.save-heading2');
+    const cancelButtons2 = document.querySelectorAll('.cancel-heading2');
+
+    editButtons2.forEach(function(editButton) {
+        editButton.addEventListener('click', function() {
+            const chartId = this.dataset.chartId;
+            const headingSpan = document.getElementById(`heading2${chartId}`);
+            const editHeadingInput = document.getElementById(`editHeading2${chartId}`);
+            const saveButton = document.querySelector(`.save-heading2[data-chart-id="${chartId}"]`);
+            const cancelButton = document.querySelector(`.cancel-heading2[data-chart-id="${chartId}"]`);
+
+            headingSpan.style.display = 'none';
+            editHeadingInput.style.display = 'inline-block';
+            saveButton.style.display = 'inline-block';
+            cancelButton.style.display = 'inline-block';
+            this.style.display = 'none'; // Hide edit button
+        });
+    });
+
+    saveButtons2.forEach(function(saveButton) {
+        saveButton.addEventListener('click', function() {
+            const chartId = this.dataset.chartId;
+            const editHeadingInput = document.getElementById(`editHeading2${chartId}`);
+            const newHeading = editHeadingInput.value;
+
+            saveChartHeading2(chartId, newHeading);
+        });
+    });
+
+    cancelButtons2.forEach(function(cancelButton) {
+        cancelButton.addEventListener('click', function() {
+            const chartId = this.dataset.chartId;
+            const headingSpan = document.getElementById(`heading2${chartId}`);
+            const editHeadingInput = document.getElementById(`editHeading2${chartId}`);
+            const saveButton = document.querySelector(`.save-heading2[data-chart-id="${chartId}"]`);
+            const editButton = document.querySelector(`.edit-heading2[data-chart-id="${chartId}"]`);
+
+            headingSpan.style.display = 'inline-block';
+            editHeadingInput.style.display = 'none';
+            saveButton.style.display = 'none';
+            this.style.display = 'none'; // Hide cancel button
+            editButton.style.display = 'inline-block'; // Show edit button
+        });
+    });
+});
+
+
+
+
+function saveChartHeading2(chartId, newHeading) {
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    fetch('/create_chart_heading/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken,
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({
+            chart_id: 3, // Change this to the appropriate value for the third heading
+            new_heading: newHeading,
+            project_id: {{project_id}}
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const headingSpan = document.getElementById(`heading2${chartId}`);
+            headingSpan.textContent = newHeading;
+            headingSpan.style.display = 'inline-block';
+            document.getElementById(`editHeading2${chartId}`).style.display = 'none';
+            document.querySelector(`.save-heading2[data-chart-id="${chartId}"]`).style.display = 'none';
+            document.querySelector(`.cancel-heading2[data-chart-id="${chartId}"]`).style.display = 'none';
+            document.querySelector(`.edit-heading2[data-chart-id="${chartId}"]`).style.display = 'inline-block';
+        } else {
+            console.error('Error updating chart heading:', data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error updating chart heading:', error);
+    });
+}
+
+//===============================3 rd chart end=============================
+//===============================4rth chart start=============================
+document.addEventListener('DOMContentLoaded', function() {
+    // Existing code...
+
+    const editButtons3 = document.querySelectorAll('.edit-heading3');
+    const saveButtons3 = document.querySelectorAll('.save-heading3');
+    const cancelButtons3 = document.querySelectorAll('.cancel-heading3');
+
+    editButtons3.forEach(function(editButton) {
+        editButton.addEventListener('click', function() {
+            const chartId = this.dataset.chartId;
+            const headingSpan = document.getElementById(`heading3${chartId}`);
+            const editHeadingInput = document.getElementById(`editHeading3${chartId}`);
+            const saveButton = document.querySelector(`.save-heading3[data-chart-id="${chartId}"]`);
+            const cancelButton = document.querySelector(`.cancel-heading3[data-chart-id="${chartId}"]`);
+
+            headingSpan.style.display = 'none';
+            editHeadingInput.style.display = 'inline-block';
+            saveButton.style.display = 'inline-block';
+            cancelButton.style.display = 'inline-block';
+            this.style.display = 'none'; // Hide edit button
+        });
+    });
+
+    saveButtons3.forEach(function(saveButton) {
+        saveButton.addEventListener('click', function() {
+            const chartId = this.dataset.chartId;
+            const editHeadingInput = document.getElementById(`editHeading3${chartId}`);
+            const newHeading = editHeadingInput.value;
+
+            saveChartHeading3(chartId, newHeading);
+        });
+    });
+
+    cancelButtons3.forEach(function(cancelButton) {
+        cancelButton.addEventListener('click', function() {
+            const chartId = this.dataset.chartId;
+            const headingSpan = document.getElementById(`heading3${chartId}`);
+            const editHeadingInput = document.getElementById(`editHeading3${chartId}`);
+            const saveButton = document.querySelector(`.save-heading3[data-chart-id="${chartId}"]`);
+            const editButton = document.querySelector(`.edit-heading3[data-chart-id="${chartId}"]`);
+
+            headingSpan.style.display = 'inline-block';
+            editHeadingInput.style.display = 'none';
+            saveButton.style.display = 'none';
+            this.style.display = 'none'; // Hide cancel button
+            editButton.style.display = 'inline-block'; // Show edit button
+        });
+    });
+});
+
+
+
+function saveChartHeading3(chartId, newHeading) {
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    fetch('/create_chart_heading/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken,
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({
+            chart_id: 4, // Change this to the appropriate value for the fourth heading
+            new_heading: newHeading,
+            project_id: {{project_id}}
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const headingSpan = document.getElementById(`heading3${chartId}`);
+            headingSpan.textContent = newHeading;
+            headingSpan.style.display = 'inline-block';
+            document.getElementById(`editHeading3${chartId}`).style.display = 'none';
+            document.querySelector(`.save-heading3[data-chart-id="${chartId}"]`).style.display = 'none';
+            document.querySelector(`.cancel-heading3[data-chart-id="${chartId}"]`).style.display = 'none';
+            document.querySelector(`.edit-heading3[data-chart-id="${chartId}"]`).style.display = 'inline-block';
+        } else {
+            console.error('Error updating chart heading:', data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error updating chart heading:', error);
+    });
+}
+//===============================4rth chart end=============================
 </script>
 {% endblock %}
