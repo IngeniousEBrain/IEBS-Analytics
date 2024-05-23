@@ -537,23 +537,14 @@ def get_top_assignees_by_year(req, code):
 
 @csrf_exempt
 def create_chart_heading(request):
-    print("hit")
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
             chart_id = data.get('chart_id')
             new_heading = data.get('new_heading')
             project_id = data.get('project_id')
-
-            print("chart_id:", chart_id)
-            print("new_heading:", new_heading)
-            print("project_id:", project_id)
-
-            # Retrieve the specific Project instance
             project_instance = Project.objects.get(id=project_id)
-
-            # Check if a ChartHeading with the given chart_id and project_instance exists
-            chart_heading = ChartHeading.objects.filter(chart_source_id=chart_id, project=project_id).first()
+            chart_heading = ChartHeading.objects.filter(chart_source_id=chart_id, project=project_instance).first()
 
             if chart_heading:
                 # Update existing ChartHeading
@@ -561,7 +552,7 @@ def create_chart_heading(request):
                 chart_heading.save()
             else:
                 # Create new ChartHeading
-                ChartHeading.objects.create(chart_source_id=chart_id, project=project_id, heading=new_heading)
+                ChartHeading.objects.create(chart_source_id=chart_id, project=project_instance, heading=new_heading)
 
             return JsonResponse({'success': True})
         except Project.DoesNotExist:
@@ -595,10 +586,12 @@ def tech_charts(req, project_id):
     context = {'project_id': project_id, 'proj_name': proj_name}
 
     def get_chart_heading(project_id, chart_source_id):
-        print(project_id,chart_source_id)
-        heading_obj = ChartHeading.objects.filter(project=project_id, chart_source_id=chart_source_id).first()
-
-        return heading_obj.heading if heading_obj else None
+        try:
+            project_inst = Project.objects.get(id=project_id)
+            heading_obj = ChartHeading.objects.filter(project=project_inst, chart_source_id=chart_source_id).first()
+            return heading_obj.heading if heading_obj else 'XYZ'
+        except Project.DoesNotExist:
+            return 'XYZ'
 
     context['chart_heading1'] = get_chart_heading(project_id, 1)
     context['chart_heading2'] = get_chart_heading(project_id, 2)
@@ -781,7 +774,6 @@ def get_heatmap_data(request, level, project_id):
                     matched_categories[category_name] = matched_values
                 else:
                     matched_categories[category_name] = values
-        # print(json.dumps(matched_categories, indent=4))
     else:
         print("No matching possible due to missing publication numbers.")
     return top_ten_assignee
@@ -1427,7 +1419,6 @@ def download_exp_exl(request, year, project_id):
                 max_len = max(df[col].astype(str).apply(len).max(), len(col))
                 worksheet.set_column(i, i, max_len)
         response['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-
         return response
 
 
@@ -1514,18 +1505,12 @@ def individual_cpc_exl(request, cpc, project_id):
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         response['Content-Disposition'] = f'attachment; filename=CPC_data.xlsx'
         with pd.ExcelWriter(response, engine='xlsxwriter') as writer:
-            # Convert the dataframe to an XlsxWriter Excel object
             df.to_excel(writer, index=False, sheet_name='CPC_data')
-
-            # Get the xlsxwriter workbook and worksheet objects
             workbook = writer.book
             worksheet = writer.sheets['CPC_data']
-
-            # Set the column widths
             for i, col in enumerate(df.columns):
                 max_len = max(df[col].astype(str).apply(len).max(), len(col))
                 worksheet.set_column(i, i, max_len)
-
         response['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 
         return response
@@ -1533,13 +1518,11 @@ def individual_cpc_exl(request, cpc, project_id):
 
 def individual_ipc_exl(request, ipc, project_id):
     data_list = []
-    user_id_to_filter = request.session.get('logged_in_user_id')
     code = Project.objects.filter(id=project_id).first().code
     ipc_qs = PatentData.objects.filter(ipc__startswith=ipc, project_code=code)
     if request.GET.get('display'):
         context = {
             'ipc_qs': ipc_qs,
-            # Add more context variables if needed
         }
         return render(request, 'pages/charts/top_ten_ipc.html', context)
     else:
@@ -1566,18 +1549,12 @@ def individual_ipc_exl(request, ipc, project_id):
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         response['Content-Disposition'] = f'attachment; filename=IPC_data.xlsx'
         with pd.ExcelWriter(response, engine='xlsxwriter') as writer:
-            # Convert the dataframe to an XlsxWriter Excel object
             df.to_excel(writer, index=False, sheet_name='IPC_data')
-
-            # Get the xlsxwriter workbook and worksheet objects
             workbook = writer.book
             worksheet = writer.sheets['IPC_data']
-
-            # Set the column widths
             for i, col in enumerate(df.columns):
                 max_len = max(df[col].astype(str).apply(len).max(), len(col))
                 worksheet.set_column(i, i, max_len)
-
         response['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 
         return response
@@ -1616,20 +1593,13 @@ def download_innovative_exl(request, country, project_id):
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         response['Content-Disposition'] = f'attachment; filename=TOP Innovative.xlsx'
         with pd.ExcelWriter(response, engine='xlsxwriter') as writer:
-            # Convert the dataframe to an XlsxWriter Excel object
             df.to_excel(writer, index=False, sheet_name='top_innovative')
-
-            # Get the xlsxwriter workbook and worksheet objects
             workbook = writer.book
             worksheet = writer.sheets['top_innovative']
-
-            # Set the column widths
             for i, col in enumerate(df.columns):
                 max_len = max(df[col].astype(str).apply(len).max(), len(col))
                 worksheet.set_column(i, i, max_len)
-
         response['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-
         return response
 
 
@@ -2881,7 +2851,6 @@ def add_user(request):
         email = request.POST.get('userEmail')
         role = request.POST.get('userRoles')
         business_unit = request.POST.get('businessUnit')
-        # print(username, password, email, role, business_unit)
         try:
             user = CustomUser.objects.create_user(username=username, email=email, password=password)
             user.roles = role
@@ -3020,12 +2989,8 @@ def deallocate_users_ajax(request):
     if request.method == 'POST':
         project_id = request.POST.get('project_id')
         manager_id = request.POST.get('manager_id')
-
-        # Retrieve the project and user instances
         project = get_object_or_404(Project, id=project_id)
         user = get_object_or_404(CustomUser, id=manager_id)
-
-        # Determine if the user is a client or a key account manager
         if user.client_project_associations.filter(projects=project).exists():
             association = get_object_or_404(ClientProjectAssociation, client=user, projects=project)
         elif user.key_account_manager_project_associations.filter(projects=project).exists():
@@ -3035,10 +3000,7 @@ def deallocate_users_ajax(request):
             association = get_object_or_404(UserProjectAssociation, user=user, projects=project)
         else:
             return JsonResponse({'status': 'error', 'message': 'User not associated with the project.'}, status=400)
-
-        # Delete the association
         association.delete()
-
         return JsonResponse({'status': 'success', 'message': 'Association removed successfully.'})
     else:
         return JsonResponse({'status': 'error', 'message': 'Invalid request method.'}, status=405)
