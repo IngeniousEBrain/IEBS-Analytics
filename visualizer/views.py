@@ -2,6 +2,8 @@
 Views for the 'visualizer' app.
 """
 from django.db.models import Sum, F
+import os
+from django.conf import settings
 import collections
 import json
 import math
@@ -23,7 +25,7 @@ from django.core.serializers import serialize
 from django.db.models import Count
 from django.db.models import Q
 from django.db.models.functions import ExtractYear
-from django.http import HttpResponse
+from django.http import HttpResponse, Http404
 from django.http import HttpResponseServerError
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
@@ -602,7 +604,6 @@ def tech_charts(req, project_id):
         num_header_levels = Category.objects.filter(project_id=proj_obj.id).first().num_header_levels
         level = 2
         heat_data = get_heatmap_data(req, level, proj_obj.id)
-        top_ten_assignees = [data['Assignee - Standardized'] for data in heat_data]
         others_count = get_others_split_count(req, num_header_levels, proj_obj.id)
         others_category_count = json.dumps(others_category_wise_count(req, num_header_levels, proj_obj.id))
         all_col_count = json.dumps(get_col_tick_count(req, num_header_levels, proj_obj.id))
@@ -613,7 +614,7 @@ def tech_charts(req, project_id):
             'get_all_data': all_col_count,
             'others_category_count': others_category_count,
             "all_child_categories_count": all_child_categories_count,
-            'top_ten_assignees': top_ten_assignees
+            'heatmap':heat_data
         })
 
     if req.method == 'POST':
@@ -624,7 +625,6 @@ def tech_charts(req, project_id):
             save_to_categories(df, num_header_levels, proj_obj)
             level = 2
             heat_data = get_heatmap_data(req, level, proj_obj.id)
-            top_ten_assignees = [data['Assignee - Standardized'] for data in heat_data]
             others_count = get_others_split_count(req, num_header_levels, proj_obj.id)
             others_category_count = json.dumps(others_category_wise_count(req, num_header_levels, proj_obj.id))
             all_col_count = json.dumps(get_col_tick_count(req, num_header_levels, proj_obj.id))
@@ -635,7 +635,7 @@ def tech_charts(req, project_id):
                 'get_all_data': all_col_count,
                 'others_category_count': others_category_count,
                 "all_child_categories_count": all_child_categories_count,
-                'top_ten_assignees': top_ten_assignees
+                 'heatmap':heat_data
             })
 
     return render(req, 'pages/charts/technical_chart.html', context)
@@ -734,49 +734,86 @@ def process_top_ten_assignees(req, project_code):
 def get_heatmap_data(request, level, project_id):
     project = Project.objects.get(id=project_id)
     code = project.code
-    top_ten_assignee = process_top_ten_assignees(request, code)
-    try:
-        category = Category.objects.get(name='Publication Number', project_id=project_id, level=level)
-        all_child = Category.objects.filter(level=2, project_id=project_id).exclude(name='Publication Number')
-    except ObjectDoesNotExist:
-        category = None
-        all_child = []
+    context = {}
+    output = []
 
-    if category:
-        names = [cat.name for cat in all_child]
-        publication_numbers_json = category.value
-        if isinstance(publication_numbers_json, str):
-            publication_numbers = json.loads(publication_numbers_json)
-        else:
-            publication_numbers = publication_numbers_json
-        pub_numbers = publication_numbers.get('Publication Number', [])
-    else:
-        print("Category 'Publication Number' not found.")
-        pub_numbers = []
+    # Fetch the top ten assignees
+    top_ten_assignee = process_top_ten_assignees(request, code)
+
+    # Initialize all_assignee_publication_numbers
     all_assignee_publication_numbers = []
+    assignee_outputs = {}
+
+    # Create a mapping of assignee names to their publication numbers for easy lookup
+    assignee_publication_map = {assignee['Assignee - Standardized']: assignee.get('publication_numbers', []) for
+                                assignee in top_ten_assignee}
+
+    # If there are assignees, process their publication numbers
     if top_ten_assignee:
         for assignee in top_ten_assignee:
-            assignee_name = assignee.get('Assignee - Standardized', 'Unknown')
-            assignee_publication_numbers = assignee.get('publication_numbers', [])
-            all_assignee_publication_numbers.extend(
-                assignee_publication_numbers)
+            assignee_name = assignee['Assignee - Standardized']
+            assignee_publication_numbers = assignee_publication_map[assignee_name]
+            all_assignee_publication_numbers.extend(assignee_publication_numbers)
+            assignee_outputs[assignee_name] = {}
 
-    if pub_numbers:
-        pub_numbers_set1 = set(pub_numbers)
-        pub_numbers_set2 = set(all_assignee_publication_numbers)
-        matched_publication_numbers = pub_numbers_set1.intersection(pub_numbers_set2)
+    try:
+        # Fetch all relevant categories excluding 'Publication Number'
+        all_child = Category.objects.filter(level=2, project_id=project_id).exclude(name='Publication Number')
+        child_cat_names = [cat.name for cat in all_child]
         values = Category.objects.filter(level=2, project_id=project_id).values_list('value', flat=True)
-        matched_categories = {}
-        for category_data in values:
-            for category_name, values in category_data.items():
-                if category_name == 'Publication Number':
-                    matched_values = [value for value in values if value in matched_publication_numbers]
-                    matched_categories[category_name] = matched_values
-                else:
-                    matched_categories[category_name] = values
-    else:
-        print("No matching possible due to missing publication numbers.")
-    return top_ten_assignee
+
+        # Process each category
+        for category in values:
+            category_name = list(category.keys())[0]
+            if category_name != 'Publication Number':
+                category_data = category[category_name]
+
+                # Count the number of 'P' for each publication number in the category
+                category_counts = {
+                    pub_num: 1 if i < len(category_data) and category_data[i] == 'P' else 0
+                    for i, pub_num in enumerate(all_assignee_publication_numbers)
+                }
+
+                # Aggregate counts for each assignee
+                for assignee_name, pub_numbers in assignee_publication_map.items():
+                    p_count = sum(category_counts[pub_num] for pub_num in pub_numbers)
+                    if assignee_name not in assignee_outputs:
+                        assignee_outputs[assignee_name] = {}
+                    assignee_outputs[assignee_name][category_name] = p_count
+
+        # Prepare output data
+        for assignee_name, assignee_data in assignee_outputs.items():
+            assignee_output = {'assignee_name': assignee_name}
+            assignee_output.update(assignee_data)
+            output.append(assignee_output)
+
+        # Prepare data for heatmap
+        assignees = list(assignee_outputs.keys())
+        categories = child_cat_names
+        z = []
+
+        for assignee in assignees:
+            row = [assignee_outputs[assignee].get(cat, None) for cat in categories]
+            z.append(row)
+
+        # Write output to file
+        with open('/home/deeksha/Documents/test_doc.txt', 'w') as file:
+            for item in output:
+                file.write(str(item) + '\n')
+
+        context.update({
+            "top_ten_assignee": assignees,
+            "child_cat_names": categories,
+            "heatmap_data": {
+                "z": z,
+                "x": categories,
+                "y": assignees
+            }
+        })
+    except ObjectDoesNotExist:
+        context = None
+
+    return context
 
 
 def get_others_split_count(request, num_header_levels, proj_id):
@@ -1826,11 +1863,6 @@ def download_demo_excel(req):
     response['Content-Disposition'] = 'attachment; filename=demo_excel_file.xlsx'
     wb.save(response)
     return response
-
-
-import os
-from django.http import HttpResponse, Http404
-from django.conf import settings
 
 
 def download_tech_demo_excel(request):

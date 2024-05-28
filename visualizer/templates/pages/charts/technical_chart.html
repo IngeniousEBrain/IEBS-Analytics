@@ -705,42 +705,64 @@ series.set("selectedDataItem", series.dataItems[0]);
 series.appear(1000, 100);
 
 // ===============================================================================
+const heatmapData = {{ heatmap|safe }};
+
+// Extract values from heatmapData
+const y = heatmapData.top_ten_assignee;
+const x = heatmapData.child_cat_names;
+const z = heatmapData.heatmap_data.z;
+
 var dataa = [
-            {
-                z: [[1, null, 30, 50, 1], [20, 1, 60, 80, 30], [30, 60, 1, -10, 20]],
-                x: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
-                y: {{top_ten_assignees|safe}},
-                type: 'heatmap',
-                hoverongaps: false
-            }
-        ];
+    {
+        z: z,
+        x: x,
+        y: y,
+        type: 'heatmap',
+        hoverongaps: false,
+        colorscale: 'Viridis'  // You can change 'Viridis' to any other predefined color scale
+        // or define a custom color scale like this:
+        // colorscale: [
+        //     [0, 'rgb(0,0,255)'],    // blue
+        //     [0.5, 'rgb(0,255,0)'],  // green
+        //     [1, 'rgb(255,0,0)']     // red
+        // ]
+    }
+];
 
-        var layout = {
-            title: 'Heatmap of Top Assignees & Tech',
-            autosize: true,
-            xaxis: {
-                title: 'Tech',
-                automargin: true,
-                tickangle: -45
-            },
-            yaxis: {
-                title: 'Top Ten Assignees',
-                automargin: true,
-                tickmode: 'array',
-                tickvals: {{top_ten_assignees|safe}},  // Ensure y-axis labels align with data
-                ticktext: {{top_ten_assignees|safe}}
-            },
-            margin: {
-                l: 100,
-                r: 50,
-                b: 100,
-                t: 50,
-                pad: 4
-            },
-            responsive: true  // Make the chart responsive
-        };
+var layout = {
+    title: 'Heatmap of Top Assignees & Tech',
+    autosize: true,
+    xaxis: {
+        title: 'Tech',
+        automargin: true,
+        tickangle: -45,
+        tickfont: {
+            size: 10  // Adjust the font size as needed
+        },
+        ticks: 'outside',  // Move ticks outside the axis
+        tickwidth: 1,  // Set the tick width
+        linewidth: 1,  // Set the axis line width
+        showticklabels: true,  // Show tick labels
+        ticklabeloverflow: 'allow'  // Allow labels to overflow the axis
+    },
+    yaxis: {
+        title: 'Top Ten Assignees',
+        automargin: true,
+        tickmode: 'array',
+        tickvals: y,
+        ticktext: y
+    },
+    margin: {
+        l: 100,
+        r: 50,
+        b: 100,
+        t: 50,
+        pad: 4
+    },
+    responsive: true
+};
 
-        Plotly.newPlot('heatdiv', dataa, layout);
+Plotly.newPlot('heatdiv', dataa, layout);
 
 // JavaScript
 document.addEventListener('DOMContentLoaded', function() {
@@ -791,7 +813,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const chartId = this.dataset.chartId;
             const editHeadingInput = document.getElementById(`editHeading${chartId}`);
             const newHeading = editHeadingInput.value;
-
             saveChartHeading(chartId, newHeading);
         });
     });
@@ -807,8 +828,8 @@ document.addEventListener('DOMContentLoaded', function() {
             headingSpan.style.display = 'inline-block';
             editHeadingInput.style.display = 'none';
             saveButton.style.display = 'none';
-            this.style.display = 'none'; // Hide cancel button
-            editButton.style.display = 'inline-block'; // Show edit button
+            this.style.display = 'none';
+            editButton.style.display = 'inline-block';
         });
     });
 });
@@ -849,12 +870,9 @@ function saveChartHeading(chartId, newHeading) {
 
     //======================================================
 document.addEventListener('DOMContentLoaded', function() {
-    // Existing code...
-
     const editButtons1 = document.querySelectorAll('.edit-heading1');
     const saveButtons1 = document.querySelectorAll('.save-heading1');
     const cancelButtons1 = document.querySelectorAll('.cancel-heading1');
-
     editButtons1.forEach(function(editButton) {
         editButton.addEventListener('click', function() {
             const chartId = this.dataset.chartId;
@@ -898,9 +916,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-
-
-
 function saveChartHeading1(chartId, newHeading) {
     const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
     fetch('/create_chart_heading/', {
@@ -936,8 +951,6 @@ function saveChartHeading1(chartId, newHeading) {
 }
 //===============================3 rd chart=============================
 document.addEventListener('DOMContentLoaded', function() {
-    // Existing code...
-
     const editButtons2 = document.querySelectorAll('.edit-heading2');
     const saveButtons2 = document.querySelectorAll('.save-heading2');
     const cancelButtons2 = document.querySelectorAll('.cancel-heading2');
@@ -1025,8 +1038,6 @@ function saveChartHeading2(chartId, newHeading) {
 //===============================3 rd chart end=============================
 //===============================4rth chart start=============================
 document.addEventListener('DOMContentLoaded', function() {
-    // Existing code...
-
     const editButtons3 = document.querySelectorAll('.edit-heading3');
     const saveButtons3 = document.querySelectorAll('.save-heading3');
     const cancelButtons3 = document.querySelectorAll('.cancel-heading3');
