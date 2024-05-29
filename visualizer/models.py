@@ -7,6 +7,7 @@ from django.utils import timezone
 from django.db.models.signals import pre_save
 from django.dispatch import receiver
 from ckeditor.fields import RichTextField
+from django.db.models import JSONField
 import logging
 
 logger = logging.getLogger(__name__)
@@ -153,7 +154,7 @@ class Project(models.Model):
     ]
 
     code = models.CharField(max_length=100, unique=True)
-    name = models.CharField(max_length=255, unique=True)
+    name = models.CharField(max_length=512)
     description = RichTextField()
     scope = RichTextField(default="")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=IN_PROGRESS)
@@ -284,9 +285,9 @@ class KeyAccountManagerProjectAssociation(models.Model):
 class PatentData(models.Model):
     user = models.ForeignKey('CustomUser', on_delete=models.CASCADE,
                              related_name='patent_user')
-    project_code = models.CharField(max_length=50)
+    project_code = models.CharField(max_length=100)
     publication_number = models.CharField(max_length=50)
-    assignee_standardized = models.CharField(max_length=512)
+    assignee_standardized = models.CharField(max_length=1025)
     legal_status = models.CharField(max_length=50)
     expected_expiry_dates = models.DateField(null=True, blank=True)
     remaining_life = models.PositiveIntegerField(null=True, blank=True)
@@ -296,11 +297,11 @@ class PatentData(models.Model):
     earliest_patent_priority_date = models.DateField(null=True, blank=True)
     application_dates = models.DateField(null=True, blank=True)
     publication_dates = models.DateField(null=True, blank=True)
-    application_number = models.CharField(max_length=255)
+    application_number = models.CharField(max_length=1025)
     cpc = models.TextField()
     ipc = models.TextField()
-    e_fan = models.CharField(max_length=100)
-    priority_country = models.CharField(max_length=255, null=True, blank=True)
+    e_fan = models.CharField(max_length=1025)
+    priority_country = models.CharField(max_length=1025, null=True, blank=True)
     created_date = models.DateTimeField(default=timezone.now, blank=True, null=True)
 
     def __str__(self):
@@ -325,22 +326,20 @@ class ProjectReports(models.Model):
 
 class Category(models.Model):
     name = models.CharField(max_length=255)
+    project_id = models.ForeignKey(Project, on_delete=models.CASCADE)
     parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True)
+    level = models.IntegerField(default=0)
+    value = models.JSONField(null=True, blank=True)
+    num_header_levels = models.IntegerField(default=2)
+    upload_date = models.DateTimeField(auto_now_add=True)
+    uploaded_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True, blank=True)
 
     def __str__(self):
         return self.name
 
-class Element(models.Model):
-    name = models.CharField(max_length=255)
-    category = models.ForeignKey(Category, on_delete=models.CASCADE)
+class ChartHeading(models.Model):
+    chart_source_id = models.IntegerField()
+    heading = models.CharField(max_length=255, default='XYZ')
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name= 'chart_project_id')
 
-    def __str__(self):
-        return self.name
 
-class Data(models.Model):
-    category = models.ForeignKey(Category, on_delete=models.CASCADE)
-    element = models.ForeignKey(Element, on_delete=models.CASCADE)
-    value = models.CharField(max_length=255)
-
-    def __str__(self):
-        return f"{self.category.name} - {self.element.name}: {self.value}"

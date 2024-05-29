@@ -9,7 +9,7 @@
     <div class="container-fluid">
         <div class="row mb-2">
             <div class="col-sm-6">
-                <h1>Associated User Listing</h1>
+                <h1>Associated User Listing<a href="{% url 'edit_project' project_obj.id %}" >({{project_obj.name}})</a></h1>
             </div>
         </div>
     </div>
@@ -40,7 +40,7 @@
                             {% for user in clients %}
                             <tr>
                                 <td class="text-center small">{{ forloop.counter }}</td>
-                                <td class="text-center small">{{ user.username }}</td>
+                                <td class="text-center small"><a href="{% url 'edit_user' user.id %}" >{{ user.username }}</a></td>
                                 <td class="text-center small">{{ user.email }}</td>
                                 <td class="text-center small">
                                     {% if user.roles == 'client' %} Client {% endif %}
@@ -75,7 +75,7 @@
                             {% for user in managers %}
                             <tr>
                                 <td class="text-center small">{{ forloop.counter }}</td>
-                                <td class="text-center small">{{ user.username }}</td>
+                                <td class="text-center small"><a href="{% url 'edit_user' user.id %}" >{{ user.username }}</a></td>
                                 <td class="text-center small">{{ user.email }}</td>
                                 <td class="text-center small">
                                     {% if user.roles == 'project_manager' or user.roles == 'PROJECT_MANAGER' %}
@@ -112,7 +112,7 @@
                             {% for user in kams %}
                             <tr>
                                 <td class="text-center small">{{ forloop.counter }}</td>
-                                <td class="text-center small">{{ user.username }}</td>
+                                <td class="text-center small"><a href="{% url 'edit_user' user.id %}" >{{ user.username }}</a></td>
                                 <td class="text-center small">{{ user.email }}</td>
                                 <td class="text-center small">{% if user.roles == 'key_account_holder' %}Key Account
                                     Manager{% endif %}

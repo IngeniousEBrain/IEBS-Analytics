@@ -270,7 +270,7 @@
 <aside class="control-sidebar control-sidebar-dark"></aside>
 {% block scripts %}
 <script>
-    // =============== for All first assignee - partner table========================
+// =============== for All first assignee - partner table========================
 function ViewAllCitedFile(type, proj_code) {
    var data = {
        type: type
@@ -400,7 +400,7 @@ function AllPartnerDataView(type, proj_code) {
 });
 }
 
-   // ===================for second application year table================
+// ===================for second application year table================
      function view_application_year(assignee, year, proj_code ,type) {
      console.log('Clicked:', assignee, year);
 
@@ -477,7 +477,7 @@ function AllPartnerDataView(type, proj_code) {
    }
 })
 .then(blob => {
-   // Create the link, download, and remove it in a single action using a closure:
+// Create the link, download, and remove it in a single action using a closure:
    (function(blob) {
        var link = document.createElement('a');
        link.href = window.URL.createObjectURL(blob);
