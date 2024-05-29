@@ -357,7 +357,6 @@ def get_user_project_data(user_id):
 def project_list(req, chart_type):
     """
 
-
      """
     user_id = req.session.get('logged_in_user_id')
     user_qs = get_object_or_404(CustomUser, id=user_id)
