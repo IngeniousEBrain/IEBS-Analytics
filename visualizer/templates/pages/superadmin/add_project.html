@@ -137,14 +137,11 @@ $(document).ready(function () {
                 url: '{% url 'add_project' %}', // URL to the add_project view
                 data: formData,
                 success: function (response) {
-                    // Handle success response
-                    alert('Project created successfully');
-                    // Optionally, redirect to another page
                     window.location.href = '{% url 'admin_project_listing' %}';
                 },
                 error: function (xhr, errmsg, err) {
                     // Handle error response
-                    alert('Error creating project');
+                    alert('ERROR !Project code must be unique!');
                 }
             });
         });

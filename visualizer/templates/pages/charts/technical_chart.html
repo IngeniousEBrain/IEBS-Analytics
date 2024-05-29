@@ -345,8 +345,8 @@
             <div class="card-body">
                 <div class="row">
                     <!-- Chart Section (60%) -->
-                    <div class="col-md-12">
-                        <div id="heatdiv" style="height: 500px; width: 100%;"></div>
+                    <div class="col-md-12" style="width: 1200px;margin: 0 auto;">
+                        <div id="heatdiv" style="height: 600px; width: 100%;"></div>
                     </div>
                 </div>
             </div>
@@ -709,6 +709,7 @@ const heatmapData = {{ heatmap|safe }};
 
 // Extract values from heatmapData
 const y = heatmapData.top_ten_assignee;
+const truncatedY = y.map(item => item.length > 15 ? item.substring(0, 15) + '...' : item);
 const x = heatmapData.child_cat_names;
 const z = heatmapData.heatmap_data.z;
 
@@ -719,41 +720,47 @@ var dataa = [
         y: y,
         type: 'heatmap',
         hoverongaps: false,
-        colorscale: 'Viridis'  // You can change 'Viridis' to any other predefined color scale
-        // or define a custom color scale like this:
-        // colorscale: [
-        //     [0, 'rgb(0,0,255)'],    // blue
-        //     [0.5, 'rgb(0,255,0)'],  // green
-        //     [1, 'rgb(255,0,0)']     // red
-        // ]
+        colorscale: [
+            [0, 'rgb(236,239,244)'], // Light blue-gray
+            [0.05, 'rgb(208,209,230)'], // Light blue
+            [0.1, 'rgb(166,189,219)'], // Sky blue
+            [0.2, 'rgb(116,169,207)'], // Cornflower blue
+            [0.4, 'rgb(54,144,192)'], // Royal blue
+            [1, 'rgb(49,54,149)'] // Dark purple
+        ],
+        hovertemplate: '<b>%{y}</b><extra></extra>'
     }
 ];
 
 var layout = {
-    title: 'Heatmap of Top Assignees & Tech',
+    title: 'Top Assignees v/s Tech',
     autosize: true,
     xaxis: {
         title: 'Tech',
         automargin: true,
         tickangle: -45,
         tickfont: {
-            size: 10  // Adjust the font size as needed
+            size: 10
         },
-        ticks: 'outside',  // Move ticks outside the axis
-        tickwidth: 1,  // Set the tick width
-        linewidth: 1,  // Set the axis line width
-        showticklabels: true,  // Show tick labels
-        ticklabeloverflow: 'allow'  // Allow labels to overflow the axis
+        ticks: 'outside',
+        tickwidth: 1,
+        linewidth: 1,
+        showticklabels: true,
+        ticklabeloverflow: 'allow'
     },
     yaxis: {
-        title: 'Top Ten Assignees',
+    //title: 'Top Assignee',
         automargin: true,
         tickmode: 'array',
         tickvals: y,
-        ticktext: y
+        ticktext: truncatedY,
+        // tickangle: 45,
+        tickfont: {
+            size: 9
+        },
     },
     margin: {
-        l: 100,
+        l: 80, // Increase left margin
         r: 50,
         b: 100,
         t: 50,
@@ -763,6 +770,7 @@ var layout = {
 };
 
 Plotly.newPlot('heatdiv', dataa, layout);
+// ================================================================================
 
 // JavaScript
 document.addEventListener('DOMContentLoaded', function() {
