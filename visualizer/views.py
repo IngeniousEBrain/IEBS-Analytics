@@ -795,12 +795,6 @@ def get_heatmap_data(request, level, project_id):
         for assignee in assignees:
             row = [assignee_outputs[assignee].get(cat, None) for cat in categories]
             z.append(row)
-
-        # Write output to file
-        with open('/home/deeksha/Documents/test_doc.txt', 'w') as file:
-            for item in output:
-                file.write(str(item) + '\n')
-
         context.update({
             "top_ten_assignee": assignees,
             "child_cat_names": categories,
@@ -812,7 +806,6 @@ def get_heatmap_data(request, level, project_id):
         })
     except ObjectDoesNotExist:
         context = None
-
     return context
 
 
