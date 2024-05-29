@@ -736,62 +736,42 @@ def get_heatmap_data(request, level, project_id):
     code = project.code
     context = {}
     output = []
-
-    # Fetch the top ten assignees
     top_ten_assignee = process_top_ten_assignees(request, code)
-
-    # Initialize all_assignee_publication_numbers
     all_assignee_publication_numbers = []
     assignee_outputs = {}
-
-    # Create a mapping of assignee names to their publication numbers for easy lookup
     assignee_publication_map = {assignee['Assignee - Standardized']: assignee.get('publication_numbers', []) for
                                 assignee in top_ten_assignee}
-
-    # If there are assignees, process their publication numbers
     if top_ten_assignee:
         for assignee in top_ten_assignee:
             assignee_name = assignee['Assignee - Standardized']
             assignee_publication_numbers = assignee_publication_map[assignee_name]
             all_assignee_publication_numbers.extend(assignee_publication_numbers)
             assignee_outputs[assignee_name] = {}
-
     try:
-        # Fetch all relevant categories excluding 'Publication Number'
         all_child = Category.objects.filter(level=2, project_id=project_id).exclude(name='Publication Number')
         child_cat_names = [cat.name for cat in all_child]
         values = Category.objects.filter(level=2, project_id=project_id).values_list('value', flat=True)
 
-        # Process each category
         for category in values:
             category_name = list(category.keys())[0]
             if category_name != 'Publication Number':
                 category_data = category[category_name]
-
-                # Count the number of 'P' for each publication number in the category
                 category_counts = {
                     pub_num: 1 if i < len(category_data) and category_data[i] == 'P' else 0
                     for i, pub_num in enumerate(all_assignee_publication_numbers)
                 }
-
-                # Aggregate counts for each assignee
                 for assignee_name, pub_numbers in assignee_publication_map.items():
                     p_count = sum(category_counts[pub_num] for pub_num in pub_numbers)
                     if assignee_name not in assignee_outputs:
                         assignee_outputs[assignee_name] = {}
                     assignee_outputs[assignee_name][category_name] = p_count
-
-        # Prepare output data
         for assignee_name, assignee_data in assignee_outputs.items():
             assignee_output = {'assignee_name': assignee_name}
             assignee_output.update(assignee_data)
             output.append(assignee_output)
-
-        # Prepare data for heatmap
         assignees = list(assignee_outputs.keys())
         categories = child_cat_names
         z = []
-
         for assignee in assignees:
             row = [assignee_outputs[assignee].get(cat, None) for cat in categories]
             z.append(row)
@@ -2933,7 +2913,7 @@ def user_project_association(request):
 
 @csrf_exempt
 def admin_project_listing(request):
-    project_obj = Project.objects.all()
+    project_obj = Project.objects.all().order_by('-id')
     return render(request, 'pages/superadmin/admin_project_listing.html', {"project_obj": project_obj})
 
 
