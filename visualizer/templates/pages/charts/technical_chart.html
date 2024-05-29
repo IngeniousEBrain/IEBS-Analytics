@@ -709,7 +709,7 @@ const heatmapData = {{ heatmap|safe }};
 
 // Extract values from heatmapData
 const y = heatmapData.top_ten_assignee;
-const truncatedY = y.map(item => item.length > 20 ? item.substring(0, 20) + '...' : item);
+const truncatedY = y.map(item => item.length > 15 ? item.substring(0, 15) + '...' : item);
 const x = heatmapData.child_cat_names;
 const z = heatmapData.heatmap_data.z;
 
