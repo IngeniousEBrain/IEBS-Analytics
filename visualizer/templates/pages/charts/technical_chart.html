@@ -709,7 +709,7 @@ const heatmapData = {{ heatmap|safe }};
 
 // Extract values from heatmapData
 const y = heatmapData.top_ten_assignee;
-const truncatedY = y.map(item => item.length > 15 ? item.substring(0, 15) + '...' : item);
+const truncatedY = y.map(item => item.length > 20 ? item.substring(0, 20) + '...' : item);
 const x = heatmapData.child_cat_names;
 const z = heatmapData.heatmap_data.z;
 
@@ -728,7 +728,7 @@ var dataa = [
             [0.4, 'rgb(54,144,192)'], // Royal blue
             [1, 'rgb(49,54,149)'] // Dark purple
         ],
-        hovertemplate: '<b>%{y}</b><extra></extra>'
+        hovertemplate: '<b>%{y}</b><br>Tech: %{x}<br>Value: %{z}<extra></extra>'
     }
 ];
 
