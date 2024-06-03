@@ -43,15 +43,28 @@ Specify the dependencies and requirements needed to run the project. For example
 ## Configuration
 ENVFILE FOR LOCALHOST:
 ```env
-DEBUG=True/False
+DEBUG=False
+ALLOWED_HOSTS=''
 SECRET_KEY=''
-DB_ENGINE='django.db.backends.postgresql'
-DB_NAME='iebs_analytics'
-DB_USER='postgres'
+DB_ENGINE=''
+DB_NAME=''
+DB_USER=''
 DB_PASSWORD=''
-#DB_HOST=''
-DB_HOST='localhost'
-DB_PORT='5432'
+#DB_HOST='postgres'(production)
+DB_PORT=''
+CSRF_COOKIE_SECURE=False
+DB_HOST='127.0.0.1' (local)
+#AWS_ACCESS_KEY_ID=''
+#AWS_SECRET_ACCESS_KEY=''
+#AWS_STORAGE_BUCKET_NAME=''
+#AWS_S3_REGION_NAME=''
+DEFAULT_FILE_STORAGE='django.core.files.storage.FileSystemStorage'(local and stage)
+# DEFAULT_FILE_STORAGE='storages.backends.s3boto3.S3Boto3Storage'(production)
+CSRF_TRUSTED_ORIGINS=''
+CORS_ORIGIN_ALLOW_ALL=True
+CORS_ALLOW_CREDENTIALS=True
+CORS_REPLACE_HTTPS_REFERER=True
+CORS_ORIGIN_WHITELIST=''
 ```
 4. run docker build command
 ```
