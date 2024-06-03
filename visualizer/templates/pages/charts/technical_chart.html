@@ -501,7 +501,6 @@ am5.ready(function() {
 });
 
 <!-- Chart code -->
-
 am4core.ready(function() {
 am4core.useTheme(am4themes_animated);
 var chart = am4core.create("chartQdiv", am4charts.PieChart3D);
@@ -600,14 +599,11 @@ am5.ready(function() {
   }));
 
   legend.data.setAll(chart.series.values);
-
   var cursor = chart.set("cursor", am5xy.XYCursor.new(root, {
     behavior: "zoomY"
   }));
   cursor.lineX.set("visible", false);
-
   series1.data.setAll(data);
-
   series1.appear();
   chart.appear(1000, 100);
 });
@@ -706,8 +702,6 @@ series.appear(1000, 100);
 
 // ===============================================================================
 const heatmapData = {{ heatmap|safe }};
-
-// Extract values from heatmapData
 const y = heatmapData.top_ten_assignee;
 const truncatedY = y.map(item => item.length > 15 ? item.substring(0, 15) + '...' : item);
 const x = heatmapData.child_cat_names;
@@ -775,7 +769,6 @@ Plotly.newPlot('heatdiv', dataa, layout);
 // JavaScript
 document.addEventListener('DOMContentLoaded', function() {
     const chartSelects = document.querySelectorAll('.chart-select');
-
     chartSelects.forEach(function(select) {
         select.addEventListener('change', function() {
             const selectedValue = this.value;
@@ -799,7 +792,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const editButtons = document.querySelectorAll('.edit-heading');
     const saveButtons = document.querySelectorAll('.save-heading');
     const cancelButtons = document.querySelectorAll('.cancel-heading');
-
     editButtons.forEach(function(editButton) {
         editButton.addEventListener('click', function() {
             const chartId = this.dataset.chartId;
@@ -876,7 +868,7 @@ function saveChartHeading(chartId, newHeading) {
     });
 }
 
-    //======================================================
+//======================================================
 document.addEventListener('DOMContentLoaded', function() {
     const editButtons1 = document.querySelectorAll('.edit-heading1');
     const saveButtons1 = document.querySelectorAll('.save-heading1');
@@ -902,7 +894,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const chartId = this.dataset.chartId;
             const editHeadingInput = document.getElementById(`editHeading1${chartId}`);
             const newHeading = editHeadingInput.value;
-
             saveChartHeading1(chartId, newHeading);
         });
     });
@@ -914,7 +905,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const editHeadingInput = document.getElementById(`editHeading1${chartId}`);
             const saveButton = document.querySelector(`.save-heading1[data-chart-id="${chartId}"]`);
             const editButton = document.querySelector(`.edit-heading1[data-chart-id="${chartId}"]`);
-
             headingSpan.style.display = 'inline-block';
             editHeadingInput.style.display = 'none';
             saveButton.style.display = 'none';
@@ -923,7 +913,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
-
 function saveChartHeading1(chartId, newHeading) {
     const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
     fetch('/create_chart_heading/', {
@@ -962,7 +951,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const editButtons2 = document.querySelectorAll('.edit-heading2');
     const saveButtons2 = document.querySelectorAll('.save-heading2');
     const cancelButtons2 = document.querySelectorAll('.cancel-heading2');
-
     editButtons2.forEach(function(editButton) {
         editButton.addEventListener('click', function() {
             const chartId = this.dataset.chartId;
@@ -970,7 +958,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const editHeadingInput = document.getElementById(`editHeading2${chartId}`);
             const saveButton = document.querySelector(`.save-heading2[data-chart-id="${chartId}"]`);
             const cancelButton = document.querySelector(`.cancel-heading2[data-chart-id="${chartId}"]`);
-
             headingSpan.style.display = 'none';
             editHeadingInput.style.display = 'inline-block';
             saveButton.style.display = 'inline-block';
@@ -984,7 +971,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const chartId = this.dataset.chartId;
             const editHeadingInput = document.getElementById(`editHeading2${chartId}`);
             const newHeading = editHeadingInput.value;
-
             saveChartHeading2(chartId, newHeading);
         });
     });
@@ -1005,10 +991,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
-
-
-
-
 function saveChartHeading2(chartId, newHeading) {
     const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
     fetch('/create_chart_heading/', {
@@ -1092,8 +1074,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
-
-
 
 function saveChartHeading3(chartId, newHeading) {
     const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;

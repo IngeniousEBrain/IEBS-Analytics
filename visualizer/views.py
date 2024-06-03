@@ -1,10 +1,8 @@
 """
 Views for the 'visualizer' app.
 """
-from django.db.models import Sum, F
 import os
 from django.conf import settings
-import collections
 import json
 import math
 from collections import Counter
@@ -124,7 +122,6 @@ def admin_login(req):
             'status': 'error',
             'message': 'Invalid username or password'
         })
-
     return render(req, 'pages/superadmin/adminlogin.html')
 
 
@@ -357,7 +354,7 @@ def get_user_project_data(user_id):
 def project_list(req, chart_type):
     """
 
-     """
+    """
     user_id = req.session.get('logged_in_user_id')
     user_qs = get_object_or_404(CustomUser, id=user_id)
     if user_qs.roles == 'client':
@@ -383,7 +380,6 @@ def delete_project(request):
                 user_associations = UserProjectAssociation.objects.filter(user_id=user_id)
             elif user_qs.roles == 'key_account_holder':
                 user_associations = KeyAccountManagerProjectAssociation.objects.filter(key_account_manager_id=user_id)
-
             project_to_deallocate = Project.objects.get(id=project_id)
             for user_association in user_associations:
                 user_association.projects.remove(project_to_deallocate)
@@ -527,7 +523,6 @@ def get_top_assignees_by_year(req, code):
 
             if year not in data:
                 data[year] = {}
-
             data[year][assignee_name] = count
 
     sorted_data = {}
@@ -548,13 +543,10 @@ def create_chart_heading(request):
             chart_heading = ChartHeading.objects.filter(chart_source_id=chart_id, project=project_instance).first()
 
             if chart_heading:
-                # Update existing ChartHeading
                 chart_heading.heading = new_heading
                 chart_heading.save()
             else:
-                # Create new ChartHeading
                 ChartHeading.objects.create(chart_source_id=chart_id, project=project_instance, heading=new_heading)
-
             return JsonResponse({'success': True})
         except Project.DoesNotExist:
             return JsonResponse({'success': False, 'error': 'Project not found'})
@@ -563,7 +555,6 @@ def create_chart_heading(request):
         except Exception as e:
             print("Exception:", str(e))
             return JsonResponse({'success': False, 'error': str(e)})
-
     return JsonResponse({'success': False, 'error': 'Invalid request'})
 
 
@@ -574,7 +565,6 @@ def tech_charts(req, project_id):
     """
     user_qs = get_object_or_404(CustomUser, id=req.session.get('logged_in_user_id'))
     project = get_object_or_404(Project, id=project_id)
-
     if not (
             UserProjectAssociation.objects.filter(user=user_qs, projects=project).exists() or
             ClientProjectAssociation.objects.filter(client=user_qs, projects=project).exists() or
@@ -601,7 +591,7 @@ def tech_charts(req, project_id):
 
     if Category.objects.filter(project_id=proj_obj.id).exists():
         num_header_levels = Category.objects.filter(project_id=proj_obj.id).first().num_header_levels
-        level = 2
+        level = num_header_levels - 1
         heat_data = get_heatmap_data(req, level, proj_obj.id)
         others_count = get_others_split_count(req, num_header_levels, proj_obj.id)
         others_category_count = json.dumps(others_category_wise_count(req, num_header_levels, proj_obj.id))
@@ -613,7 +603,7 @@ def tech_charts(req, project_id):
             'get_all_data': all_col_count,
             'others_category_count': others_category_count,
             "all_child_categories_count": all_child_categories_count,
-            'heatmap':heat_data
+            'heatmap': heat_data
         })
 
     if req.method == 'POST':
@@ -622,7 +612,7 @@ def tech_charts(req, project_id):
         if uploaded_media:
             df = pd.read_excel(uploaded_media, header=list(range(num_header_levels)))
             save_to_categories(df, num_header_levels, proj_obj)
-            level = 2
+            level = num_header_levels - 1
             heat_data = get_heatmap_data(req, level, proj_obj.id)
             others_count = get_others_split_count(req, num_header_levels, proj_obj.id)
             others_category_count = json.dumps(others_category_wise_count(req, num_header_levels, proj_obj.id))
@@ -633,8 +623,8 @@ def tech_charts(req, project_id):
                 'others_count': json.dumps(others_count),
                 'get_all_data': all_col_count,
                 'others_category_count': others_category_count,
-                "all_child_categories_count": all_child_categories_count,
-                 'heatmap':heat_data
+                'all_child_categories_count': all_child_categories_count,
+                'heatmap': heat_data
             })
 
     return render(req, 'pages/charts/technical_chart.html', context)
@@ -674,14 +664,11 @@ def save_to_categories(df, num_header_levels, proj_obj):
 # =============================hierarchical charts ============================
 def process_category(category, children_list, proj_id):
     existing_category = next((child for child in children_list if child["name"] == category.name), None)
-
     if existing_category:
         if category.value:
             for key, values_list in category.value.items():
                 count_p = sum(1 for value in values_list if value == 'P')
                 existing_category["value"] = count_p if count_p > 0 else existing_category.get("value", None)
-
-        # Process children of the current category recursively
         children = Category.objects.filter(parent=category, project_id=proj_id)
         for child in children:
             process_category(child, existing_category.setdefault("children", []), proj_id)
@@ -699,7 +686,6 @@ def process_category(category, children_list, proj_id):
 
 def get_col_tick_count(request, num_header_levels, proj_id):
     data = {"name": "", "children": []}
-
     root_categories = Category.objects.filter(parent__isnull=True, project_id=proj_id)
     for root_category in root_categories:
         process_category(root_category, data["children"], proj_id=proj_id)
@@ -747,10 +733,9 @@ def get_heatmap_data(request, level, project_id):
             all_assignee_publication_numbers.extend(assignee_publication_numbers)
             assignee_outputs[assignee_name] = {}
     try:
-        all_child = Category.objects.filter(level=2, project_id=project_id).exclude(name='Publication Number')
+        all_child = Category.objects.filter(level=level, project_id=project_id).exclude(name='Publication Number')
         child_cat_names = [cat.name for cat in all_child]
-        values = Category.objects.filter(level=2, project_id=project_id).values_list('value', flat=True)
-
+        values = Category.objects.filter(level=level, project_id=project_id).values_list('value', flat=True)
         for category in values:
             category_name = list(category.keys())[0]
             if category_name != 'Publication Number':
@@ -1423,7 +1408,6 @@ def download_exp_exl(request, year, project_id):
             df.to_excel(writer, index=False, sheet_name='expected_expiry_date')
             workbook = writer.book
             worksheet = writer.sheets['expected_expiry_date']
-            # Set the column widths
             for i, col in enumerate(df.columns):
                 max_len = max(df[col].astype(str).apply(len).max(), len(col))
                 worksheet.set_column(i, i, max_len)
@@ -1464,14 +1448,9 @@ def download_legal_status_exl(request, status, project_id):
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         response['Content-Disposition'] = f'attachment; filename=legal_status_data.xlsx'
         with pd.ExcelWriter(response, engine='xlsxwriter') as writer:
-            # Convert the dataframe to an XlsxWriter Excel object
             df.to_excel(writer, index=False, sheet_name='legal_status_data')
-
-            # Get the xlsxwriter workbook and worksheet objects
             workbook = writer.book
             worksheet = writer.sheets['legal_status_data']
-
-            # Set the column widths
             for i, col in enumerate(df.columns):
                 max_len = max(df[col].astype(str).apply(len).max(), len(col))
                 worksheet.set_column(i, i, max_len)
@@ -1649,16 +1628,11 @@ def download_ind_citing_excel(request, patent, project_id):
         with pd.ExcelWriter(response, engine='xlsxwriter') as writer:
             # Convert the dataframe to an XlsxWriter Excel object
             df.to_excel(writer, index=False, sheet_name=f'{patent}_citing_data')
-
-            # Get the xlsxwriter workbook and worksheet objects
             workbook = writer.book
             worksheet = writer.sheets[f'{patent}_citing_data']
-
-            # Set the column widths
             for i, col in enumerate(df.columns):
                 max_len = max(df[col].astype(str).apply(len).max(), len(col))
                 worksheet.set_column(i, i, max_len)
-
         response['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 
         return response
@@ -1701,8 +1675,6 @@ def download_top_assignee_exl(request, assignee, project_id):
         with pd.ExcelWriter(response, engine='xlsxwriter') as writer:
             # Convert the dataframe to an XlsxWriter Excel object
             df.to_excel(writer, index=False, sheet_name=f'{assignee}_data')
-
-            # Get the xlsxwriter workbook and worksheet objects
             workbook = writer.book
             worksheet = writer.sheets[f'{assignee}_data.xlsx']
 
@@ -1754,18 +1726,12 @@ def download_recent_assignee_exl(request, assignee, project_id):
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         response['Content-Disposition'] = f'attachment; filename=Recent {assignee}_data.xlsx'
         with pd.ExcelWriter(response, engine='xlsxwriter') as writer:
-            # Convert the dataframe to an XlsxWriter Excel object
             df.to_excel(writer, index=False, sheet_name=f'Recent {assignee}_data')
-
-            # Get the xlsxwriter workbook and worksheet objects
             workbook = writer.book
             worksheet = writer.sheets[f'Recent {assignee}_data']
-
-            # Set the column widths
             for i, col in enumerate(df.columns):
                 max_len = max(df[col].astype(str).apply(len).max(), len(col))
                 worksheet.set_column(i, i, max_len)
-
         response['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 
         return response
@@ -1808,16 +1774,11 @@ def download_ind_cited_excel(request, patent, project_id):
         with pd.ExcelWriter(response, engine='xlsxwriter') as writer:
             # Convert the dataframe to an XlsxWriter Excel object
             df.to_excel(writer, index=False, sheet_name=f'{patent}_cited_data')
-
-            # Get the xlsxwriter workbook and worksheet objects
             workbook = writer.book
             worksheet = writer.sheets[f'{patent}_cited_data']
-
-            # Set the column widths
             for i, col in enumerate(df.columns):
                 max_len = max(df[col].astype(str).apply(len).max(), len(col))
                 worksheet.set_column(i, i, max_len)
-
         response['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 
         return response
@@ -1877,10 +1838,7 @@ def download_citedExl(request, project_id):
     df = pd.DataFrame(data)
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     response['Content-Disposition'] = 'attachment; filename=top_ten_cited_patents.xlsx'
-
-    # Create a Pandas Excel writer using XlsxWriter as the engine
     with pd.ExcelWriter(response, engine='xlsxwriter') as writer:
-        # Convert the dataframe to an XlsxWriter Excel object
         df.to_excel(writer, index=False, sheet_name='Top Ten Cited Patents')
         workbook = writer.book
         worksheet = writer.sheets['Top Ten Cited Patents']
@@ -1913,7 +1871,6 @@ def top_ten_recent_ass_exl(request, project_id):
         return render(request, 'pages/charts/top_ten_ipc.html', context)
     else:
         data = {
-            # 'Project Code': [patent.project_code for patent in top_ten_ass],
             'Publication Number': [patent.publication_number for patent in top_ten_ass],
             'Assignee Standardized': [patent.assignee_standardized for patent in top_ten_ass],
             'Cited Patents Count': [patent.cited_patents_count for patent in top_ten_ass],
@@ -1933,18 +1890,12 @@ def top_ten_recent_ass_exl(request, project_id):
         with pd.ExcelWriter(response, engine='xlsxwriter') as writer:
             # Convert the dataframe to an XlsxWriter Excel object
             df.to_excel(writer, index=False, sheet_name='top_ten_cited_patents')
-
-            # Get the xlsxwriter workbook and worksheet objects
             workbook = writer.book
             worksheet = writer.sheets['top_ten_cited_patents']
-
-            # Set the column widths
             for i, col in enumerate(df.columns):
                 max_len = max(df[col].astype(str).apply(len).max(), len(col))
                 worksheet.set_column(i, i, max_len)
-
         response['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-
         return response
 
 
@@ -2666,7 +2617,7 @@ def user_profile(req):
     return render(req, 'pages/onboard/profile.html', context)
 
 
-@csrf_exempt
+@request.validator
 def admin_profile(req):
     """
     User Profile
@@ -2747,7 +2698,7 @@ def get_associated_projects(req):
     associated_project_ids = [project for project in associated_projects]
     return JsonResponse({'associated_projects': associated_project_ids})
 
-
+@csrf_exempt
 def doc_upload(request, project_id):
     """
 
@@ -2812,7 +2763,6 @@ def add_project(request):
         projectCode = request.POST.get('projectCode')
         projectScope = request.POST.get('projectScope')
         projectStatus = request.POST.get('projectStatus')
-        # createdDate = request.POST.get('createdDate')
         project = Project.objects.create(
             name=project_name,
             code=projectCode,
@@ -2825,13 +2775,13 @@ def add_project(request):
     return render(request, 'pages/superadmin/add_project.html')
 
 
-@csrf_exempt
+@request.validator
 def user_listing(request):
     user_obj = CustomUser.objects.all()
     return render(request, 'pages/superadmin/user_listing.html', {"user_obj": user_obj})
 
 
-@csrf_exempt
+@request.validator
 def association_listing(request, project_id):
     project_obj = Project.objects.filter(id=project_id).first()
     associations = ClientProjectAssociation.objects.filter(projects=project_obj).select_related('client')
@@ -2847,7 +2797,7 @@ def association_listing(request, project_id):
                   {"clients": clients, "managers": managers, "kams": kam, "project_obj": project_obj})
 
 
-@csrf_exempt
+@request.validator
 def add_user(request):
     if request.method == 'POST':
         username = request.POST.get('userName')
@@ -2866,7 +2816,7 @@ def add_user(request):
     return render(request, 'pages/superadmin/create_user.html')
 
 
-@csrf_exempt
+@request.validator
 def edit_user(request, user_id):
     user_obj = CustomUser.objects.filter(id=user_id).first()
     if request.method == 'POST':
@@ -2875,23 +2825,15 @@ def edit_user(request, user_id):
         password = request.POST.get('userPassword')
         roles = request.POST.get('userRoles')
         BU = request.POST.get('businessUnit')
-
-        # Update user fields
         user_obj.username = username
         user_obj.email = useremail
         user_obj.roles = roles
         user_obj.business_unit = BU
         if password:
-            # Check if password is provided and update it
             user_obj.set_password(password)
         user_obj.updated_date = timezone.now()
-
-        # Save the updated user object
         user_obj.save()
-
-        # Redirect to a success page or render a template
         return render(request, 'pages/superadmin/edit_user.html', {'user_obj': user_obj})
-
     return render(request, 'pages/superadmin/edit_user.html', {'user_obj': user_obj})
 
 
@@ -2923,8 +2865,6 @@ def get_associated_users(request, project_id):
     associated_clients = ClientProjectAssociation.objects.filter(projects=project).values_list('client_id', flat=True)
     # Get associated managers
     associated_managers = UserProjectAssociation.objects.filter(projects=project).values_list('user_id', flat=True)
-
-    # Get associated key account managers
     associated_kam = KeyAccountManagerProjectAssociation.objects.filter(projects=project).values_list(
         'key_account_manager_id', flat=True)
     return JsonResponse({
@@ -2942,33 +2882,24 @@ def associate_users_with_project(request):
             project = Project.objects.get(pk=project_id)
         except Project.DoesNotExist:
             return JsonResponse({'error': 'Project does not exist'}, status=404)
-
-        # Get selected clients, key account managers, and managers
         selected_clients = request.POST.getlist('client_ids[]')
         selected_kam = request.POST.getlist('kam_ids[]')
         selected_managers = request.POST.getlist('manager_ids[]')
-
-        # Associate clients with the project
         # project.clientprojectassociation_set.clear()  # Remove existing associations
         for client_id in selected_clients:
             client = CustomUser.objects.get(pk=client_id)
             association, created = ClientProjectAssociation.objects.get_or_create(client=client)
             association.projects.add(project)
-
-        # Associate key account managers with the project
         # project.keyaccountmanagerprojectassociation_set.clear()  # Remove existing associations
         for kam_id in selected_kam:
             kam = CustomUser.objects.get(pk=kam_id)
             association, created = KeyAccountManagerProjectAssociation.objects.get_or_create(key_account_manager=kam)
             association.projects.add(project)
-
-        # Associate managers with the project
         # project.userprojectassociation_set.clear()  # Remove existing associations
         for manager_id in selected_managers:
             manager = CustomUser.objects.get(pk=manager_id)
             association, created = UserProjectAssociation.objects.get_or_create(user=manager)
             association.projects.add(project)
-
         return JsonResponse({'message': 'Users associated successfully'}, status=200)
     else:
         return JsonResponse({'error': 'Invalid request method'}, status=400)
@@ -2979,7 +2910,7 @@ def delete_user(request):
     if request.method == 'POST':
         user_id = request.POST.get('user_id')
         try:
-            user_qs = get_object_or_404(CustomUser, id=user_id).delete()
+            get_object_or_404(CustomUser, id=user_id).delete()
             return JsonResponse({'status': 'success'})
         except UserProjectAssociation.DoesNotExist:
             return JsonResponse({'status': 'error', 'message': 'User association not found'})
@@ -3010,13 +2941,13 @@ def deallocate_users_ajax(request):
         return JsonResponse({'status': 'error', 'message': 'Invalid request method.'}, status=405)
 
 
-@csrf_exempt
+@request.validator
 def reports_listing(request, project_id):
     """
 
 
     """
-    uploaded_by = User.objects.filter(is_superuser=True).first().id
+    # uploaded_by = User.objects.filter(is_superuser=True).first().id
     project_name = Project.objects.filter(id=project_id).first().name
     user_role = 'superadmin'
     uploaded_files = ProjectReports.objects.filter(project_id=project_id)
@@ -3027,7 +2958,6 @@ def reports_listing(request, project_id):
                 file=proposal_file,
                 file_name=proposal_file.name,
                 file_type='Proposal',
-                # uploaded_by_id=uploaded_by,
                 project_id=project_id
             )
 
@@ -3037,7 +2967,6 @@ def reports_listing(request, project_id):
                 file=interim_file,
                 file_name=interim_file.name,
                 file_type='Interim Report',
-                # uploaded_by_id=uploaded_by,
                 project_id=project_id
             )
 
@@ -3047,7 +2976,6 @@ def reports_listing(request, project_id):
                 file=final_file,
                 file_name=final_file.name,
                 file_type='Final Report',
-                # uploaded_by_id=uploaded_by,
                 project_id=project_id
             )
         return redirect('reports_listing', project_id=project_id)
