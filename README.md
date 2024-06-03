@@ -41,7 +41,7 @@ Specify the dependencies and requirements needed to run the project. For example
     ```
 
 ## Configuration
-ENVFILE FOR LOCALHOST:
+ENVFILE FOR LOCALHOST/PRODUCTION/STAGE:
 ```env
 DEBUG=False
 ALLOWED_HOSTS=''
