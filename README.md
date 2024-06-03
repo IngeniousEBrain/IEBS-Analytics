@@ -68,7 +68,7 @@ CORS_ORIGIN_WHITELIST=''
 ```
 4. run docker build command
 ```
- docker-compose up --build
+ docker-compose up --build -d
 ```
 
 # Contributing
