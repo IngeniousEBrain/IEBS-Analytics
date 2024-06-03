@@ -2781,7 +2781,7 @@ def user_listing(request):
     return render(request, 'pages/superadmin/user_listing.html', {"user_obj": user_obj})
 
 
-@request.validator
+@csrf_exempt
 def association_listing(request, project_id):
     project_obj = Project.objects.filter(id=project_id).first()
     associations = ClientProjectAssociation.objects.filter(projects=project_obj).select_related('client')
@@ -2797,7 +2797,7 @@ def association_listing(request, project_id):
                   {"clients": clients, "managers": managers, "kams": kam, "project_obj": project_obj})
 
 
-@request.validator
+@csrf_exempt
 def add_user(request):
     if request.method == 'POST':
         username = request.POST.get('userName')
@@ -2816,7 +2816,7 @@ def add_user(request):
     return render(request, 'pages/superadmin/create_user.html')
 
 
-@request.validator
+@csrf_exempt
 def edit_user(request, user_id):
     user_obj = CustomUser.objects.filter(id=user_id).first()
     if request.method == 'POST':
