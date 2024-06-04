@@ -1129,7 +1129,7 @@ def competitor_charts(req, project_id):
     for item in data1:
         assignee_name = item['assignee_standardized']
         partners_list = extract_assignee_partners(req, code).get(assignee_name.title(), [])
-        print(partners_list)
+
         partner_count_dict = dict(Counter(partners_list))
         result.append({
             'assignee': assignee_name,
@@ -1140,44 +1140,43 @@ def competitor_charts(req, project_id):
     req.session['res'] = res
     assignees = [entry['assignee'].title() for entry in result]
     partners = sorted(set(partner for entry in result for partner in entry['partners']))
-    partner_count_matrix = [
-        [entry['partners'].get(partner, None) for partner in partners] for entry in result
-    ]
+    partner_count_matrix = [[entry['partners'].get(partner, None) for partner in partners] for entry in result]
     text_colors = [['dark' if calculate_luminance(color) < 0.5 else 'light' for color in row] for row in
                    partner_count_matrix]
+
     if not partners:
         fig1 = go.Figure()
         fig1.add_annotation(
             text="No partner data found",
-            xref="paper", yref="paper",
-            x=0.5, y=0.5,
+            xref="paper",
+            yref="paper",
+            x=0.5,
+            y=0.5,
             showarrow=False,
             font=dict(size=20)
         )
     else:
-        truncated_assignees = [assignee[:25] + '...' if len(assignee) > 30 else assignee for assignee in assignees]
-        truncated_partners = [partner[:25] + '...' if len(partner) > 30 else partner for partner in partners]
         fig1 = go.Figure(data=go.Heatmap(
             z=partner_count_matrix,
-            x=truncated_partners,
-            y=truncated_assignees,
-            hoverinfo='none',
+            x=partners,
+            y=assignees,  # Use the original assignees list
+            hoverinfo='text',
+            hovertemplate='Assignee: %{y} Partner: %{x} Value: %{z}',
             colorscale='PuBuGn',
             colorbar=dict(title='Partner Count'),
-            text=[
-                [f'<span style="color:{text_colors[i][j]}">{count}</span>' if count is not None else '' for j, count in
-                 enumerate(row)] for i, row in enumerate(partner_count_matrix)
-            ],
+            text=[[f'{count}' if count is not None else '' for j, count in enumerate(row)] for i, row in
+                  enumerate(partner_count_matrix)],
             texttemplate="%{text}",
             textfont={"size": 14}
         ))
-    fig1.update_layout(
-        title='Collaborations of competitors',
-        xaxis=dict(title='Partners'),
-        yaxis=dict(title='Assignees'),
-        height=500,
-        width=995,
-    )
+        fig1.update_layout(
+            # title='Collaborations of competitors',
+            xaxis=dict(title='Partners', tickangle=65, tickfont=dict(size=8)),
+            yaxis=dict(title='Assignees', automargin=True, tickangle=55, tickfont=dict(size=10)),
+            height=900,
+            width=1000,
+        )
+
     div1 = fig1.to_html()
     # ==================================BUBBLE===================================================
     result_b = get_top_assignees_by_year(req, code)
@@ -1194,7 +1193,7 @@ def competitor_charts(req, project_id):
             y="Assignee",
             size="Count",
             size_max=20,
-            height=500,
+            height=700,
             width=995,
         )
         fig2.update_layout(
