@@ -499,7 +499,9 @@ def extract_assignee_partners(req, code):
     user = req.session.get('logged_in_user_id')
     for patent_data in PatentData.objects.filter(project_code=code):
         assignee_partners_str = patent_data.assignee_standardized
+        # print(assignee_partners_str)
         assignee, *partners = map(lambda x: x.strip().title(), assignee_partners_str.split('|'))
+        # print(partners)
         if assignee in assignee_partner_dict:
             assignee_partner_dict[assignee].extend(p for p in partners if p)
         else:
@@ -1127,6 +1129,7 @@ def competitor_charts(req, project_id):
     for item in data1:
         assignee_name = item['assignee_standardized']
         partners_list = extract_assignee_partners(req, code).get(assignee_name.title(), [])
+        print(partners_list)
         partner_count_dict = dict(Counter(partners_list))
         result.append({
             'assignee': assignee_name,
@@ -1262,8 +1265,8 @@ def competitor_charts(req, project_id):
         title="Influence of Innovation",
         height=400,
         width=995,
-        margin=dict(t=50, b=30, r=10, l=10),  # Adjust margins
-        showlegend=False  # Remove legend to save space
+        margin=dict(t=50, b=30, r=10, l=10),
+        showlegend=False
     )
     fig3.update_layout(updatemenus=[])
     div3 = fig3.to_html(full_html=False)
@@ -2081,7 +2084,7 @@ def download_excel_view(req):
     response['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     return response
 
-
+@csrf_exempt
 def fetch_data_view(request):
     status = request.GET.get('status')
     patents = PatentData.objects.filter(legal_status=status)
@@ -2185,7 +2188,7 @@ def bibliographic_charts(req, project_id):
         print(f"Unexpected error: {str(e)}")
         return HttpResponseServerError("An unexpected error occurred. Please try again.")
 
-
+@csrf_exempt
 def process_excel_data(context, req, project_id):
     """
     Process the Excel data to generate various charts.
@@ -2231,34 +2234,8 @@ def process_excel_data(context, req, project_id):
         'get_cpc_counts_from_db': get_cpc_counts_from_db(req, project_id),
         'get_ipc_counts': get_ipc_counts(req, project_id)
     })
-    # assignee_legal_status_counts = {}
-    # cpc_assignee_counts = {}
-    #
-    # for _, row in df.iterrows():
-    #     assignee = row['Assignee - Standardized']
-    #     legal_status = row['Legal Status']
-    #     if assignee not in assignee_legal_status_counts:
-    #         assignee_legal_status_counts[assignee] = Counter()
-    #     assignee_legal_status_counts[assignee][legal_status] += 1
-    #
-    #     cpc_values = str(row['CPC']).replace(' ', '').split('|')
-    #     for cpc_value in cpc_values:
-    #         cpc_code = cpc_value[:4]
-    #
-    #         if cpc_code not in cpc_assignee_counts:
-    #             cpc_assignee_counts[cpc_code] = Counter()
-    #         cpc_assignee_counts[cpc_code][assignee] += 1
-    #
-    # context['assignee_legal_status_counts'] = {
-    #     assignee: dict(status_counts) for assignee, status_counts in
-    #     assignee_legal_status_counts.items()
-    # }
-    # context['cpc_assignee_counts'] = {
-    #     cpc_code: dict(assignee_counts) for cpc_code, assignee_counts in
-    #     cpc_assignee_counts.items()
-    # }
 
-
+@csrf_exempt
 def get_country_code_count(req, project_id):
     patent_data_queryset = PatentData.objects.filter(project_code=project_id)
     assignee_country_counts_from_db = {}
@@ -2271,34 +2248,29 @@ def get_country_code_count(req, project_id):
         assignee_country_counts_from_db[assignee][country_code] += 1
     return assignee_country_counts_from_db
 
-
+@csrf_exempt
 def get_ipc_counts(req, project_id):
     patent_data_queryset = PatentData.objects.filter(project_code=project_id)
     ipc_counts_from_db = Counter()
-
     for patent_data in patent_data_queryset:
         ipc_values = patent_data.ipc.split('|') if patent_data.ipc else []
-
         for ipc_value in ipc_values:
             if ipc_value.strip().upper() == 'NAN':
                 continue
-
             ipc_code = ipc_value.strip()[:4]
             ipc_counts_from_db[ipc_code] += 1
-
     ipc_counts_dict_ws = dict(ipc_counts_from_db)
     sorted_ipc_counts = dict(sorted(ipc_counts_dict_ws.items(), key=lambda item: item[1], reverse=True))
     ipc_counts_dict = dict(list(sorted_ipc_counts.items())[:10])
     return ipc_counts_dict
 
-
+@csrf_exempt
 def get_cpc_counts_from_db(req, project_id):
     patent_data_queryset = PatentData.objects.filter(project_code=project_id)
     cpc_counts_from_db = Counter()
     for patent_data in patent_data_queryset:
         cpc_values = patent_data.cpc.split('|') if patent_data.cpc else []
         for cpc_value in cpc_values:
-            # Skip processing if the cpc_value is 'nan'
             if cpc_value.strip().upper() == 'NAN':
                 continue
             cpc_code = cpc_value.strip()[:4]
@@ -2309,7 +2281,7 @@ def get_cpc_counts_from_db(req, project_id):
     req.session['cpc_counts_dict'] = cpc_counts_dict
     return cpc_counts_dict
 
-
+@csrf_exempt
 def get_country_code_counts_from_db(req, project_id):
     patent_data_queryset = PatentData.objects.filter(project_code=project_id)
     country_code_counts_from_db = Counter()
@@ -2322,7 +2294,7 @@ def get_country_code_counts_from_db(req, project_id):
     country_code_counts_dict = dict(country_code_counts_from_db)
     return country_code_counts_dict
 
-
+@csrf_exempt
 def get_legal_status_count(req, project_id):
     patent_data_queryset = PatentData.objects.filter(project_code=project_id)
     legal_status_counts = patent_data_queryset.values('legal_status').annotate(count=Count('legal_status'))
@@ -2754,7 +2726,7 @@ def download_file(request, project_id):
     return response
 
 
-# ======================NEW ADMIN PANNEL==========
+# ======================NEW ADMIN PANEL==========
 @csrf_exempt
 def add_project(request):
     if request.method == 'POST':
