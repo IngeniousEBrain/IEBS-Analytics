@@ -1141,8 +1141,11 @@ def competitor_charts(req, project_id):
     assignees = [entry['assignee'].title() for entry in result]
     partners = sorted(set(partner for entry in result for partner in entry['partners']))
     partner_count_matrix = [[entry['partners'].get(partner, None) for partner in partners] for entry in result]
-    text_colors = [['dark' if calculate_luminance(color) < 0.5 else 'light' for color in row] for row in
-                   partner_count_matrix]
+    # text_colors = [['dark' if calculate_luminance(color) < 0.5 else 'light' for color in row] for row in
+    #                partner_count_matrix]
+    hover_text = [[f'<b>Assignee:</b> {assignees[i]}<br><b>Partner:</b> {partners[j]}' + (
+        f'<br><b>Value:</b> {count}' if count is not None else '')
+                   for j, count in enumerate(row)] for i, row in enumerate(partner_count_matrix)]
 
     if not partners:
         fig1 = go.Figure()
@@ -1159,9 +1162,10 @@ def competitor_charts(req, project_id):
         fig1 = go.Figure(data=go.Heatmap(
             z=partner_count_matrix,
             x=partners,
-            y=assignees,  # Use the original assignees list
+            y=assignees,
             hoverinfo='text',
-            hovertemplate='Assignee: %{y} Partner: %{x} Value: %{z}',
+            hovertext=hover_text,
+            # hovertemplate='<b>Assignee:</b> %{y}<br><b>Partner:</b> %{x}<br><b>Value:</b> %{z}' if '%{z}' != 'None' else '<b>Assignee:</b> %{y}<br><b>Partner:</b> %{x}',
             colorscale='PuBuGn',
             colorbar=dict(title='Partner Count'),
             text=[[f'{count}' if count is not None else '' for j, count in enumerate(row)] for i, row in
@@ -1170,7 +1174,6 @@ def competitor_charts(req, project_id):
             textfont={"size": 14}
         ))
         fig1.update_layout(
-            # title='Collaborations of competitors',
             xaxis=dict(title='Partners', tickangle=65, tickfont=dict(size=8)),
             yaxis=dict(title='Assignees', automargin=True, tickangle=55, tickfont=dict(size=10)),
             height=900,
