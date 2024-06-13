@@ -472,22 +472,12 @@ function createHeatmap(data) {
 
 window.onload = function() {
     const initialLevel = document.getElementById('levelSelect').value;
-    const levelNumber = initialLevel.replace('level', '');
+    const levelNumber = initialLevel ? initialLevel.replace('level', '') : '0';
     const projectId = {{ project_id }};
     fetch(`/get-heatmap-data/${projectId}/${levelNumber}/`)
         .then(response => response.json())
         .then(data => createHeatmap(data))
         .catch(error => console.error('Error fetching initial heatmap data:', error));
-};
-
-// Event listener for dropdown change
-document.getElementById('levelSelect').addEventListener('change', function() {
-    const selectedLevel = this.value;
-    createHeatmap(selectedLevel);
-});
-window.onload = function() {
-    const initialLevel = document.getElementById('levelSelect').value;
-    createHeatmap(initialLevel);
 };
 // ==================================heat map end==============================================
 const data = [{{get_all_data|safe}}];
