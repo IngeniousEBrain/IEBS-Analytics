@@ -160,7 +160,7 @@ class Project(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=IN_PROGRESS)
     created_date = models.DateTimeField(default=timezone.now)
     updated_date = models.DateTimeField(auto_now=True)
-
+    objects = models.Manager()
     def __str__(self):
         """
         Return a string representation of the Project.
@@ -191,7 +191,7 @@ class UserProjectAssociation(models.Model):
     projects = models.ManyToManyField(Project)
     assigned_time = models.DateTimeField(auto_now=True)
     updated_assigned_time = models.DateTimeField(auto_now=True)
-
+    objects = models.Manager()
     def __str__(self):
         """
         Return a string representation of the UserProjectAssociation.
@@ -231,7 +231,7 @@ class ClientProjectAssociation(models.Model):
     allocation_time = models.DateTimeField(auto_now=True, null=True, blank=True)
     deallocation_time = models.DateTimeField(null=True, blank=True)
     updated_assigned_time = models.DateTimeField(auto_now=True)
-
+    objects = models.Manager()
     def __str__(self):
         """
         Return a string representation of the ClientProjectAssociation.
@@ -266,7 +266,7 @@ class KeyAccountManagerProjectAssociation(models.Model):
     projects = models.ManyToManyField(Project)
     assigned_time = models.DateTimeField(auto_now=True)
     updated_assigned_time = models.DateTimeField(auto_now=True)
-
+    objects = models.Manager()
     def __str__(self):
         """
         Return a string representation of the KeyAccountManagerProjectAssociation.
@@ -303,7 +303,7 @@ class PatentData(models.Model):
     e_fan = models.CharField(max_length=1025)
     priority_country = models.CharField(max_length=1025, null=True, blank=True)
     created_date = models.DateTimeField(default=timezone.now, blank=True, null=True)
-
+    objects = models.Manager()
     def __str__(self):
         return f"{self.assignee_standardized} - {self.publication_number}"
 
@@ -315,7 +315,7 @@ class ProjectReports(models.Model):
     uploaded_by = models.ForeignKey('CustomUser', on_delete=models.CASCADE, related_name='uploaded_files', null=True,blank=True)
     uploaded_at = models.DateTimeField(auto_now_add=True)
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='uploaded_files')
-
+    objects = models.Manager()
     def __str__(self):
         return self.file_name
 
@@ -333,7 +333,7 @@ class Category(models.Model):
     num_header_levels = models.IntegerField(default=2)
     upload_date = models.DateTimeField(auto_now_add=True)
     uploaded_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True, blank=True)
-
+    objects = models.Manager()
     def __str__(self):
         return self.name
 
@@ -341,5 +341,5 @@ class ChartHeading(models.Model):
     chart_source_id = models.IntegerField()
     heading = models.CharField(max_length=255, default='XYZ')
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name= 'chart_project_id')
-
+    objects = models.Manager()
 
