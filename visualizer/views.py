@@ -1,8 +1,8 @@
 """
 Views for the 'visualizer' app.
 """
-from django.db.models import Sum, F
-import collections
+import os
+from django.conf import settings
 import json
 import math
 from collections import Counter
@@ -23,7 +23,7 @@ from django.core.serializers import serialize
 from django.db.models import Count
 from django.db.models import Q
 from django.db.models.functions import ExtractYear
-from django.http import HttpResponse
+from django.http import HttpResponse, Http404
 from django.http import HttpResponseServerError
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
@@ -31,7 +31,7 @@ from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
 from openpyxl import Workbook
 from plotly.subplots import make_subplots
-from django.contrib.auth import authenticate
+
 # Local imports
 from .models import *
 from .packages import request
@@ -122,7 +122,6 @@ def admin_login(req):
             'status': 'error',
             'message': 'Invalid username or password'
         })
-
     return render(req, 'pages/superadmin/adminlogin.html')
 
 
@@ -355,10 +354,10 @@ def get_user_project_data(user_id):
 def project_list(req, chart_type):
     """
 
-
-     """
+    """
     user_id = req.session.get('logged_in_user_id')
     user_qs = get_object_or_404(CustomUser, id=user_id)
+    projects = {}
     if user_qs.roles == 'client':
         projects = Project.objects.filter(clientprojectassociation__client=user_qs).distinct()
     elif user_qs.roles == 'project_manager':
@@ -382,7 +381,6 @@ def delete_project(request):
                 user_associations = UserProjectAssociation.objects.filter(user_id=user_id)
             elif user_qs.roles == 'key_account_holder':
                 user_associations = KeyAccountManagerProjectAssociation.objects.filter(key_account_manager_id=user_id)
-
             project_to_deallocate = Project.objects.get(id=project_id)
             for user_association in user_associations:
                 user_association.projects.remove(project_to_deallocate)
@@ -421,7 +419,7 @@ def edit_project(request, project_id):
         valid_statuses = dict(Project.STATUS_CHOICES)
         if projectStatus not in valid_statuses:
             pass
-        update_query = Project.objects.filter(id=project_id).update(
+        Project.objects.filter(id=project_id).update(
             code=projectCode,
             name=project_name,
             description=projectDescription,
@@ -487,6 +485,9 @@ def in_progress_project_list(req):
 
 
 def calculate_luminance(color):
+    """
+    calculate_luminance
+    """
     if isinstance(color, int):
         color = (color, color, color)
     if color is not None:
@@ -502,7 +503,9 @@ def extract_assignee_partners(req, code):
     user = req.session.get('logged_in_user_id')
     for patent_data in PatentData.objects.filter(project_code=code):
         assignee_partners_str = patent_data.assignee_standardized
+        # print(assignee_partners_str)
         assignee, *partners = map(lambda x: x.strip().title(), assignee_partners_str.split('|'))
+        # print(partners)
         if assignee in assignee_partner_dict:
             assignee_partner_dict[assignee].extend(p for p in partners if p)
         else:
@@ -514,21 +517,16 @@ def get_top_assignees_by_year(req, code):
     top_assignees = PatentData.objects.filter(project_code=code).values('assignee_standardized').annotate(
         count=Count('assignee_standardized')).order_by('-count')[:10]
     data = {}
-
     for assignee in top_assignees:
         assignee_name = assignee['assignee_standardized']
         year_counts = PatentData.objects.filter(project_code=code, assignee_standardized=assignee_name).values(
             year=ExtractYear('application_dates')).annotate(count=Count('id')).order_by('year')
-
         for year_count in year_counts:
             year = year_count['year']
             count = year_count['count']
-
             if year not in data:
                 data[year] = {}
-
             data[year][assignee_name] = count
-
     sorted_data = {}
     for year in sorted(data.keys()):
         sorted_data[year] = data[year]
@@ -537,32 +535,19 @@ def get_top_assignees_by_year(req, code):
 
 @csrf_exempt
 def create_chart_heading(request):
-    print("hit")
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
             chart_id = data.get('chart_id')
             new_heading = data.get('new_heading')
             project_id = data.get('project_id')
-
-            print("chart_id:", chart_id)
-            print("new_heading:", new_heading)
-            print("project_id:", project_id)
-
-            # Retrieve the specific Project instance
             project_instance = Project.objects.get(id=project_id)
-
-            # Check if a ChartHeading with the given chart_id and project_instance exists
-            chart_heading = ChartHeading.objects.filter(chart_source_id=chart_id, project=project_id).first()
-
+            chart_heading = ChartHeading.objects.filter(chart_source_id=chart_id, project=project_instance).first()
             if chart_heading:
-                # Update existing ChartHeading
                 chart_heading.heading = new_heading
                 chart_heading.save()
             else:
-                # Create new ChartHeading
-                ChartHeading.objects.create(chart_source_id=chart_id, project=project_id, heading=new_heading)
-
+                ChartHeading.objects.create(chart_source_id=chart_id, project=project_instance, heading=new_heading)
             return JsonResponse({'success': True})
         except Project.DoesNotExist:
             return JsonResponse({'success': False, 'error': 'Project not found'})
@@ -571,18 +556,13 @@ def create_chart_heading(request):
         except Exception as e:
             print("Exception:", str(e))
             return JsonResponse({'success': False, 'error': str(e)})
-
     return JsonResponse({'success': False, 'error': 'Invalid request'})
 
 
 @request.validator
 def tech_charts(req, project_id):
-    """
-    Logic for tech charts
-    """
     user_qs = get_object_or_404(CustomUser, id=req.session.get('logged_in_user_id'))
     project = get_object_or_404(Project, id=project_id)
-
     if not (
             UserProjectAssociation.objects.filter(user=user_qs, projects=project).exists() or
             ClientProjectAssociation.objects.filter(client=user_qs, projects=project).exists() or
@@ -595,10 +575,12 @@ def tech_charts(req, project_id):
     context = {'project_id': project_id, 'proj_name': proj_name}
 
     def get_chart_heading(project_id, chart_source_id):
-        print(project_id,chart_source_id)
-        heading_obj = ChartHeading.objects.filter(project=project_id, chart_source_id=chart_source_id).first()
-
-        return heading_obj.heading if heading_obj else None
+        try:
+            project_inst = Project.objects.get(id=project_id)
+            heading_obj = ChartHeading.objects.filter(project=project_inst, chart_source_id=chart_source_id).first()
+            return heading_obj.heading if heading_obj else 'XYZ'
+        except Project.DoesNotExist:
+            return 'XYZ'
 
     context['chart_heading1'] = get_chart_heading(project_id, 1)
     context['chart_heading2'] = get_chart_heading(project_id, 2)
@@ -607,9 +589,8 @@ def tech_charts(req, project_id):
 
     if Category.objects.filter(project_id=proj_obj.id).exists():
         num_header_levels = Category.objects.filter(project_id=proj_obj.id).first().num_header_levels
-        level = 2
-        heat_data = get_heatmap_data(req, level, proj_obj.id)
-        top_ten_assignees = [data['Assignee - Standardized'] for data in heat_data]
+        level = num_header_levels - 1
+        heat_data = get_heatmap_data(req, level, proj_obj.id, num_header_levels)
         others_count = get_others_split_count(req, num_header_levels, proj_obj.id)
         others_category_count = json.dumps(others_category_wise_count(req, num_header_levels, proj_obj.id))
         all_col_count = json.dumps(get_col_tick_count(req, num_header_levels, proj_obj.id))
@@ -620,7 +601,7 @@ def tech_charts(req, project_id):
             'get_all_data': all_col_count,
             'others_category_count': others_category_count,
             "all_child_categories_count": all_child_categories_count,
-            'top_ten_assignees': top_ten_assignees
+            'heatmap': heat_data
         })
 
     if req.method == 'POST':
@@ -629,9 +610,8 @@ def tech_charts(req, project_id):
         if uploaded_media:
             df = pd.read_excel(uploaded_media, header=list(range(num_header_levels)))
             save_to_categories(df, num_header_levels, proj_obj)
-            level = 2
-            heat_data = get_heatmap_data(req, level, proj_obj.id)
-            top_ten_assignees = [data['Assignee - Standardized'] for data in heat_data]
+            level = num_header_levels - 1
+            heat_data = get_heatmap_data(req, level, proj_obj.id, num_header_levels)
             others_count = get_others_split_count(req, num_header_levels, proj_obj.id)
             others_category_count = json.dumps(others_category_wise_count(req, num_header_levels, proj_obj.id))
             all_col_count = json.dumps(get_col_tick_count(req, num_header_levels, proj_obj.id))
@@ -641,15 +621,34 @@ def tech_charts(req, project_id):
                 'others_count': json.dumps(others_count),
                 'get_all_data': all_col_count,
                 'others_category_count': others_category_count,
-                "all_child_categories_count": all_child_categories_count,
-                'top_ten_assignees': top_ten_assignees
+                'all_child_categories_count': all_child_categories_count,
+                'heatmap': heat_data
             })
 
     return render(req, 'pages/charts/technical_chart.html', context)
 
 
+def get_heatmap_data_for_level(req, project_id, level=1):
+    user_qs = get_object_or_404(CustomUser, id=req.session.get('logged_in_user_id'))
+    project = get_object_or_404(Project, id=project_id)
+    if not (
+            UserProjectAssociation.objects.filter(user=user_qs, projects=project).exists() or
+            ClientProjectAssociation.objects.filter(client=user_qs, projects=project).exists() or
+            KeyAccountManagerProjectAssociation.objects.filter(key_account_manager=user_qs, projects=project).exists()
+    ):
+        return JsonResponse({"error": "You are not authorized to view data for this project."}, status=403)
+
+    proj_obj = Project.objects.filter(id=project_id).first()
+    num_header_levels = Category.objects.filter(project_id=proj_obj.id).first().num_header_levels
+    heat_data = get_heatmap_data(req, level, proj_obj.id, num_header_levels)
+    return JsonResponse(heat_data)
+
+
 @transaction.atomic
 def save_to_categories(df, num_header_levels, proj_obj):
+    """
+    save_to_categories
+    """
     if Category.objects.filter(project_id=proj_obj.id).exists():
         Category.objects.filter(project_id=proj_obj.id).delete()
     parent_stack = []
@@ -681,15 +680,15 @@ def save_to_categories(df, num_header_levels, proj_obj):
 
 # =============================hierarchical charts ============================
 def process_category(category, children_list, proj_id):
+    """
+    process_category
+    """
     existing_category = next((child for child in children_list if child["name"] == category.name), None)
-
     if existing_category:
         if category.value:
             for key, values_list in category.value.items():
                 count_p = sum(1 for value in values_list if value == 'P')
                 existing_category["value"] = count_p if count_p > 0 else existing_category.get("value", None)
-
-        # Process children of the current category recursively
         children = Category.objects.filter(parent=category, project_id=proj_id)
         for child in children:
             process_category(child, existing_category.setdefault("children", []), proj_id)
@@ -706,8 +705,10 @@ def process_category(category, children_list, proj_id):
 
 
 def get_col_tick_count(request, num_header_levels, proj_id):
+    """
+    get_col_tick_count
+    """
     data = {"name": "", "children": []}
-
     root_categories = Category.objects.filter(parent__isnull=True, project_id=proj_id)
     for root_category in root_categories:
         process_category(root_category, data["children"], proj_id=proj_id)
@@ -718,6 +719,9 @@ def get_col_tick_count(request, num_header_levels, proj_id):
 # ===========================other col split count==============
 
 def process_top_ten_assignees(req, project_code):
+    """
+    process_top_ten_assignees
+    """
     data = PatentData.objects.filter(project_code=project_code).exclude(
         assignee_standardized__isnull=True
     ).values('assignee_standardized').annotate(
@@ -738,56 +742,113 @@ def process_top_ten_assignees(req, project_code):
     return result
 
 
-def get_heatmap_data(request, level, project_id):
+from django.core.exceptions import ObjectDoesNotExist
+
+
+def get_child_categories_p_count(category):
+    """
+    Recursively sum the 'p' counts for all child categories.
+    """
+    p_count = 0
+    children = Category.objects.filter(parent=category)
+    for child in children:
+        if child.value:
+            p_count += sum(1 for value in child.value.values() if value == 'P')
+        p_count += get_child_categories_p_count(child)
+    return p_count
+
+
+def get_category_p_count(category):
+    """
+    Sum the 'p' counts directly from the category's value field.
+    """
+    if category.value:
+        return sum(1 for value in category.value.values() if value == 'P')
+    return 0
+
+
+def get_heatmap_data(request, level, project_id, num_header_levels):
+    """
+    get_heatmap_data
+    """
     project = Project.objects.get(id=project_id)
     code = project.code
+    context, output = {}, []
     top_ten_assignee = process_top_ten_assignees(request, code)
-    try:
-        category = Category.objects.get(name='Publication Number', project_id=project_id, level=level)
-        all_child = Category.objects.filter(level=2, project_id=project_id).exclude(name='Publication Number')
-    except ObjectDoesNotExist:
-        category = None
-        all_child = []
-
-    if category:
-        names = [cat.name for cat in all_child]
-        publication_numbers_json = category.value
-        if isinstance(publication_numbers_json, str):
-            publication_numbers = json.loads(publication_numbers_json)
-        else:
-            publication_numbers = publication_numbers_json
-        pub_numbers = publication_numbers.get('Publication Number', [])
-    else:
-        print("Category 'Publication Number' not found.")
-        pub_numbers = []
-    all_assignee_publication_numbers = []
+    all_assignee_publication_numbers, assignee_outputs = [], {}
+    assignee_publication_map = {assignee['Assignee - Standardized']: assignee.get('publication_numbers', []) for
+                                assignee in top_ten_assignee}
     if top_ten_assignee:
         for assignee in top_ten_assignee:
-            assignee_name = assignee.get('Assignee - Standardized', 'Unknown')
-            assignee_publication_numbers = assignee.get('publication_numbers', [])
-            all_assignee_publication_numbers.extend(
-                assignee_publication_numbers)
+            assignee_name = assignee['Assignee - Standardized']
+            assignee_publication_numbers = assignee_publication_map[assignee_name]
+            all_assignee_publication_numbers.extend(assignee_publication_numbers)
+            assignee_outputs[assignee_name] = {}
+    try:
+        categories = Category.objects.filter(level=level, project_id=project_id).exclude(name='Publication Number')
+        child_cat_names = [cat.name for cat in categories]
 
-    if pub_numbers:
-        pub_numbers_set1 = set(pub_numbers)
-        pub_numbers_set2 = set(all_assignee_publication_numbers)
-        matched_publication_numbers = pub_numbers_set1.intersection(pub_numbers_set2)
-        values = Category.objects.filter(level=2, project_id=project_id).values_list('value', flat=True)
-        matched_categories = {}
-        for category_data in values:
-            for category_name, values in category_data.items():
-                if category_name == 'Publication Number':
-                    matched_values = [value for value in values if value in matched_publication_numbers]
-                    matched_categories[category_name] = matched_values
-                else:
-                    matched_categories[category_name] = values
-        # print(json.dumps(matched_categories, indent=4))
-    else:
-        print("No matching possible due to missing publication numbers.")
-    return top_ten_assignee
+        for category in categories:
+            category_name = category.name
+            category_counts = {}
+
+            if level < num_header_levels - 1:
+                # Get all child categories recursively
+                child_categories = category.category_set.all()
+                while child_categories:
+                    next_level_categories = []
+                    for child_category in child_categories:
+                        values = child_category.value
+                        if values:
+                            category_data = list(values.values())[0]
+                            for i, pub_num in enumerate(all_assignee_publication_numbers):
+                                if i < len(category_data) and category_data[i] == 'P':
+                                    category_counts[pub_num] = category_counts.get(pub_num, 0) + 1
+                        next_level_categories.extend(child_category.category_set.all())
+                    child_categories = next_level_categories
+            else:
+                # Display 'P' value count for each category
+                values = category.value
+                if values:
+                    category_data = list(values.values())[0]
+                    for i, pub_num in enumerate(all_assignee_publication_numbers):
+                        if i < len(category_data) and category_data[i] == 'P':
+                            category_counts[pub_num] = category_counts.get(pub_num, 0) + 1
+
+            for assignee_name, pub_numbers in assignee_publication_map.items():
+                p_count = sum(category_counts.get(pub_num, 0) for pub_num in pub_numbers)
+                if assignee_name not in assignee_outputs:
+                    assignee_outputs[assignee_name] = {}
+                assignee_outputs[assignee_name][category_name] = p_count
+
+        for assignee_name, assignee_data in assignee_outputs.items():
+            assignee_output = {'assignee_name': assignee_name}
+            assignee_output.update(assignee_data)
+            output.append(assignee_output)
+        assignees = list(assignee_outputs.keys())
+        categories = child_cat_names
+        z = []
+        for assignee in assignees:
+            row = [assignee_outputs[assignee].get(cat, 0) for cat in categories]
+            z.append(row)
+        context.update({
+            "top_ten_assignee": assignees,
+            "child_cat_names": categories,
+            "heatmap_data": {
+                "z": z,
+                "x": categories,
+                "y": assignees
+            }
+        })
+    except ObjectDoesNotExist:
+        context = None
+    return context
 
 
 def get_others_split_count(request, num_header_levels, proj_id):
+    """
+    get_others_split_count
+    """
     data = []
     others_child_columns = Category.objects.filter(name__icontains='Other-', level=num_header_levels - 1,
                                                    project_id_id=proj_id)
@@ -814,6 +875,9 @@ def get_others_split_count(request, num_header_levels, proj_id):
 
 # ===========================other column split count category wise start==============
 def others_category_wise_count(request, num_header_levels, proj_id):
+    """
+    others_category_wise_count
+    """
     data = []
     others_child_columns = Category.objects.filter(name__icontains='Other-', level=num_header_levels - 1,
                                                    project_id=proj_id)
@@ -840,6 +904,9 @@ def others_category_wise_count(request, num_header_levels, proj_id):
 
 # =========================== other column split count category wise end==============
 def barchart_tick_count(request, num_header_levels, proj_id):
+    """
+    barchart_tick_count
+    """
     ignore_keys = ['Publication Number', 'Other-']
     child_categories = {}
 
@@ -865,11 +932,17 @@ def barchart_tick_count(request, num_header_levels, proj_id):
 # ===================================================================
 @csrf_exempt
 def get_q_object(assignee, partner):
+    """
+    get_q_object
+    """
     return Q(assignee_standardized__icontains=assignee) & Q(assignee_standardized__icontains=partner)
 
 
 @csrf_exempt
 def competitor_colab_view(request, proj_code):
+    """
+    competitor_colab_view
+    """
     code = Project.objects.filter(code=proj_code).first().code
     try:
         if request.method == 'POST':
@@ -1123,6 +1196,9 @@ def competitor_colab_view(request, proj_code):
 
 @request.validator
 def competitor_charts(req, project_id):
+    """
+    competitor_charts
+    """
     user_id = req.session.get('logged_in_user_id')
     user_qs = get_object_or_404(CustomUser, id=user_id)
     project = get_object_or_404(Project, id=project_id)
@@ -1141,6 +1217,7 @@ def competitor_charts(req, project_id):
     for item in data1:
         assignee_name = item['assignee_standardized']
         partners_list = extract_assignee_partners(req, code).get(assignee_name.title(), [])
+
         partner_count_dict = dict(Counter(partners_list))
         result.append({
             'assignee': assignee_name,
@@ -1151,44 +1228,46 @@ def competitor_charts(req, project_id):
     req.session['res'] = res
     assignees = [entry['assignee'].title() for entry in result]
     partners = sorted(set(partner for entry in result for partner in entry['partners']))
-    partner_count_matrix = [
-        [entry['partners'].get(partner, None) for partner in partners] for entry in result
-    ]
-    text_colors = [['dark' if calculate_luminance(color) < 0.5 else 'light' for color in row] for row in
-                   partner_count_matrix]
+    partner_count_matrix = [[entry['partners'].get(partner, None) for partner in partners] for entry in result]
+    # text_colors = [['dark' if calculate_luminance(color) < 0.5 else 'light' for color in row] for row in
+    #                partner_count_matrix]
+    hover_text = [[f'<b>Assignee:</b> {assignees[i]}<br><b>Partner:</b> {partners[j]}' + (
+        f'<br><b>Value:</b> {count}' if count is not None else '')
+                   for j, count in enumerate(row)] for i, row in enumerate(partner_count_matrix)]
+
     if not partners:
         fig1 = go.Figure()
         fig1.add_annotation(
             text="No partner data found",
-            xref="paper", yref="paper",
-            x=0.5, y=0.5,
+            xref="paper",
+            yref="paper",
+            x=0.5,
+            y=0.5,
             showarrow=False,
             font=dict(size=20)
         )
     else:
-        truncated_assignees = [assignee[:25] + '...' if len(assignee) > 30 else assignee for assignee in assignees]
-        truncated_partners = [partner[:25] + '...' if len(partner) > 30 else partner for partner in partners]
         fig1 = go.Figure(data=go.Heatmap(
             z=partner_count_matrix,
-            x=truncated_partners,
-            y=truncated_assignees,
-            hoverinfo='none',
+            x=partners,
+            y=assignees,
+            hoverinfo='text',
+            hovertext=hover_text,
+            # hovertemplate='<b>Assignee:</b> %{y}<br><b>Partner:</b> %{x}<br><b>Value:</b> %{z}' if '%{z}' != 'None' else '<b>Assignee:</b> %{y}<br><b>Partner:</b> %{x}',
             colorscale='PuBuGn',
             colorbar=dict(title='Partner Count'),
-            text=[
-                [f'<span style="color:{text_colors[i][j]}">{count}</span>' if count is not None else '' for j, count in
-                 enumerate(row)] for i, row in enumerate(partner_count_matrix)
-            ],
+            text=[[f'{count}' if count is not None else '' for j, count in enumerate(row)] for i, row in
+                  enumerate(partner_count_matrix)],
             texttemplate="%{text}",
             textfont={"size": 14}
         ))
-    fig1.update_layout(
-        title='Collaborations of competitors',
-        xaxis=dict(title='Partners'),
-        yaxis=dict(title='Assignees'),
-        height=500,
-        width=995,
-    )
+        fig1.update_layout(
+            xaxis=dict(title='Partners', tickangle=65, tickfont=dict(size=8)),
+            yaxis=dict(title='Assignees', automargin=True, tickangle=55, tickfont=dict(size=10)),
+            height=900,
+            width=1000,
+        )
+
     div1 = fig1.to_html()
     # ==================================BUBBLE===================================================
     result_b = get_top_assignees_by_year(req, code)
@@ -1205,7 +1284,7 @@ def competitor_charts(req, project_id):
             y="Assignee",
             size="Count",
             size_max=20,
-            height=500,
+            height=700,
             width=995,
         )
         fig2.update_layout(
@@ -1229,7 +1308,6 @@ def competitor_charts(req, project_id):
 
     y_labels = [f"{assignee} | {publication}" for assignee, publication in zip(assignee_names, publication_numbers)]
     table_data = []
-
     for val in top_ten_highest_citing:
         assignee_name = val.assignee_standardized.split('|')[0]
         publication_number = val.publication_number
@@ -1276,8 +1354,8 @@ def competitor_charts(req, project_id):
         title="Influence of Innovation",
         height=400,
         width=995,
-        margin=dict(t=50, b=30, r=10, l=10),  # Adjust margins
-        showlegend=False  # Remove legend to save space
+        margin=dict(t=50, b=30, r=10, l=10),
+        showlegend=False
     )
     fig3.update_layout(updatemenus=[])
     div3 = fig3.to_html(full_html=False)
@@ -1317,18 +1395,6 @@ def competitor_charts(req, project_id):
     div4 = fig4.to_html(full_html=False)
     # ===========================================================================
 
-    # df = px.data.gapminder().query("year==2007")
-    # fig6 = px.choropleth(df, locations="iso_alpha",
-    #                      color="lifeExp",
-    #                      hover_name="country",
-    #                      color_continuous_scale=px.colors.sequential.Plasma)
-
-    # Set the height and width of the choropleth map
-    # fig6.update_layout(
-    #     height=600,
-    #     width=995
-    # )
-    # div6 = fig6.to_html(full_html=False)
     context = {'plot_div1': div1, 'plot_div2': div2, 'plot_div3': div3, 'plot_div4': div4,
                'data1': data1, 'result': res, 'data': data, 'proj_code': code,
                'project_id': project_id_template, 'project_name': project_name,
@@ -1337,6 +1403,9 @@ def competitor_charts(req, project_id):
 
 
 def handle_nat(dt):
+    """
+    handle_nat
+    """
     if pd.isna(dt):
         return None
     else:
@@ -1344,6 +1413,9 @@ def handle_nat(dt):
 
 
 def download_publication_exl(request, year, project_id):
+    """
+    download_publication_exl
+    """
     data_list = []
     code = Project.objects.filter(id=project_id).first().code
     innovators = PatentData.objects.filter(publication_dates__year=year, project_code=code)
@@ -1387,6 +1459,9 @@ def download_publication_exl(request, year, project_id):
 
 
 def download_exp_exl(request, year, project_id):
+    """
+    download_exp_exl
+    """
     data_list = []
     code = Project.objects.filter(id=project_id).first().code
     exp_qs = PatentData.objects.filter(expected_expiry_dates__year=year, project_code=code)
@@ -1420,18 +1495,19 @@ def download_exp_exl(request, year, project_id):
         response['Content-Disposition'] = f'attachment; filename=expected_expiry_date.xlsx'
         with pd.ExcelWriter(response, engine='xlsxwriter') as writer:
             df.to_excel(writer, index=False, sheet_name='expected_expiry_date')
-            workbook = writer.book
+            writer.book
             worksheet = writer.sheets['expected_expiry_date']
-            # Set the column widths
             for i, col in enumerate(df.columns):
                 max_len = max(df[col].astype(str).apply(len).max(), len(col))
                 worksheet.set_column(i, i, max_len)
         response['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-
         return response
 
 
 def download_legal_status_exl(request, status, project_id):
+    """
+    download_legal_status_exl
+    """
     data_list = []
     code = Project.objects.filter(id=project_id).first().code
     innovators = PatentData.objects.filter(legal_status=status, project_code=code)
@@ -1464,24 +1540,20 @@ def download_legal_status_exl(request, status, project_id):
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         response['Content-Disposition'] = f'attachment; filename=legal_status_data.xlsx'
         with pd.ExcelWriter(response, engine='xlsxwriter') as writer:
-            # Convert the dataframe to an XlsxWriter Excel object
             df.to_excel(writer, index=False, sheet_name='legal_status_data')
-
-            # Get the xlsxwriter workbook and worksheet objects
-            workbook = writer.book
+            writer.book
             worksheet = writer.sheets['legal_status_data']
-
-            # Set the column widths
             for i, col in enumerate(df.columns):
                 max_len = max(df[col].astype(str).apply(len).max(), len(col))
                 worksheet.set_column(i, i, max_len)
-
         response['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-
         return response
 
 
 def individual_cpc_exl(request, cpc, project_id):
+    """
+    individual_cpc_exl
+    """
     data_list = []
     code = Project.objects.filter(id=project_id).first().code
     cpc_qs = PatentData.objects.filter(cpc__startswith=cpc, project_code=code)
@@ -1514,32 +1586,26 @@ def individual_cpc_exl(request, cpc, project_id):
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         response['Content-Disposition'] = f'attachment; filename=CPC_data.xlsx'
         with pd.ExcelWriter(response, engine='xlsxwriter') as writer:
-            # Convert the dataframe to an XlsxWriter Excel object
             df.to_excel(writer, index=False, sheet_name='CPC_data')
-
-            # Get the xlsxwriter workbook and worksheet objects
-            workbook = writer.book
+            writer.book
             worksheet = writer.sheets['CPC_data']
-
-            # Set the column widths
             for i, col in enumerate(df.columns):
                 max_len = max(df[col].astype(str).apply(len).max(), len(col))
                 worksheet.set_column(i, i, max_len)
-
         response['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-
         return response
 
 
 def individual_ipc_exl(request, ipc, project_id):
+    """
+    individual_ipc_exl
+    """
     data_list = []
-    user_id_to_filter = request.session.get('logged_in_user_id')
     code = Project.objects.filter(id=project_id).first().code
     ipc_qs = PatentData.objects.filter(ipc__startswith=ipc, project_code=code)
     if request.GET.get('display'):
         context = {
             'ipc_qs': ipc_qs,
-            # Add more context variables if needed
         }
         return render(request, 'pages/charts/top_ten_ipc.html', context)
     else:
@@ -1566,24 +1632,20 @@ def individual_ipc_exl(request, ipc, project_id):
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         response['Content-Disposition'] = f'attachment; filename=IPC_data.xlsx'
         with pd.ExcelWriter(response, engine='xlsxwriter') as writer:
-            # Convert the dataframe to an XlsxWriter Excel object
             df.to_excel(writer, index=False, sheet_name='IPC_data')
-
-            # Get the xlsxwriter workbook and worksheet objects
             workbook = writer.book
             worksheet = writer.sheets['IPC_data']
-
-            # Set the column widths
             for i, col in enumerate(df.columns):
                 max_len = max(df[col].astype(str).apply(len).max(), len(col))
                 worksheet.set_column(i, i, max_len)
-
         response['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-
         return response
 
 
 def download_innovative_exl(request, country, project_id):
+    """
+    download_innovative_exl
+    """
     data_list = []
     code = Project.objects.filter(id=project_id).first().code
     innovators = PatentData.objects.filter(publication_number__startswith=country, project_code=code)
@@ -1616,20 +1678,13 @@ def download_innovative_exl(request, country, project_id):
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         response['Content-Disposition'] = f'attachment; filename=TOP Innovative.xlsx'
         with pd.ExcelWriter(response, engine='xlsxwriter') as writer:
-            # Convert the dataframe to an XlsxWriter Excel object
             df.to_excel(writer, index=False, sheet_name='top_innovative')
-
-            # Get the xlsxwriter workbook and worksheet objects
-            workbook = writer.book
+            writer.book
             worksheet = writer.sheets['top_innovative']
-
-            # Set the column widths
             for i, col in enumerate(df.columns):
                 max_len = max(df[col].astype(str).apply(len).max(), len(col))
                 worksheet.set_column(i, i, max_len)
-
         response['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-
         return response
 
 
@@ -1668,24 +1723,21 @@ def download_ind_citing_excel(request, patent, project_id):
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         response['Content-Disposition'] = f'attachment; filename={patent}_citing_data.xlsx'
         with pd.ExcelWriter(response, engine='xlsxwriter') as writer:
-            # Convert the dataframe to an XlsxWriter Excel object
             df.to_excel(writer, index=False, sheet_name=f'{patent}_citing_data')
-
-            # Get the xlsxwriter workbook and worksheet objects
-            workbook = writer.book
+            writer.book
             worksheet = writer.sheets[f'{patent}_citing_data']
-
-            # Set the column widths
             for i, col in enumerate(df.columns):
                 max_len = max(df[col].astype(str).apply(len).max(), len(col))
                 worksheet.set_column(i, i, max_len)
-
         response['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 
         return response
 
 
 def download_top_assignee_exl(request, assignee, project_id):
+    """
+    download_top_assignee_exl
+    """
     data_list = []
     code = Project.objects.filter(id=project_id).first().code
     top_ten_assignees = PatentData.objects.filter(
@@ -1720,24 +1772,21 @@ def download_top_assignee_exl(request, assignee, project_id):
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         response['Content-Disposition'] = f'attachment; filename={assignee}_data.xlsx'
         with pd.ExcelWriter(response, engine='xlsxwriter') as writer:
-            # Convert the dataframe to an XlsxWriter Excel object
             df.to_excel(writer, index=False, sheet_name=f'{assignee}_data')
-
-            # Get the xlsxwriter workbook and worksheet objects
-            workbook = writer.book
+            writer.book
             worksheet = writer.sheets[f'{assignee}_data.xlsx']
-
-            # Set the column widths
             for i, col in enumerate(df.columns):
                 max_len = max(df[col].astype(str).apply(len).max(), len(col))
                 worksheet.set_column(i, i, max_len)
-
         response['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 
         return response
 
 
 def download_recent_assignee_exl(request, assignee, project_id):
+    """
+    download_recent_assignee_exl
+    """
     data_list = []
     current_year = datetime.now().year
     last_five_years_start = current_year - 5
@@ -1775,18 +1824,12 @@ def download_recent_assignee_exl(request, assignee, project_id):
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         response['Content-Disposition'] = f'attachment; filename=Recent {assignee}_data.xlsx'
         with pd.ExcelWriter(response, engine='xlsxwriter') as writer:
-            # Convert the dataframe to an XlsxWriter Excel object
             df.to_excel(writer, index=False, sheet_name=f'Recent {assignee}_data')
-
-            # Get the xlsxwriter workbook and worksheet objects
             workbook = writer.book
             worksheet = writer.sheets[f'Recent {assignee}_data']
-
-            # Set the column widths
             for i, col in enumerate(df.columns):
                 max_len = max(df[col].astype(str).apply(len).max(), len(col))
                 worksheet.set_column(i, i, max_len)
-
         response['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 
         return response
@@ -1827,24 +1870,21 @@ def download_ind_cited_excel(request, patent, project_id):
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         response['Content-Disposition'] = f'attachment; filename={patent}_cited_data.xlsx'
         with pd.ExcelWriter(response, engine='xlsxwriter') as writer:
-            # Convert the dataframe to an XlsxWriter Excel object
             df.to_excel(writer, index=False, sheet_name=f'{patent}_cited_data')
-
-            # Get the xlsxwriter workbook and worksheet objects
-            workbook = writer.book
+            writer.book
             worksheet = writer.sheets[f'{patent}_cited_data']
-
-            # Set the column widths
             for i, col in enumerate(df.columns):
                 max_len = max(df[col].astype(str).apply(len).max(), len(col))
                 worksheet.set_column(i, i, max_len)
-
         response['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 
         return response
 
 
 def download_demo_excel(req):
+    """
+    download_demo_excel
+    """
     wb = Workbook()
     ws = wb.active
     header_row = ["S. No.", "Publication Number", "Assignee - Standardized", "Legal Status", "Expected Expiry Dates",
@@ -1858,12 +1898,10 @@ def download_demo_excel(req):
     return response
 
 
-import os
-from django.http import HttpResponse, Http404
-from django.conf import settings
-
-
 def download_tech_demo_excel(request):
+    """
+    download_tech_demo_excel
+    """
     file_path = os.path.join(settings.BASE_DIR, 'static/Ingenious e-Brain - stage demo 1.xlsm')
     if os.path.exists(file_path):
         with open(file_path, 'rb') as fh:
@@ -1876,6 +1914,9 @@ def download_tech_demo_excel(request):
 
 
 def download_citedExl(request, project_id):
+    """
+    download_citedExl
+    """
     code = Project.objects.filter(id=project_id).first().code
     top_ten_cited_patents = PatentData.objects.filter(
         prject_code=code
@@ -1903,12 +1944,9 @@ def download_citedExl(request, project_id):
     df = pd.DataFrame(data)
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     response['Content-Disposition'] = 'attachment; filename=top_ten_cited_patents.xlsx'
-
-    # Create a Pandas Excel writer using XlsxWriter as the engine
     with pd.ExcelWriter(response, engine='xlsxwriter') as writer:
-        # Convert the dataframe to an XlsxWriter Excel object
         df.to_excel(writer, index=False, sheet_name='Top Ten Cited Patents')
-        workbook = writer.book
+        writer.book
         worksheet = writer.sheets['Top Ten Cited Patents']
         for i, col in enumerate(df.columns):
             max_len = max(df[col].astype(str).apply(len).max(), len(col))
@@ -1939,7 +1977,6 @@ def top_ten_recent_ass_exl(request, project_id):
         return render(request, 'pages/charts/top_ten_ipc.html', context)
     else:
         data = {
-            # 'Project Code': [patent.project_code for patent in top_ten_ass],
             'Publication Number': [patent.publication_number for patent in top_ten_ass],
             'Assignee Standardized': [patent.assignee_standardized for patent in top_ten_ass],
             'Cited Patents Count': [patent.cited_patents_count for patent in top_ten_ass],
@@ -1957,20 +1994,13 @@ def top_ten_recent_ass_exl(request, project_id):
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         response['Content-Disposition'] = 'attachment; filename=top_ten_cited_patents.xlsx'
         with pd.ExcelWriter(response, engine='xlsxwriter') as writer:
-            # Convert the dataframe to an XlsxWriter Excel object
             df.to_excel(writer, index=False, sheet_name='top_ten_cited_patents')
-
-            # Get the xlsxwriter workbook and worksheet objects
-            workbook = writer.book
+            writer.book
             worksheet = writer.sheets['top_ten_cited_patents']
-
-            # Set the column widths
             for i, col in enumerate(df.columns):
                 max_len = max(df[col].astype(str).apply(len).max(), len(col))
                 worksheet.set_column(i, i, max_len)
-
         response['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-
         return response
 
 
@@ -1990,7 +2020,6 @@ def top_ten_ass_exl(request, project_id):
         return render(request, 'pages/charts/top_ten_ipc.html', context)
     else:
         data = {
-            # 'Project Code': [patent.project_code for patent in top_ten_ass],
             'Publication Number': [patent.publication_number for patent in top_ten_ass],
             'Assignee Standardized': [patent.assignee_standardized for patent in top_ten_ass],
             'Cited Patents Count': [patent.cited_patents_count for patent in top_ten_ass],
@@ -2008,12 +2037,9 @@ def top_ten_ass_exl(request, project_id):
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         response['Content-Disposition'] = 'attachment; filename=top_ten_assignee.xlsx'
         with pd.ExcelWriter(response, engine='xlsxwriter') as writer:
-            # Convert the dataframe to an XlsxWriter Excel object
             df.to_excel(writer, index=False, sheet_name='top_ten_assignee')
-            # Get the xlsxwriter workbook and worksheet objects
-            workbook = writer.book
+            writer.book
             worksheet = writer.sheets['top_ten_assignee']
-            # Set the column widths
             for i, col in enumerate(df.columns):
                 max_len = max(df[col].astype(str).apply(len).max(), len(col))
                 worksheet.set_column(i, i, max_len)
@@ -2022,6 +2048,9 @@ def top_ten_ass_exl(request, project_id):
 
 
 def top_ten_cpc_exl(req, project_id):
+    """
+    top_ten_cpc_exl
+    """
     code = Project.object.filter(id=project_id).first().code
     patent_data_queryset = PatentData.objects.filter(project_code=code)
     cpc_counts_from_db = Counter()
@@ -2060,13 +2089,9 @@ def top_ten_cpc_exl(req, project_id):
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         response['Content-Disposition'] = 'attachment; filename=Top Ten CPC.xlsx'
         with pd.ExcelWriter(response, engine='xlsxwriter') as writer:
-            # Convert the dataframe to an XlsxWriter Excel object
             df.to_excel(writer, index=False, sheet_name='Top Ten CPC')
-            # Get the xlsxwriter workbook and worksheet objects
-            workbook = writer.book
+            writer.book
             worksheet = writer.sheets['Top Ten CPC']
-
-            # Set the column widths
             for i, col in enumerate(df.columns):
                 max_len = max(df[col].astype(str).apply(len).max(), len(col))
                 worksheet.set_column(i, i, max_len)
@@ -2084,7 +2109,6 @@ def top_ten_ipc_exl(req, project_id):
         for ipc_value in ipc_values:
             ipc_code = ipc_value.strip()
             ipc_counts_from_db[ipc_code] += 1
-
     ipc_counts_dict_ws = dict(ipc_counts_from_db)
     sorted_ipc_counts = dict(sorted(ipc_counts_dict_ws.items(), key=lambda item: item[1], reverse=True))
     ipc_counts_dict = dict(list(sorted_ipc_counts.items())[:10])
@@ -2104,13 +2128,9 @@ def top_ten_ipc_exl(req, project_id):
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         response['Content-Disposition'] = 'attachment; filename=Top Ten IPC.xlsx'
         with pd.ExcelWriter(response, engine='xlsxwriter') as writer:
-            # Convert the dataframe to an XlsxWriter Excel object
             df.to_excel(writer, index=False, sheet_name='Top Ten IPC')
-            # Get the xlsxwriter workbook and worksheet objects
-            workbook = writer.book
+            writer.book
             worksheet = writer.sheets['Top Ten IPC']
-
-            # Set the column widths
             for i, col in enumerate(df.columns):
                 max_len = max(df[col].astype(str).apply(len).max(), len(col))
                 worksheet.set_column(i, i, max_len)
@@ -2119,6 +2139,9 @@ def top_ten_ipc_exl(req, project_id):
 
 
 def download_excel_view(req):
+    """
+    download_excel_view
+    """
     status = req.GET.get('status')
     patents = PatentData.objects.filter(legal_status=status)
     data = {
@@ -2157,7 +2180,11 @@ def download_excel_view(req):
     return response
 
 
+@csrf_exempt
 def fetch_data_view(request):
+    """
+    fetch_data_view
+    """
     status = request.GET.get('status')
     patents = PatentData.objects.filter(legal_status=status)
     data = [
@@ -2185,6 +2212,9 @@ def fetch_data_view(request):
 
 @request.validator
 def bibliographic_charts(req, project_id):
+    """
+    bibliographic_charts
+    """
     context = {}
     try:
         project_code_qs = Project.objects.filter(id=project_id).first()
@@ -2261,6 +2291,7 @@ def bibliographic_charts(req, project_id):
         return HttpResponseServerError("An unexpected error occurred. Please try again.")
 
 
+@csrf_exempt
 def process_excel_data(context, req, project_id):
     """
     Process the Excel data to generate various charts.
@@ -2306,35 +2337,13 @@ def process_excel_data(context, req, project_id):
         'get_cpc_counts_from_db': get_cpc_counts_from_db(req, project_id),
         'get_ipc_counts': get_ipc_counts(req, project_id)
     })
-    # assignee_legal_status_counts = {}
-    # cpc_assignee_counts = {}
-    #
-    # for _, row in df.iterrows():
-    #     assignee = row['Assignee - Standardized']
-    #     legal_status = row['Legal Status']
-    #     if assignee not in assignee_legal_status_counts:
-    #         assignee_legal_status_counts[assignee] = Counter()
-    #     assignee_legal_status_counts[assignee][legal_status] += 1
-    #
-    #     cpc_values = str(row['CPC']).replace(' ', '').split('|')
-    #     for cpc_value in cpc_values:
-    #         cpc_code = cpc_value[:4]
-    #
-    #         if cpc_code not in cpc_assignee_counts:
-    #             cpc_assignee_counts[cpc_code] = Counter()
-    #         cpc_assignee_counts[cpc_code][assignee] += 1
-    #
-    # context['assignee_legal_status_counts'] = {
-    #     assignee: dict(status_counts) for assignee, status_counts in
-    #     assignee_legal_status_counts.items()
-    # }
-    # context['cpc_assignee_counts'] = {
-    #     cpc_code: dict(assignee_counts) for cpc_code, assignee_counts in
-    #     cpc_assignee_counts.items()
-    # }
 
 
+@csrf_exempt
 def get_country_code_count(req, project_id):
+    """
+    get_country_code_count
+    """
     patent_data_queryset = PatentData.objects.filter(project_code=project_id)
     assignee_country_counts_from_db = {}
     for patent_data in patent_data_queryset:
@@ -2347,33 +2356,36 @@ def get_country_code_count(req, project_id):
     return assignee_country_counts_from_db
 
 
+@csrf_exempt
 def get_ipc_counts(req, project_id):
+    """
+    get_ipc_counts
+    """
     patent_data_queryset = PatentData.objects.filter(project_code=project_id)
     ipc_counts_from_db = Counter()
-
     for patent_data in patent_data_queryset:
         ipc_values = patent_data.ipc.split('|') if patent_data.ipc else []
-
         for ipc_value in ipc_values:
             if ipc_value.strip().upper() == 'NAN':
                 continue
-
             ipc_code = ipc_value.strip()[:4]
             ipc_counts_from_db[ipc_code] += 1
-
     ipc_counts_dict_ws = dict(ipc_counts_from_db)
     sorted_ipc_counts = dict(sorted(ipc_counts_dict_ws.items(), key=lambda item: item[1], reverse=True))
     ipc_counts_dict = dict(list(sorted_ipc_counts.items())[:10])
     return ipc_counts_dict
 
 
+@csrf_exempt
 def get_cpc_counts_from_db(req, project_id):
+    """
+    get_cpc_counts_from_db
+    """
     patent_data_queryset = PatentData.objects.filter(project_code=project_id)
     cpc_counts_from_db = Counter()
     for patent_data in patent_data_queryset:
         cpc_values = patent_data.cpc.split('|') if patent_data.cpc else []
         for cpc_value in cpc_values:
-            # Skip processing if the cpc_value is 'nan'
             if cpc_value.strip().upper() == 'NAN':
                 continue
             cpc_code = cpc_value.strip()[:4]
@@ -2385,7 +2397,11 @@ def get_cpc_counts_from_db(req, project_id):
     return cpc_counts_dict
 
 
+@csrf_exempt
 def get_country_code_counts_from_db(req, project_id):
+    """
+    get_country_code_counts_from_db
+    """
     patent_data_queryset = PatentData.objects.filter(project_code=project_id)
     country_code_counts_from_db = Counter()
     for patent_data in patent_data_queryset:
@@ -2398,7 +2414,11 @@ def get_country_code_counts_from_db(req, project_id):
     return country_code_counts_dict
 
 
+@csrf_exempt
 def get_legal_status_count(req, project_id):
+    """
+    get_legal_status_count
+    """
     patent_data_queryset = PatentData.objects.filter(project_code=project_id)
     legal_status_counts = patent_data_queryset.values('legal_status').annotate(count=Count('legal_status'))
     legal_status_counts_dict = {item['legal_status']: item['count'] for item in legal_status_counts}
@@ -2409,6 +2429,9 @@ def get_legal_status_count(req, project_id):
 
 
 def download_excel_file(request, project_id):
+    """
+    download_excel_file
+    """
     project_code = Project.objects.filter(code=project_id).first().code
     top_ten_cited_patents = PatentData.objects.filter(project_code=project_code).exclude(
         cited_patents_count__isnull=True
@@ -2437,7 +2460,7 @@ def download_excel_file(request, project_id):
         response['Content-Disposition'] = 'attachment; filename=top_ten_cited_patents.xlsx'
         with pd.ExcelWriter(response, engine='xlsxwriter') as writer:
             df.to_excel(writer, index=False, sheet_name='Top Ten Cited Patents')
-            workbook = writer.book
+            writer.book
             worksheet = writer.sheets['Top Ten Cited Patents']
             for i, col in enumerate(df.columns):
                 max_len = max(df[col].astype(str).apply(len).max(), len(col))
@@ -2447,6 +2470,9 @@ def download_excel_file(request, project_id):
 
 
 def download_citing_excel_file(request, project_id):
+    """
+    download_citing_excel_file
+    """
     project_code = Project.objects.filter(id=project_id).first().code
     top_ten_citing_patents = PatentData.objects.filter(project_code=project_code).exclude(
         cited_patents_count__isnull=True
@@ -2475,7 +2501,7 @@ def download_citing_excel_file(request, project_id):
         response['Content-Disposition'] = 'attachment; filename=download_citing_excel_file.xlsx'
         with pd.ExcelWriter(response, engine='xlsxwriter') as writer:
             df.to_excel(writer, index=False, sheet_name='top ten citing')
-            workbook = writer.book
+            writer.book
             worksheet = writer.sheets['top ten citing']
             for i, col in enumerate(df.columns):
                 max_len = max(df[col].astype(str).apply(len).max(), len(col))
@@ -2485,6 +2511,9 @@ def download_citing_excel_file(request, project_id):
 
 
 def get_year_wise_excel(req, project_id):
+    """
+    get_year_wise_excel
+    """
     project_code = Project.objects.filter(id=project_id).first().code
     year_counts = PatentData.objects.filter(project_code=project_code).annotate(
         publication_year=ExtractYear('publication_dates')
@@ -2509,7 +2538,7 @@ def get_year_wise_excel(req, project_id):
     response['Content-Disposition'] = 'attachment; filename=year_wise_patents.xlsx'
     with pd.ExcelWriter(response, engine='xlsxwriter') as writer:
         df.to_excel(writer, index=False, sheet_name='Year Wise Patents')
-        workbook = writer.book
+        writer.book
         worksheet = writer.sheets['Year Wise Patents']
         for i, col in enumerate(df.columns):
             max_len = max(df[col].astype(str).apply(len).max(), len(col))
@@ -2519,6 +2548,9 @@ def get_year_wise_excel(req, project_id):
 
 
 def get_top_citing_count(req, project_id):
+    """
+    get_top_citing_count
+    """
     citing_patents_dict = {}
     top_ten_citing_patents = PatentData.objects.filter(
         project_code=project_id
@@ -2538,6 +2570,9 @@ def get_top_citing_count(req, project_id):
 
 
 def get_top_cited_count(req, project_id):
+    """
+    get_top_cited_count
+    """
     cited_patents_dict = {}
     top_ten_cited_patents = PatentData.objects.filter(
         project_code=project_id
@@ -2556,6 +2591,9 @@ def get_top_cited_count(req, project_id):
 
 
 def get_year_with_publication(req, project_id):
+    """
+    get_year_with_publication
+    """
     year_counts = PatentData.objects.filter(project_code=project_id).annotate(
         publication_year=ExtractYear('publication_dates')
     ).values('publication_year').annotate(
@@ -2566,6 +2604,9 @@ def get_year_with_publication(req, project_id):
 
 
 def get_year_with_exp_date(req, project_id):
+    """
+    get_year_with_exp_date
+    """
     year_counts = PatentData.objects.filter(
         Q(expected_expiry_dates__isnull=False) | Q(expected_expiry_dates__isnull=True),
         project_code=project_id
@@ -2582,6 +2623,9 @@ def get_year_with_exp_date(req, project_id):
 
 
 def process_assignees(req, project_code):
+    """
+    process_assignees
+    """
     data = PatentData.objects.filter(project_code=project_code).exclude(
         assignee_standardized__isnull=True)
     data = data.values('assignee_standardized').annotate(count=Count('assignee_standardized')).order_by('-count')[:10]
@@ -2590,6 +2634,9 @@ def process_assignees(req, project_code):
 
 
 def process_assignees_last_five_years(request, project_id):
+    """
+    process_assignees_last_five_years
+    """
     current_year = datetime.now().year
     last_five_years_start = current_year - 5
     top_assignees_last_five_years = (
@@ -2692,10 +2739,10 @@ def user_profile(req):
     return render(req, 'pages/onboard/profile.html', context)
 
 
-@csrf_exempt
+@request.validator
 def admin_profile(req):
     """
-    User Profile
+    admin_profile
     """
     user_qs = User.objects.filter(is_superuser=True).first()
     total_projects = Project.objects.all()
@@ -2713,16 +2760,13 @@ def admin_profile(req):
 @request.validator
 def project_client_association(req):
     """
-    User Profile
+    project_client_association
     """
     project_association = {}
     user_id = req.session.get('logged_in_user_id')
     user_qs = CustomUser.objects.get(id=user_id)
-
     if user_qs.roles != 'Client':
         clients = CustomUser.objects.filter(roles=CustomUser.CLIENT, is_superuser=False)
-
-        # Fetch project association based on user's role
         if user_qs.roles == 'project_manager':
             try:
                 project_association = UserProjectAssociation.objects.get(user=user_id)
@@ -2734,12 +2778,9 @@ def project_client_association(req):
             try:
                 project_association = KeyAccountManagerProjectAssociation.objects.get(user=user_id)
             except KeyAccountManagerProjectAssociation.DoesNotExist:
-                # Handle case where key account manager is not associated with any project
                 project_association = None
-
-        # Check if project_association is not None before accessing its attributes
         if project_association:
-            associated_projects = project_association.projects.all()
+            associated_projects = project_association.objects.all()
             associated_project_ids = [project.id for project in associated_projects]
 
             if req.method == 'POST':
@@ -2750,13 +2791,10 @@ def project_client_association(req):
                 client_project_association = ClientProjectAssociation.objects.create(client=client,
                                                                                      allocated_by=user_qs)
                 client_project_association.projects.set(projects)
-
             return render(req, 'pages/projects/project_client_association.html',
                           {'clients': clients, 'associated_projects': associated_projects,
                            'associated_project_ids': associated_project_ids})
-
         else:
-            # Handle case where user is not associated with any project
             return render(req, 'pages/projects/project_client_association.html',
                           {'clients': clients, 'message': 'You are not associated with any projects.'})
 
@@ -2764,7 +2802,7 @@ def project_client_association(req):
 @request.validator
 def get_associated_projects(req):
     """
-
+get_associated_projects
 
     """
     selected_client = req.GET.get('client')
@@ -2774,9 +2812,10 @@ def get_associated_projects(req):
     return JsonResponse({'associated_projects': associated_project_ids})
 
 
+@csrf_exempt
 def doc_upload(request, project_id):
     """
-
+doc_upload
 
     """
     uploaded_by = request.session.get('logged_in_user_id')
@@ -2820,7 +2859,7 @@ def doc_upload(request, project_id):
 
 def download_file(request, project_id):
     """
-
+download_file
 
     """
     uploaded_file = get_object_or_404(ProjectReports, id=project_id)
@@ -2829,16 +2868,19 @@ def download_file(request, project_id):
     return response
 
 
-# ======================NEW ADMIN PANNEL==========
+# ======================NEW ADMIN PANEL==========
 @csrf_exempt
 def add_project(request):
+    """
+    add_project
+
+    """
     if request.method == 'POST':
         project_name = request.POST.get('projectName')
         projectDescription = request.POST.get('projectDescription')
         projectCode = request.POST.get('projectCode')
         projectScope = request.POST.get('projectScope')
         projectStatus = request.POST.get('projectStatus')
-        # createdDate = request.POST.get('createdDate')
         project = Project.objects.create(
             name=project_name,
             code=projectCode,
@@ -2851,7 +2893,7 @@ def add_project(request):
     return render(request, 'pages/superadmin/add_project.html')
 
 
-@csrf_exempt
+@request.validator
 def user_listing(request):
     user_obj = CustomUser.objects.all()
     return render(request, 'pages/superadmin/user_listing.html', {"user_obj": user_obj})
@@ -2881,7 +2923,6 @@ def add_user(request):
         email = request.POST.get('userEmail')
         role = request.POST.get('userRoles')
         business_unit = request.POST.get('businessUnit')
-        # print(username, password, email, role, business_unit)
         try:
             user = CustomUser.objects.create_user(username=username, email=email, password=password)
             user.roles = role
@@ -2902,23 +2943,15 @@ def edit_user(request, user_id):
         password = request.POST.get('userPassword')
         roles = request.POST.get('userRoles')
         BU = request.POST.get('businessUnit')
-
-        # Update user fields
         user_obj.username = username
         user_obj.email = useremail
         user_obj.roles = roles
         user_obj.business_unit = BU
         if password:
-            # Check if password is provided and update it
             user_obj.set_password(password)
         user_obj.updated_date = timezone.now()
-
-        # Save the updated user object
         user_obj.save()
-
-        # Redirect to a success page or render a template
         return render(request, 'pages/superadmin/edit_user.html', {'user_obj': user_obj})
-
     return render(request, 'pages/superadmin/edit_user.html', {'user_obj': user_obj})
 
 
@@ -2939,7 +2972,7 @@ def user_project_association(request):
 
 @csrf_exempt
 def admin_project_listing(request):
-    project_obj = Project.objects.all()
+    project_obj = Project.objects.all().order_by('-id')
     return render(request, 'pages/superadmin/admin_project_listing.html', {"project_obj": project_obj})
 
 
@@ -2950,8 +2983,6 @@ def get_associated_users(request, project_id):
     associated_clients = ClientProjectAssociation.objects.filter(projects=project).values_list('client_id', flat=True)
     # Get associated managers
     associated_managers = UserProjectAssociation.objects.filter(projects=project).values_list('user_id', flat=True)
-
-    # Get associated key account managers
     associated_kam = KeyAccountManagerProjectAssociation.objects.filter(projects=project).values_list(
         'key_account_manager_id', flat=True)
     return JsonResponse({
@@ -2969,33 +3000,24 @@ def associate_users_with_project(request):
             project = Project.objects.get(pk=project_id)
         except Project.DoesNotExist:
             return JsonResponse({'error': 'Project does not exist'}, status=404)
-
-        # Get selected clients, key account managers, and managers
         selected_clients = request.POST.getlist('client_ids[]')
         selected_kam = request.POST.getlist('kam_ids[]')
         selected_managers = request.POST.getlist('manager_ids[]')
-
-        # Associate clients with the project
         # project.clientprojectassociation_set.clear()  # Remove existing associations
         for client_id in selected_clients:
             client = CustomUser.objects.get(pk=client_id)
             association, created = ClientProjectAssociation.objects.get_or_create(client=client)
             association.projects.add(project)
-
-        # Associate key account managers with the project
         # project.keyaccountmanagerprojectassociation_set.clear()  # Remove existing associations
         for kam_id in selected_kam:
             kam = CustomUser.objects.get(pk=kam_id)
             association, created = KeyAccountManagerProjectAssociation.objects.get_or_create(key_account_manager=kam)
             association.projects.add(project)
-
-        # Associate managers with the project
         # project.userprojectassociation_set.clear()  # Remove existing associations
         for manager_id in selected_managers:
             manager = CustomUser.objects.get(pk=manager_id)
             association, created = UserProjectAssociation.objects.get_or_create(user=manager)
             association.projects.add(project)
-
         return JsonResponse({'message': 'Users associated successfully'}, status=200)
     else:
         return JsonResponse({'error': 'Invalid request method'}, status=400)
@@ -3006,7 +3028,7 @@ def delete_user(request):
     if request.method == 'POST':
         user_id = request.POST.get('user_id')
         try:
-            user_qs = get_object_or_404(CustomUser, id=user_id).delete()
+            get_object_or_404(CustomUser, id=user_id).delete()
             return JsonResponse({'status': 'success'})
         except UserProjectAssociation.DoesNotExist:
             return JsonResponse({'status': 'error', 'message': 'User association not found'})
@@ -3020,12 +3042,8 @@ def deallocate_users_ajax(request):
     if request.method == 'POST':
         project_id = request.POST.get('project_id')
         manager_id = request.POST.get('manager_id')
-
-        # Retrieve the project and user instances
         project = get_object_or_404(Project, id=project_id)
         user = get_object_or_404(CustomUser, id=manager_id)
-
-        # Determine if the user is a client or a key account manager
         if user.client_project_associations.filter(projects=project).exists():
             association = get_object_or_404(ClientProjectAssociation, client=user, projects=project)
         elif user.key_account_manager_project_associations.filter(projects=project).exists():
@@ -3035,22 +3053,19 @@ def deallocate_users_ajax(request):
             association = get_object_or_404(UserProjectAssociation, user=user, projects=project)
         else:
             return JsonResponse({'status': 'error', 'message': 'User not associated with the project.'}, status=400)
-
-        # Delete the association
         association.delete()
-
         return JsonResponse({'status': 'success', 'message': 'Association removed successfully.'})
     else:
         return JsonResponse({'status': 'error', 'message': 'Invalid request method.'}, status=405)
 
 
-@csrf_exempt
+@request.validator
 def reports_listing(request, project_id):
     """
 
 
     """
-    uploaded_by = User.objects.filter(is_superuser=True).first().id
+    # uploaded_by = User.objects.filter(is_superuser=True).first().id
     project_name = Project.objects.filter(id=project_id).first().name
     user_role = 'superadmin'
     uploaded_files = ProjectReports.objects.filter(project_id=project_id)
@@ -3061,7 +3076,6 @@ def reports_listing(request, project_id):
                 file=proposal_file,
                 file_name=proposal_file.name,
                 file_type='Proposal',
-                # uploaded_by_id=uploaded_by,
                 project_id=project_id
             )
 
@@ -3071,7 +3085,6 @@ def reports_listing(request, project_id):
                 file=interim_file,
                 file_name=interim_file.name,
                 file_type='Interim Report',
-                # uploaded_by_id=uploaded_by,
                 project_id=project_id
             )
 
@@ -3081,7 +3094,6 @@ def reports_listing(request, project_id):
                 file=final_file,
                 file_name=final_file.name,
                 file_type='Final Report',
-                # uploaded_by_id=uploaded_by,
                 project_id=project_id
             )
         return redirect('reports_listing', project_id=project_id)
