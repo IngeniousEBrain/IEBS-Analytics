@@ -205,7 +205,7 @@
 <!--3D PIE CHART-->
 <div class="row justify-content-center">
     <div class="col-md-12">
-        <div class="card">
+        <div class="card" id="chartCard{{ chart_id }}">
 
             <div class="card-header d-flex justify-content-between align-items-center">
                 <div class="card-title mb-0 d-flex align-items-center">
@@ -545,23 +545,32 @@ am5.ready(function() {
 
 <!-- Chart code -->
 am4core.ready(function() {
-am4core.useTheme(am4themes_animated);
-var chart = am4core.create("chartQdiv", am4charts.PieChart3D);
-chart.hiddenState.properties.opacity = 0;
-var encodedData = '{{others_count}}';
-var tempElement = document.createElement('div');
-tempElement.innerHTML = encodedData;
-var decodedData = tempElement.innerText;
-chart.data = JSON.parse(decodedData);
-chart.innerRadius = am4core.percent(40);
-chart.depth = 120;
-chart.legend = new am4charts.Legend();
-var series = chart.series.push(new am4charts.PieSeries3D());
-series.dataFields.value = "litres";
-series.dataFields.depthValue = "litres";
-series.dataFields.category = "category";
-series.slices.template.cornerRadius = 5;
-series.colors.step = 3;
+  am4core.useTheme(am4themes_animated);
+  var chart = am4core.create("chartQdiv", am4charts.PieChart3D);
+  chart.hiddenState.properties.opacity = 0;
+
+  var encodedData = '{{others_count}}';
+  var tempElement = document.createElement('div');
+  tempElement.innerHTML = encodedData;
+  var decodedData = tempElement.innerText;
+
+  if (decodedData.trim() === '') {
+    document.getElementById("chartCard{{ chart_id }}").style.display = "None";
+    chart.dispose();
+    document.getElementById("chartQdiv").style.display = "none";
+  } else {
+    chart.data = JSON.parse(decodedData);
+    chart.innerRadius = am4core.percent(40);
+    chart.depth = 120;
+    chart.legend = new am4charts.Legend();
+
+    var series = chart.series.push(new am4charts.PieSeries3D());
+    series.dataFields.value = "litres";
+    series.dataFields.depthValue = "litres";
+    series.dataFields.category = "category";
+    series.slices.template.cornerRadius = 5;
+    series.colors.step = 3;
+  }
 });
 
 // ============bar chart starts here=================
