@@ -144,32 +144,35 @@
 <script>
     document.getElementById("userRoles").addEventListener("change", function() {
         var companyDetails = document.getElementById("companyDetails");
+        var clientCompany = document.getElementById("clientCompany");
         if (this.value === "client") {
             companyDetails.style.display = "block";
+            clientCompany.setAttribute('required', 'required');
         } else {
             companyDetails.style.display = "none";
+            clientCompany.removeAttribute('required');
         }
     });
-$(document).ready(function () {
-    $('#add-user-form').submit(function (event) {
-        event.preventDefault();
-        var formData = new FormData(this);
-        // Log the FormData object to the console
-        console.log(formData);
-        $.ajax({
-            type: 'POST',
-            url: '{% url 'add_user' %}',
-            data: formData,
-            processData: false,
-            contentType: false,
-            success: function (response) {
-                window.location.href = "{% url 'user_listing' %}";
-            },
-            error: function (xhr, errmsg, err) {
-                // Handle error response
-            }
+
+    $(document).ready(function () {
+        $('#add-user-form').submit(function (event) {
+            event.preventDefault();
+            var formData = new FormData(this);
+            $.ajax({
+                type: 'POST',
+                url: '{% url 'add_user' %}',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function (response) {
+                    window.location.href = "{% url 'user_listing' %}";
+                },
+                error: function (xhr, errmsg, err) {
+                    // Handle error response
+                }
+            });
         });
     });
-});
+
 </script>
 {% endblock %}
