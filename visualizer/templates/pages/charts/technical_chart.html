@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 {% block head %}
+{{ block.super }}
 {% endblock %}
 {% block content %}
 <div class="tab-container">
@@ -17,14 +18,21 @@
     <div class="col-lg-8">
         <h4>Technical Focus Chart - <b>({{proj_name}})</b></h4>
     </div>
-    <div class="col-lg-4">
+    <div class="col-lg-4" style="margin-top:-5%;">
         <form method="post" action="/tech_charts/{{ project_id }}/" enctype="multipart/form-data">
             {% csrf_token %}
             <div class="input-group">
+                <div class="input-group-prepend">
+                    <span class="input-group-text">Level</span>
+                </div>
+                <input type="number" class="form-control" name="level" min="1" required>
+            </div>
+            <br>
+            <div class="input-group">
                 <div class="custom-file">
                     <input type="file" class="custom-file-input" id="excelFile" accept=".xlsx,.xls,.ods,.xlsm"
-                           name="technical_excel">
-                    <label class="custom-file-label" for="excelFile">
+                           name="technical_excel" onchange="updateFileName(this)">
+                    <label class="custom-file-label" for="excelFile" id="fileNameLabel" title="Choose File">
                         Choose File
                     </label>
                 </div>
@@ -37,21 +45,81 @@
         </form>
     </div>
 </div>
+
+
 <div class="text-right">
-    <a href="#">
+    <a href="{% url 'download_tech_demo_excel' %}">
         <i class="fas fa-file-download"></i> Download Demo Excel
     </a>
 </div>
-<!--NESTED DONUT-->
+{% if get_all_data %}
+<!--heirarchical-->
+<div class="row justify-content-center" id="hierarchydivchart">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="card-title mb-0 d-flex align-items-center">
+                    <h5 class="mb-0 mr-2"><b><span id="heading{{ chart_id }}">{{ chart_heading1 }}</span></b></h5>
+                    <input type="text" id="editHeading{{ chart_id }}" class="form-control edit-heading-input"
+                           style="display: none;" value="{{ chart_heading }}">
+                    <button class="btn btn-sm btn-success save-heading" data-chart-id="{{ chart_id }}"
+                            style="display: none;">Save
+                    </button>
+                    <button class="btn btn-sm btn-secondary cancel-heading" data-chart-id="{{ chart_id }}"
+                            style="display: none;">Cancel
+                    </button>
+                </div>
+                <div class="d-flex">
+                    <button class="btn btn-sm btn-primary edit-heading mr-4" data-chart-id="{{ chart_id }}">Edit
+                    </button>
+                    <select class="form-control chart-select" data-chart-id="{{ chart_id }}">
+                        <option value="chart1" selected>Nested Donut Chart</option>
+                        <option value="chart2">Hierarchical Node chart</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-12">
+                        <div id="hierarchydiv"
+                             style="width: 100%; max-width: 100%; height: 550px; max-height: 550px; overflow: auto; display: none;">
+                        </div>
+                        <div id="chartdiv" style="height: 500px; overflow: auto; width: 100%;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!--bar cart-->
 <div class="row justify-content-center">
     <div class="col-md-12">
         <div class="card">
-            <h5 class="card-title"><b>Spatial Omics Segmentation</b></h5>
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="card-title mb-0 d-flex align-items-center">
+                    <h5 class="mb-0 mr-2"><b><span id="heading2{{ chart_id }}">{{ chart_heading3 }}</span></b></h5>
+                    <input type="text" id="editHeading2{{ chart_id }}" class="form-control edit-heading-input"
+                           style="display: none;" value="{{ chart_heading }}">
+                    <button class="btn btn-sm btn-success save-heading2" data-chart-id="{{ chart_id }}"
+                            style="display: none;">Save
+                    </button>
+                    <button class="btn btn-sm btn-secondary cancel-heading2" data-chart-id="{{ chart_id }}"
+                            style="display: none;">Cancel
+                    </button>
+                </div>
+                <div class="d-flex">
+                    <button class="btn btn-sm btn-primary edit-heading2 mr-4" data-chart-id="{{ chart_id }}">Edit
+                    </button>
+
+                </div>
+            </div>
             <div class="card-body">
                 <div class="row">
-                    <!-- Chart Section (60%) -->
                     <div class="col-md-12">
-                        <div id="chartdiv" style="height: 400px; width: 100%;"></div>
+                        <div id="barlinechartdiv" style="height: 500px; width: 100%;"></div>
                     </div>
                 </div>
             </div>
@@ -62,42 +130,42 @@
                 <div class="card">
                     <div class="card-body">
                         <div style="max-height: 300px; overflow-y: auto;">
-                            <table class="table table-sm table-bordered">
-                                <thead style="background-color: #808080">
-                                <tr>
-                                    <th class="text-center small">CPC</th>
-                                    <th class="text-center small">Count</th>
-                                    <th class="text-center small">Actions</th>
-                                </tr>
-                                </thead>
-                                <tbody>
-                                <tr>
-                                    <td class="text-center small">data</td>
-                                    <td class="text-center small">data</td>
-                                    <td class="text-center small">
-                                        <div class="d-flex justify-content-center">
-                                            <button class="btn btn-secondary btn-xs mx-1"
-                                                    onclick="indCpcDataView('{{key}}','{{project_id}}')">
-                                                <i class="fa fa-eye" aria-hidden="true"></i>
-                                            </button>
-                                            <button class="btn btn-primary btn-xs mx-1"
-                                                    onclick="downloadIndCpc('')"><i
-                                                    class="fas fa-file-download" aria-hidden="true"></i>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                                </tbody>
-                            </table>
+<!--                            <table class="table table-sm table-bordered">-->
+<!--                                <thead style="background-color: #808080">-->
+<!--                                <tr>-->
+<!--                                    <th class="text-center small">CPC</th>-->
+<!--                                    <th class="text-center small">Count</th>-->
+<!--                                    <th class="text-center small">Actions</th>-->
+<!--                                </tr>-->
+<!--                                </thead>-->
+<!--                                <tbody>-->
+<!--                                <tr>-->
+<!--                                    <td class="text-center small">data</td>-->
+<!--                                    <td class="text-center small">data</td>-->
+<!--                                    <td class="text-center small">-->
+<!--                                        <div class="d-flex justify-content-center">-->
+<!--                                            <button class="btn btn-secondary btn-xs mx-1"-->
+<!--                                                    onclick="indCpcDataView('{{key}}','{{project_id}}')">-->
+<!--                                                <i class="fa fa-eye" aria-hidden="true"></i>-->
+<!--                                            </button>-->
+<!--                                            <button class="btn btn-primary btn-xs mx-1"-->
+<!--                                                    onclick="downloadIndCpc('')"><i-->
+<!--                                                    class="fas fa-file-download" aria-hidden="true"></i>-->
+<!--                                            </button>-->
+<!--                                        </div>-->
+<!--                                    </td>-->
+<!--                                </tr>-->
+<!--                                </tbody>-->
+<!--                            </table>-->
                         </div>
                         <div class="text-center mt-2">
-                            <button class="btn btn-secondary btn-xs"
-                                    onclick="openCpcDataView('')">View
-                            </button>
-                            <button class="btn btn-primary btn-xs"
-                                    onclick="downloadTopCPC('')">
-                                Download
-                            </button>
+<!--                            <button class="btn btn-secondary btn-xs"-->
+<!--                                    onclick="openCpcDataView('')">View-->
+<!--                            </button>-->
+<!--                            <button class="btn btn-primary btn-xs"-->
+<!--                                    onclick="downloadTopCPC('')">-->
+<!--                                Download-->
+<!--                            </button>-->
                         </div>
                     </div>
                 </div>
@@ -105,19 +173,58 @@
         </div>
     </div>
 </div>
+<!--bar cart ends here-->
 
-<!--NESTED DONUT table end-->
+<!--HEAT chart-->
+<div class="d-flex justify-content-end">
+        <div class="col-auto">
+            <select class="form-control chart-select" id="levelSelect">
+                <option value="level0" selected>Level1</option>
+                <option value="level1">Level2</option>
+                <option value="level2">Level3</option>
+            </select>
+        </div>
+    </div>
+    <div class="row justify-content-center">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-12" style="width: 1200px; margin: 0 auto;">
+                            <div id="heatdiv" style="height: 600px; width: 100%;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 <!--3D PIE CHART-->
-
 <div class="row justify-content-center">
     <div class="col-md-12">
-        <div class="card">
-            <h5 class="card-title"><b>Other Spatial Omics Column Segmentation</b></h5>
+        <div class="card" id="chartCard{{ chart_id }}">
+
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="card-title mb-0 d-flex align-items-center">
+                    <h5 class="mb-0 mr-2"><b><span id="heading1{{ chart_id }}">{{ chart_heading2 }}</span></b></h5>
+                    <input type="text" id="editHeading1{{ chart_id }}" class="form-control edit-heading-input"
+                           style="display: none;" value="{{ chart_heading }}">
+                    <button class="btn btn-sm btn-success save-heading1" data-chart-id="{{ chart_id }}"
+                            style="display: none;">Save
+                    </button>
+                    <button class="btn btn-sm btn-secondary cancel-heading1" data-chart-id="{{ chart_id }}"
+                            style="display: none;">Cancel
+                    </button>
+                </div>
+                <div class="d-flex">
+                    <button class="btn btn-sm btn-primary edit-heading1 mr-4" data-chart-id="{{ chart_id }}">Edit
+                    </button>
+
+                </div>
+            </div>
             <div class="card-body">
                 <div class="row">
-                    <!-- Chart Section (60%) -->
                     <div class="col-md-12">
-                        <div id="chartQdiv" style="height: 400px; width: 100%;"></div>
+                        <div id="chartQdiv" style="height: 450px; width: 100%; overflow: 'visible';"></div>
                     </div>
                 </div>
             </div>
@@ -129,42 +236,41 @@
                 <div class="card">
                     <div class="card-body">
                         <div style="max-height: 300px; overflow-y: auto;">
-                            <table class="table table-sm table-bordered">
-                                <thead style="background-color: #808080">
-                                <tr>
-                                    <th class="text-center small">CPC</th>
-                                    <th class="text-center small">Count</th>
-                                    <th class="text-center small">Actions</th>
-                                </tr>
-                                </thead>
-                                <tbody>
-                                <tr>
-                                    <td class="text-center small">data</td>
-                                    <td class="text-center small">data</td>
-                                    <td class="text-center small">
-                                        <div class="d-flex justify-content-center">
-                                            <button class="btn btn-secondary btn-xs mx-1"
-                                                    onclick="indCpcDataView('{{key}}','{{project_id}}')">
-                                                <i class="fa fa-eye" aria-hidden="true"></i>
-                                            </button>
-                                            <button class="btn btn-primary btn-xs mx-1"
-                                                    onclick="downloadIndCpc('')"><i
-                                                    class="fas fa-file-download" aria-hidden="true"></i>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                                </tbody>
-                            </table>
+<!--                            <table class="table table-sm table-bordered">-->
+<!--                                <thead style="background-color: #808080">-->
+<!--                                <tr>-->
+<!--                                    <th class="text-center small">CPC</th>-->
+<!--                                    <th class="text-center small">Count</th>-->
+<!--                                    <th class="text-center small">Actions</th>-->
+<!--                                </tr>-->
+<!--                                </thead>-->
+<!--                                <tbody>-->
+<!--                                    <tr>-->
+<!--                                        <td class="text-center small">data</td>-->
+<!--                                        <td class="text-center small">-->
+<!--                                            <div class="d-flex justify-content-center">-->
+<!--                                                <button class="btn btn-secondary btn-xs mx-1"-->
+<!--                                                        onclick="indCpcDataView('{{key}}','{{project_id}}')">-->
+<!--                                                    <i class="fa fa-eye" aria-hidden="true"></i>-->
+<!--                                                </button>-->
+<!--                                                <button class="btn btn-primary btn-xs mx-1"-->
+<!--                                                        onclick="downloadIndCpc('')"><i-->
+<!--                                                        class="fas fa-file-download" aria-hidden="true"></i>-->
+<!--                                                </button>-->
+<!--                                            </div>-->
+<!--                                        </td>-->
+<!--                                    </tr>-->
+<!--                                </tbody>-->
+<!--                            </table>-->
                         </div>
                         <div class="text-center mt-2">
-                            <button class="btn btn-secondary btn-xs"
-                                    onclick="openCpcDataView('')">View
-                            </button>
-                            <button class="btn btn-primary btn-xs"
-                                    onclick="downloadTopCPC('')">
-                                Download
-                            </button>
+<!--                            <button class="btn btn-secondary btn-xs"-->
+<!--                                    onclick="openCpcDataView('')">View-->
+<!--                            </button>-->
+<!--                            <button class="btn btn-primary btn-xs"-->
+<!--                                    onclick="downloadTopCPC('')">-->
+<!--                                Download-->
+<!--                            </button>-->
                         </div>
                     </div>
                 </div>
@@ -172,76 +278,27 @@
         </div>
     </div>
 </div>
-<!--3D PIE CHART Table end-->
-<!--bar cart-->
-<div class="row justify-content-center">
-    <div class="col-md-12">
-        <div class="card">
-            <h5 class="card-title"><b>Sequencing Techniques vs Patent family count</b></h5>
-            <div class="card-body">
-                <div class="row">
-                    <!-- Chart Section (60%) -->
-                    <div class="col-md-12">
-                        <div id="barchartdiv" style="height: 400px; width: 100%;"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="row mt-4">
-            <!-- Table Section (40%) -->
-            <div class="col-md-12">
-                <div class="card">
-                    <div class="card-body">
-                        <div style="max-height: 300px; overflow-y: auto;">
-                            <table class="table table-sm table-bordered">
-                                <thead style="background-color: #808080">
-                                <tr>
-                                    <th class="text-center small">CPC</th>
-                                    <th class="text-center small">Count</th>
-                                    <th class="text-center small">Actions</th>
-                                </tr>
-                                </thead>
-                                <tbody>
-                                <tr>
-                                    <td class="text-center small">data</td>
-                                    <td class="text-center small">data</td>
-                                    <td class="text-center small">
-                                        <div class="d-flex justify-content-center">
-                                            <button class="btn btn-secondary btn-xs mx-1"
-                                                    onclick="indCpcDataView('{{key}}','{{project_id}}')">
-                                                <i class="fa fa-eye" aria-hidden="true"></i>
-                                            </button>
-                                            <button class="btn btn-primary btn-xs mx-1"
-                                                    onclick="downloadIndCpc('')"><i
-                                                    class="fas fa-file-download" aria-hidden="true"></i>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        <div class="text-center mt-2">
-                            <button class="btn btn-secondary btn-xs"
-                                    onclick="openCpcDataView('')">View
-                            </button>
-                            <button class="btn btn-primary btn-xs"
-                                    onclick="downloadTopCPC('')">
-                                Download
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-<!--bar cart ends here-->
 <!--3d pie chart-->
 <div class="row justify-content-center">
     <div class="col-md-12">
         <div class="card">
-            <h5 class="card-title"><b>Sequencing Techniques vs Patent family count</b></h5>
+             <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="card-title mb-0 d-flex align-items-center">
+                    <h5 class="mb-0 mr-2"><b><span id="heading3{{ chart_id }}">{{ chart_heading4 }}</span></b></h5>
+                    <input type="text" id="editHeading3{{ chart_id }}" class="form-control edit-heading-input"
+                           style="display: none;" value="{{ chart_heading }}">
+                    <button class="btn btn-sm btn-success save-heading3" data-chart-id="{{ chart_id }}"
+                            style="display: none;">Save
+                    </button>
+                    <button class="btn btn-sm btn-secondary cancel-heading3" data-chart-id="{{ chart_id }}"
+                            style="display: none;">Cancel
+                    </button>
+                </div>
+                <div class="d-flex">
+                    <button class="btn btn-sm btn-primary edit-heading3 mr-4" data-chart-id="{{ chart_id }}">Edit
+                    </button>
+                </div>
+            </div>
             <div class="card-body">
                 <div class="row">
                     <!-- Chart Section (60%) -->
@@ -257,42 +314,42 @@
                 <div class="card">
                     <div class="card-body">
                         <div style="max-height: 300px; overflow-y: auto;">
-                            <table class="table table-sm table-bordered">
-                                <thead style="background-color: #808080">
-                                <tr>
-                                    <th class="text-center small">CPC</th>
-                                    <th class="text-center small">Count</th>
-                                    <th class="text-center small">Actions</th>
-                                </tr>
-                                </thead>
-                                <tbody>
-                                <tr>
-                                    <td class="text-center small">data</td>
-                                    <td class="text-center small">data</td>
-                                    <td class="text-center small">
-                                        <div class="d-flex justify-content-center">
-                                            <button class="btn btn-secondary btn-xs mx-1"
-                                                    onclick="indCpcDataView('{{key}}','{{project_id}}')">
-                                                <i class="fa fa-eye" aria-hidden="true"></i>
-                                            </button>
-                                            <button class="btn btn-primary btn-xs mx-1"
-                                                    onclick="downloadIndCpc('')"><i
-                                                    class="fas fa-file-download" aria-hidden="true"></i>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                                </tbody>
-                            </table>
+<!--                            <table class="table table-sm table-bordered">-->
+<!--                                <thead style="background-color: #808080">-->
+<!--                                <tr>-->
+<!--                                    <th class="text-center small">CPC</th>-->
+<!--                                    <th class="text-center small">Count</th>-->
+<!--                                    <th class="text-center small">Actions</th>-->
+<!--                                </tr>-->
+<!--                                </thead>-->
+<!--                                <tbody>-->
+<!--                                <tr>-->
+<!--                                    <td class="text-center small">data</td>-->
+<!--                                    <td class="text-center small">data</td>-->
+<!--                                    <td class="text-center small">-->
+<!--                                        <div class="d-flex justify-content-center">-->
+<!--                                            <button class="btn btn-secondary btn-xs mx-1"-->
+<!--                                                    onclick="indCpcDataView('{{key}}','{{project_id}}')">-->
+<!--                                                <i class="fa fa-eye" aria-hidden="true"></i>-->
+<!--                                            </button>-->
+<!--                                            <button class="btn btn-primary btn-xs mx-1"-->
+<!--                                                    onclick="downloadIndCpc('')"><i-->
+<!--                                                    class="fas fa-file-download" aria-hidden="true"></i>-->
+<!--                                            </button>-->
+<!--                                        </div>-->
+<!--                                    </td>-->
+<!--                                </tr>-->
+<!--                                </tbody>-->
+<!--                            </table>-->
                         </div>
                         <div class="text-center mt-2">
-                            <button class="btn btn-secondary btn-xs"
-                                    onclick="openCpcDataView('')">View
-                            </button>
-                            <button class="btn btn-primary btn-xs"
-                                    onclick="downloadTopCPC('')">
-                                Download
-                            </button>
+<!--                            <button class="btn btn-secondary btn-xs"-->
+<!--                                    onclick="openCpcDataView('')">View-->
+<!--                            </button>-->
+<!--                            <button class="btn btn-primary btn-xs"-->
+<!--                                    onclick="downloadTopCPC('')">-->
+<!--                                Download-->
+<!--                            </button>-->
                         </div>
                     </div>
                 </div>
@@ -300,276 +357,733 @@
         </div>
     </div>
 </div>
+<!--3D PIE CHART Table end-->
+<!--===================================================-->
+{% else %}
+<img id="logo" src="{% static 'img/No data-amico.svg' %}" width="100%" height="70%">
+    <div style="text-align: center;">
+        <b>No Data uploaded yet!</b>
+    </div>
+{% endif %}
 <!--3d pie chart ends here-->
 {% endblock %}
 {% block scripts %}
+<!-- Resources -->
+<script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/hierarchy.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
 <script src="https://cdn.amcharts.com/lib/4/core.js"></script>
 <script src="https://cdn.amcharts.com/lib/4/charts.js"></script>
 <script src="https://cdn.amcharts.com/lib/4/themes/animated.js"></script>
-<script src="https://cdn.amcharts.com/lib/5/index.js"></script>
 <script src="https://cdn.amcharts.com/lib/5/percent.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/xy.js"></script>
+<script src="https://d3js.org/d3.v6.min.js"></script>
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 <script>
-    am4core.ready(function() {
+// ============================heat map===================================================
+document.getElementById('levelSelect').addEventListener('change', function() {
+    const selectedLevel = this.value;
+    const levelNumber = selectedLevel.replace('level', '');
+    const projectId = {{ project_id }};
+    fetch(`/get-heatmap-data/${projectId}/${levelNumber}/`)
+        .then(response => response.json())
+        .then(data => {
+            const y = data.top_ten_assignee;
+            const truncatedY = y.map(item => item.length > 15 ? item.substring(0, 15) + '...' : item);
+            const x = data.child_cat_names;
+            const z = data.heatmap_data.z;
 
-    // Themes begin
-    am4core.useTheme(am4themes_animated);
-    // Themes end
+            const heatmapData = {
+                top_ten_assignee: y,
+                child_cat_names: x,
+                heatmap_data: {
+                    z: z
+                }
+            };
+            createHeatmap(heatmapData);
+        })
+        .catch(error => console.error('Error fetching heatmap data:', error));
+});
 
-    // Create chart instance
-    var chart = am4core.create("chartdiv", am4charts.PieChart);
+function createHeatmap(data) {
+    const y = data.top_ten_assignee;
+    const truncatedY = y.map(item => item.length > 15 ? item.substring(0, 15) + '...' : item);
+    const x = data.child_cat_names;
+    const z = data.heatmap_data.z;
 
-    // Let's cut a hole in our Pie chart the size of 40% the radius
-    chart.innerRadius = am4core.percent(40);
-
-    // Add data
-    chart.data = [{
-      "Metabolomics": "Lithuania",
-      "litres": 501.9,
-      "bottles": 1500
-    }, {
-      "country": "Czech Republic",
-      "litres": 301.9,
-      "bottles": 990
-    }, {
-      "country": "Ireland",
-      "litres": 201.1,
-      "bottles": 785
-    }, {
-      "country": "Germany",
-      "litres": 165.8,
-      "bottles": 255
-    }, {
-      "country": "Australia",
-      "litres": 139.9,
-      "bottles": 452
-    }, {
-      "country": "Austria",
-      "litres": 128.3,
-      "bottles": 332
-    }, {
-      "country": "UK",
-      "litres": 99,
-      "bottles": 150
-    }, {
-      "country": "Belgium",
-      "litres": 60,
-      "bottles": 178
-    }, {
-      "country": "The Netherlands",
-      "litres": 50,
-      "bottles": 50
-    }];
-
-    // Add and configure Series
-    var pieSeries = chart.series.push(new am4charts.PieSeries());
-    pieSeries.dataFields.value = "litres";
-    pieSeries.dataFields.category = "country";
-    pieSeries.slices.template.stroke = am4core.color("#fff");
-    pieSeries.slices.template.strokeWidth = 2;
-    pieSeries.slices.template.strokeOpacity = 1;
-
-    // Define blue color shades
-    pieSeries.colors.list = [
-        am4core.color("#b2cf5a"),
-        am4core.color("#8dc03c"),
-        am4core.color("#94d966"),
-        am4core.color("#a2d28a"),
-        am4core.color("#6d9d2d")
+    var dataa = [
+        {
+            z: z,
+            x: x,
+            y: y,
+            type: 'heatmap',
+            hoverongaps: false,
+            colorscale: [
+                [0, 'rgb(236,239,244)'], // Light blue-gray
+                [0.05, 'rgb(208,209,230)'], // Light blue
+                [0.1, 'rgb(166,189,219)'], // Sky blue
+                [0.2, 'rgb(116,169,207)'], // Cornflower blue
+                [0.4, 'rgb(54,144,192)'], // Royal blue
+                [1, 'rgb(49,54,149)'] // Dark purple
+            ],
+            hovertemplate: '<b>%{y}</b><br>Tech: %{x}<br>Value: %{z}<extra></extra>'
+        }
     ];
 
-    // Disabling labels and ticks on inner circle
-    pieSeries.labels.template.disabled = true;
-    pieSeries.ticks.template.disabled = true;
+    var layout = {
+        title: 'Top Assignees v/s Tech',
+        autosize: true,
+        xaxis: {
+            title: 'Tech',
+            automargin: true,
+            tickangle: -45,
+            tickfont: {
+                size: 10
+            },
+            ticks: 'outside',
+            tickwidth: 1,
+            linewidth: 1,
+            showticklabels: true,
+            ticklabeloverflow: 'allow'
+        },
+        yaxis: {
+            automargin: true,
+            tickmode: 'array',
+            tickvals: y,
+            ticktext: truncatedY,
+            tickfont: {
+                size: 9
+            },
+        },
+        margin: {
+            l: 80, // Increase left margin
+            r: 50,
+            b: 100,
+            t: 50,
+            pad: 4
+        },
+        responsive: true
+    };
+    Plotly.react('heatdiv', dataa, layout);
+}
 
-    // Disable sliding out of slices
-    pieSeries.slices.template.states.getKey("hover").properties.shiftRadius = 0;
-    pieSeries.slices.template.states.getKey("hover").properties.scale = 0.9;
+window.onload = function() {
+    const initialLevel = document.getElementById('levelSelect').value;
+    const levelNumber = initialLevel ? initialLevel.replace('level', '') : '0';
+    const projectId = {{ project_id }};
+    fetch(`/get-heatmap-data/${projectId}/${levelNumber}/`)
+        .then(response => response.json())
+        .then(data => createHeatmap(data))
+        .catch(error => console.error('Error fetching initial heatmap data:', error));
+};
+// ==================================heat map end==============================================
+const data = [{{get_all_data|safe}}];
+am5.ready(function() {
+    var root = am5.Root.new("chartdiv");
+    root.setThemes([am5themes_Animated.new(root)]);
+    var container = root.container.children.push(
+        am5.Container.new(root, {
+            width: am5.percent(100),
+            height: am5.percent(100),
+            layout: root.verticalLayout,
+        })
+    );
+    var series = container.children.push(
+        am5hierarchy.Sunburst.new(root, {
+            singleBranchOnly: true,
+            downDepth: 2,
+            initialDepth: 3,
+            valueField: "value",
+            categoryField: "name",
+            childDataField: "children",
+            maxDepth: 2,
+        })
+    );
+    series.labels.template.setAll({
+        fontSize: function(target) {
+            const labelWidth = target.labelShape.measuredWidth;
+            if (labelWidth > 120) {
+                return 8;
+            } else {
+                return 10;
+            }
+        }
+    });
+    setTimeout(function() {
+        series.labels.template.adapters.add("dx", function(dx, target) {
+            if (target.labelShape) {
+                const labelWidth = target.labelShape.measuredWidth;
+                const radius = target.dataItem.get("radius");
+                const adjustment = Math.min(0, (labelWidth / 2) - radius * 0.2);
+                return adjustment;
+            }
+            return dx;
+        });
+    }, 100);
 
-    // Add second series
-    var pieSeries2 = chart.series.push(new am4charts.PieSeries());
-    pieSeries2.dataFields.value = "bottles";
-    pieSeries2.dataFields.category = "country";
-    pieSeries2.slices.template.stroke = am4core.color("#fff");
-    pieSeries2.slices.template.strokeWidth = 2;
-    pieSeries2.slices.template.strokeOpacity = 1;
-
-    // Define green color shades
-    pieSeries2.colors.list = [
-        am4core.color("#4e79a7"),
-        am4core.color("#81b1d2"),
-        am4core.color("#a5c9e6"),
-        am4core.color("#8fb5d1"),
-        am4core.color("#6f9ec0")
-    ];
-
-    pieSeries2.slices.template.states.getKey("hover").properties.shiftRadius = 0;
-    pieSeries2.slices.template.states.getKey("hover").properties.scale = 1.1;
-
-}); // end am4core.ready()
-
+    series.data.setAll(data);
+    series.set("selectedDataItem", series.dataItems[0]);
+    series.slices.template.events.on("click", function(ev) {
+        var dataItem = ev.target.dataItem;
+        if (dataItem && dataItem.dataContext) {
+            const dataContext = dataItem.dataContext;
+            console.log("Clicked data context:", dataContext);
+        } else {
+            console.warn("Clicked element has no dataContext");
+        }
+        if (dataItem.get("depth") >= 0 && !dataItem.get("children")) {
+            ev.stopPropagation();
+        }
+    });
+    series.appear(1000, 100);
+});
 
 <!-- Chart code -->
 am4core.ready(function() {
+  am4core.useTheme(am4themes_animated);
+  var chart = am4core.create("chartQdiv", am4charts.PieChart3D);
+  chart.hiddenState.properties.opacity = 0;
 
-// Themes begin
-am4core.useTheme(am4themes_animated);
-// Themes end
+  var encodedData = '{{others_count}}';
+  var tempElement = document.createElement('div');
+  tempElement.innerHTML = encodedData;
+  var decodedData = tempElement.innerText;
 
-var chart = am4core.create("chartQdiv", am4charts.PieChart3D);
-chart.hiddenState.properties.opacity = 0; // this creates initial fade-in
+  if (decodedData.trim() === '') {
+    document.getElementById("chartCard{{ chart_id }}").style.display = "None";
+    chart.dispose();
+    document.getElementById("chartQdiv").style.display = "none";
+  } else {
+    chart.data = JSON.parse(decodedData);
+    chart.innerRadius = am4core.percent(40);
+    chart.depth = 120;
+    chart.legend = new am4charts.Legend();
 
-chart.data = [
-  {
-    country: "Lithuania",
-    litres: 501.9
-  },
-  {
-    country: "Czech Republic",
-    litres: 301.9
-  },
-  {
-    country: "Ireland",
-    litres: 201.1
-  },
-  {
-    country: "Germany",
-    litres: 165.8
-  },
-  {
-    country: "Australia",
-    litres: 139.9
-  },
-  {
-    country: "Austria",
-    litres: 128.3
+    var series = chart.series.push(new am4charts.PieSeries3D());
+    series.dataFields.value = "litres";
+    series.dataFields.depthValue = "litres";
+    series.dataFields.category = "category";
+    series.slices.template.cornerRadius = 5;
+    series.colors.step = 3;
   }
-];
-
-chart.innerRadius = am4core.percent(40);
-chart.depth = 120;
-
-chart.legend = new am4charts.Legend();
-
-var series = chart.series.push(new am4charts.PieSeries3D());
-series.dataFields.value = "litres";
-series.dataFields.depthValue = "litres";
-series.dataFields.category = "country";
-series.slices.template.cornerRadius = 5;
-series.colors.step = 3;
-
-}); // end am4core.ready()
-    //============bar chart=================
-    am4core.ready(function() {
-
-// Themes begin
-am4core.useTheme(am4themes_animated);
-// Themes end
-
-// Create chart instance
-var chart = am4core.create("barchartdiv", am4charts.XYChart3D);
-
-// Add data
-chart.data = [{
-  "year": 2005,
-  "income": 23.5,
-  "color": chart.colors.next()
-}, {
-  "year": 2006,
-  "income": 26.2,
-  "color": chart.colors.next()
-}, {
-  "year": 2007,
-  "income": 30.1,
-  "color": chart.colors.next()
-}, {
-  "year": 2008,
-  "income": 29.5,
-  "color": chart.colors.next()
-}, {
-  "year": 2009,
-  "income": 24.6,
-  "color": chart.colors.next()
-}];
-
-// Create axes
-var categoryAxis = chart.yAxes.push(new am4charts.CategoryAxis());
-categoryAxis.dataFields.category = "year";
-categoryAxis.numberFormatter.numberFormat = "#";
-categoryAxis.renderer.inversed = true;
-
-var  valueAxis = chart.xAxes.push(new am4charts.ValueAxis());
-
-// Create series
-var series = chart.series.push(new am4charts.ColumnSeries3D());
-series.dataFields.valueX = "income";
-series.dataFields.categoryY = "year";
-series.name = "Income";
-series.columns.template.propertyFields.fill = "color";
-series.columns.template.tooltipText = "{valueX}";
-series.columns.template.column3D.stroke = am4core.color("#fff");
-series.columns.template.column3D.strokeOpacity = 0.2;
-
 });
 
+// ============bar chart starts here=================
+am5.ready(function() {
+  var container = document.getElementById("barlinechartdiv");
+  container.style.height = "500px";
+  var root = am5.Root.new("barlinechartdiv");
+  root.setThemes([
+    am5themes_Animated.new(root)
+  ]);
+  var chart = root.container.children.push(am5xy.XYChart.new(root, {
+    panX: false,
+    panY: false,
+    wheelX: "panX",
+    wheelY: "zoomX",
+    paddingLeft: 0
+  }));
 
-    //===================pie chart 3D===========
-    am4core.ready(function() {
+  chart.set("scrollbarY", am5.Scrollbar.new(root, {
+    orientation: "vertical"
+  }));
 
-// Themes begin
-am4core.useTheme(am4themes_animated);
-// Themes end
+  var dataFromBackend = {{all_child_categories_count|safe}};
+  var data = Object.keys(dataFromBackend).map(function(key) {
+    return {
+      "category": key,
+      "count": dataFromBackend[key]
+    };
+  });
 
-var chart = am4core.create("piechartdiv", am4charts.PieChart3D);
-chart.hiddenState.properties.opacity = 0; // this creates initial fade-in
+  var yRenderer = am5xy.AxisRendererY.new(root, {
+    cellStartLocation: 0.1,
+    cellEndLocation: 0.9,
+    minorGridEnabled: true
+  });
+  yRenderer.grid.template.set("location", 1);
 
-chart.legend = new am4charts.Legend();
+  var yAxis = chart.yAxes.push(
+    am5xy.CategoryAxis.new(root, {
+      categoryField: "category",
+      renderer: yRenderer,
+      tooltip: am5.Tooltip.new(root, {})
+    })
+  );
 
-chart.data = [
-  {
-    country: "Lithuania",
-    litres: 501.9
-  },
-  {
-    country: "Czech Republic",
-    litres: 301.9
-  },
-  {
-    country: "Ireland",
-    litres: 201.1
-  },
-  {
-    country: "Germany",
-    litres: 165.8
-  },
-  {
-    country: "Australia",
-    litres: 139.9
-  },
-  {
-    country: "Austria",
-    litres: 128.3
-  },
-  {
-    country: "UK",
-    litres: 99
-  },
-  {
-    country: "Belgium",
-    litres: 60
-  },
-  {
-    country: "The Netherlands",
-    litres: 50
-  }
-];
+  yAxis.data.setAll(data);
 
-var series = chart.series.push(new am4charts.PieSeries3D());
-series.dataFields.value = "litres";
-series.dataFields.category = "country";
+  var xAxis = chart.xAxes.push(
+    am5xy.ValueAxis.new(root, {
+      min: 0,
+      renderer: am5xy.AxisRendererX.new(root, {
+        strokeOpacity: 0.1,
+        minGridDistance: 70
+      })
+    })
+  );
 
+  var series1 = chart.series.push(am5xy.ColumnSeries.new(root, {
+    name: "Count",
+    xAxis: xAxis,
+    yAxis: yAxis,
+    valueXField: "count",
+    categoryYField: "category",
+    sequencedInterpolation: true,
+    tooltip: am5.Tooltip.new(root, {
+      pointerOrientation: "horizontal",
+      labelText: "[bold]{name}[/]\n{categoryY}: {valueX}"
+    })
+  }));
+
+  series1.columns.template.setAll({
+    height: am5.percent(70)
+  });
+
+  var legend = chart.children.push(am5.Legend.new(root, {
+    centerX: am5.p50,
+    x: am5.p50
+  }));
+
+  legend.data.setAll(chart.series.values);
+  var cursor = chart.set("cursor", am5xy.XYCursor.new(root, {
+    behavior: "zoomY"
+  }));
+  cursor.lineX.set("visible", false);
+  series1.data.setAll(data);
+  series1.appear();
+  chart.appear(1000, 100);
 });
-    //===================pie chart 3D===========
+//============bar chart end here=================
 
+//===================pie chart 3D===========
+am4core.ready(function() {
+    am4core.useTheme(am4themes_animated);
+    var chart = am4core.create("piechartdiv", am4charts.PieChart3D);
+    chart.hiddenState.properties.opacity = 0;
+    chart.legend = new am4charts.Legend();
+    chart.data = {{ others_category_count|safe }};
+    var series = chart.series.push(new am4charts.PieSeries3D());
+    series.dataFields.value = "litres"; // Specify the value field
+    series.dataFields.category = "child_cat_name";
+});
 
+//================================================================================
+const data1 = {{get_all_data|safe}};
+var container = document.getElementById("hierarchydiv");
+container.style.height = "500px";
+container.style.overflow = "auto";
+var root = am5.Root.new("hierarchydiv");
+root.setThemes([am5themes_Animated.new(root)]);
+var chartContainer = root.container.children.push(am5.Container.new(root, {
+  width: am5.percent(100),
+  height: am5.percent(100),
+  layout: root.horizontalLayout
+}));
+
+var series = chartContainer.children.push(am5hierarchy.ForceDirected.new(root, {
+  singleBranchOnly: false,
+  downDepth: 2,
+  topDepth: 1,
+  initialDepth: 1,
+  valueField: "value",
+  categoryField: "name",
+  childDataField: "children",
+  idField: "name",
+  linkWithField: "linkWith",
+  manyBodyStrength: -10,
+  centerStrength: 0.8
+}));
+
+series.set("panX", false);
+series.set("panY", false);
+series.set("wheelX", "panX");
+series.set("wheelY", "zoomX");
+
+series.events.on("ready", function() {
+  if (series.nodes && series.nodes.templates && series.nodes.templates.circle) {
+    var labelTemplate = series.nodes.templates.label.setAll({
+      text: "{name}",
+      fontSize: 14,
+      fill: am5.color(0x000000),
+      background: am5.Rectangle.new(root, {
+        fill: am5.color(0xffffff),
+        fillOpacity: 0.8
+      }),
+      paddingLeft: 10,
+      paddingRight: 10,
+      paddingTop: 5,
+      paddingBottom: 5
+    });
+    labelTemplate.adapter.add("dx", function(dx, target) {
+      var labelWidth = target.dataItem.get("label").node.getBBox().width;
+      return -labelWidth / 2;
+    });
+
+    labelTemplate.adapter.add("dy", function(dy, target) {
+      var labelHeight = target.dataItem.get("label").node.getBBox().height;
+      return -labelHeight / 2;
+    });
+    series.nodes.template.adapter.add("radius", function(radius, target) {
+      var label = target.dataItem.get("label");
+      var textWidth = label.node.getBBox().width + label.paddingLeft + label.paddingRight;
+      var textHeight = label.node.getBBox().height + label.paddingTop + label.paddingBottom;
+      return Math.max(radius, Math.max(textWidth, textHeight) / 2 + 20); // Adjust the node radius to fit the label
+    });
+  }
+});
+
+series.get("colors").setAll({
+  step: 2
+});
+series.links.template.set("strength", 0.5);
+series.data.setAll([data1]);
+series.set("selectedDataItem", series.dataItems[0]);
+series.appear(1000, 100);
+
+//<!--============================================-->
+document.addEventListener('DOMContentLoaded', function() {
+    const chartSelects = document.querySelectorAll('.chart-select');
+    chartSelects.forEach(function(select) {
+        select.addEventListener('change', function() {
+            const selectedValue = this.value;
+            const chartId = this.dataset.chartId;
+            const hierarchydiv = document.getElementById('hierarchydiv');
+            const chartdiv = document.getElementById('chartdiv');
+
+            if (selectedValue === 'chart1') {
+                hierarchydiv.style.display = 'none';
+                chartdiv.style.display = 'block';
+            } else if (selectedValue === 'chart2') {
+                hierarchydiv.style.display = 'block';
+                chartdiv.style.display = 'none';
+            }
+        });
+    });
+});
+
+//======================================================
+
+document.addEventListener('DOMContentLoaded', function() {
+    const editButtons = document.querySelectorAll('.edit-heading');
+    const saveButtons = document.querySelectorAll('.save-heading');
+    const cancelButtons = document.querySelectorAll('.cancel-heading');
+    editButtons.forEach(function(editButton) {
+        editButton.addEventListener('click', function() {
+            const chartId = this.dataset.chartId;
+            const headingSpan = document.getElementById(`heading${chartId}`);
+            const editHeadingInput = document.getElementById(`editHeading${chartId}`);
+            const saveButton = document.querySelector(`.save-heading[data-chart-id="${chartId}"]`);
+            const cancelButton = document.querySelector(`.cancel-heading[data-chart-id="${chartId}"]`);
+            headingSpan.style.display = 'none';
+            editHeadingInput.style.display = 'inline-block';
+            saveButton.style.display = 'inline-block';
+            cancelButton.style.display = 'inline-block';
+            this.style.display = 'none';
+        });
+    });
+
+    saveButtons.forEach(function(saveButton) {
+        saveButton.addEventListener('click', function() {
+            const chartId = this.dataset.chartId;
+            const editHeadingInput = document.getElementById(`editHeading${chartId}`);
+            const newHeading = editHeadingInput.value;
+            saveChartHeading(chartId, newHeading);
+        });
+    });
+
+    cancelButtons.forEach(function(cancelButton) {
+        cancelButton.addEventListener('click', function() {
+            const chartId = this.dataset.chartId;
+            const headingSpan = document.getElementById(`heading${chartId}`);
+            const editHeadingInput = document.getElementById(`editHeading${chartId}`);
+            const saveButton = document.querySelector(`.save-heading[data-chart-id="${chartId}"]`);
+            const editButton = document.querySelector(`.edit-heading[data-chart-id="${chartId}"]`);
+
+            headingSpan.style.display = 'inline-block';
+            editHeadingInput.style.display = 'none';
+            saveButton.style.display = 'none';
+            this.style.display = 'none';
+            editButton.style.display = 'inline-block';
+        });
+    });
+});
+
+function saveChartHeading(chartId, newHeading) {
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    fetch('/create_chart_heading/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken,
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({
+            chart_id: 1,
+            new_heading: newHeading,
+            project_id: {{project_id}}
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const headingSpan = document.getElementById(`heading${chartId}`);
+            headingSpan.textContent = newHeading;
+            headingSpan.style.display = 'inline-block';
+            document.getElementById(`editHeading${chartId}`).style.display = 'none';
+            document.querySelector(`.save-heading[data-chart-id="${chartId}"]`).style.display = 'none';
+            document.querySelector(`.cancel-heading[data-chart-id="${chartId}"]`).style.display = 'none';
+            document.querySelector(`.edit-heading[data-chart-id="${chartId}"]`).style.display = 'inline-block';
+        } else {
+            console.error('Error updating chart heading:', data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error updating chart heading:', error);
+    });
+}
+
+//======================================================
+document.addEventListener('DOMContentLoaded', function() {
+    const editButtons1 = document.querySelectorAll('.edit-heading1');
+    const saveButtons1 = document.querySelectorAll('.save-heading1');
+    const cancelButtons1 = document.querySelectorAll('.cancel-heading1');
+    editButtons1.forEach(function(editButton) {
+        editButton.addEventListener('click', function() {
+            const chartId = this.dataset.chartId;
+            const headingSpan = document.getElementById(`heading1${chartId}`);
+            const editHeadingInput = document.getElementById(`editHeading1${chartId}`);
+            const saveButton = document.querySelector(`.save-heading1[data-chart-id="${chartId}"]`);
+            const cancelButton = document.querySelector(`.cancel-heading1[data-chart-id="${chartId}"]`);
+
+            headingSpan.style.display = 'none';
+            editHeadingInput.style.display = 'inline-block';
+            saveButton.style.display = 'inline-block';
+            cancelButton.style.display = 'inline-block';
+            this.style.display = 'none';
+        });
+    });
+
+    saveButtons1.forEach(function(saveButton) {
+        saveButton.addEventListener('click', function() {
+            const chartId = this.dataset.chartId;
+            const editHeadingInput = document.getElementById(`editHeading1${chartId}`);
+            const newHeading = editHeadingInput.value;
+            saveChartHeading1(chartId, newHeading);
+        });
+    });
+
+    cancelButtons1.forEach(function(cancelButton) {
+        cancelButton.addEventListener('click', function() {
+            const chartId = this.dataset.chartId;
+            const headingSpan = document.getElementById(`heading1${chartId}`);
+            const editHeadingInput = document.getElementById(`editHeading1${chartId}`);
+            const saveButton = document.querySelector(`.save-heading1[data-chart-id="${chartId}"]`);
+            const editButton = document.querySelector(`.edit-heading1[data-chart-id="${chartId}"]`);
+            headingSpan.style.display = 'inline-block';
+            editHeadingInput.style.display = 'none';
+            saveButton.style.display = 'none';
+            this.style.display = 'none';
+            editButton.style.display = 'inline-block';
+        });
+    });
+});
+function saveChartHeading1(chartId, newHeading) {
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    fetch('/create_chart_heading/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken,
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({
+            chart_id: 2,
+            new_heading: newHeading,
+            project_id: {{project_id}}
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const headingSpan = document.getElementById(`heading1${chartId}`);
+            headingSpan.textContent = newHeading;
+            headingSpan.style.display = 'inline-block';
+            document.getElementById(`editHeading1${chartId}`).style.display = 'none';
+            document.querySelector(`.save-heading1[data-chart-id="${chartId}"]`).style.display = 'none';
+            document.querySelector(`.cancel-heading1[data-chart-id="${chartId}"]`).style.display = 'none';
+            document.querySelector(`.edit-heading1[data-chart-id="${chartId}"]`).style.display = 'inline-block';
+        } else {
+            console.error('Error updating chart heading:', data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error updating chart heading:', error);
+    });
+}
+//===============================3 rd chart=============================
+document.addEventListener('DOMContentLoaded', function() {
+    const editButtons2 = document.querySelectorAll('.edit-heading2');
+    const saveButtons2 = document.querySelectorAll('.save-heading2');
+    const cancelButtons2 = document.querySelectorAll('.cancel-heading2');
+    editButtons2.forEach(function(editButton) {
+        editButton.addEventListener('click', function() {
+            const chartId = this.dataset.chartId;
+            const headingSpan = document.getElementById(`heading2${chartId}`);
+            const editHeadingInput = document.getElementById(`editHeading2${chartId}`);
+            const saveButton = document.querySelector(`.save-heading2[data-chart-id="${chartId}"]`);
+            const cancelButton = document.querySelector(`.cancel-heading2[data-chart-id="${chartId}"]`);
+            headingSpan.style.display = 'none';
+            editHeadingInput.style.display = 'inline-block';
+            saveButton.style.display = 'inline-block';
+            cancelButton.style.display = 'inline-block';
+            this.style.display = 'none';
+        });
+    });
+
+    saveButtons2.forEach(function(saveButton) {
+        saveButton.addEventListener('click', function() {
+            const chartId = this.dataset.chartId;
+            const editHeadingInput = document.getElementById(`editHeading2${chartId}`);
+            const newHeading = editHeadingInput.value;
+            saveChartHeading2(chartId, newHeading);
+        });
+    });
+
+    cancelButtons2.forEach(function(cancelButton) {
+        cancelButton.addEventListener('click', function() {
+            const chartId = this.dataset.chartId;
+            const headingSpan = document.getElementById(`heading2${chartId}`);
+            const editHeadingInput = document.getElementById(`editHeading2${chartId}`);
+            const saveButton = document.querySelector(`.save-heading2[data-chart-id="${chartId}"]`);
+            const editButton = document.querySelector(`.edit-heading2[data-chart-id="${chartId}"]`);
+
+            headingSpan.style.display = 'inline-block';
+            editHeadingInput.style.display = 'none';
+            saveButton.style.display = 'none';
+            this.style.display = 'none';
+            editButton.style.display = 'inline-block';
+        });
+    });
+});
+function saveChartHeading2(chartId, newHeading) {
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    fetch('/create_chart_heading/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken,
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({
+            chart_id: 3,
+            new_heading: newHeading,
+            project_id: {{project_id}}
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const headingSpan = document.getElementById(`heading2${chartId}`);
+            headingSpan.textContent = newHeading;
+            headingSpan.style.display = 'inline-block';
+            document.getElementById(`editHeading2${chartId}`).style.display = 'none';
+            document.querySelector(`.save-heading2[data-chart-id="${chartId}"]`).style.display = 'none';
+            document.querySelector(`.cancel-heading2[data-chart-id="${chartId}"]`).style.display = 'none';
+            document.querySelector(`.edit-heading2[data-chart-id="${chartId}"]`).style.display = 'inline-block';
+        } else {
+            console.error('Error updating chart heading:', data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error updating chart heading:', error);
+    });
+}
+
+//===============================3 rd chart end=============================
+//===============================4rth chart start=============================
+document.addEventListener('DOMContentLoaded', function() {
+    const editButtons3 = document.querySelectorAll('.edit-heading3');
+    const saveButtons3 = document.querySelectorAll('.save-heading3');
+    const cancelButtons3 = document.querySelectorAll('.cancel-heading3');
+
+    editButtons3.forEach(function(editButton) {
+        editButton.addEventListener('click', function() {
+            const chartId = this.dataset.chartId;
+            const headingSpan = document.getElementById(`heading3${chartId}`);
+            const editHeadingInput = document.getElementById(`editHeading3${chartId}`);
+            const saveButton = document.querySelector(`.save-heading3[data-chart-id="${chartId}"]`);
+            const cancelButton = document.querySelector(`.cancel-heading3[data-chart-id="${chartId}"]`);
+
+            headingSpan.style.display = 'none';
+            editHeadingInput.style.display = 'inline-block';
+            saveButton.style.display = 'inline-block';
+            cancelButton.style.display = 'inline-block';
+            this.style.display = 'none';
+        });
+    });
+
+    saveButtons3.forEach(function(saveButton) {
+        saveButton.addEventListener('click', function() {
+            const chartId = this.dataset.chartId;
+            const editHeadingInput = document.getElementById(`editHeading3${chartId}`);
+            const newHeading = editHeadingInput.value;
+
+            saveChartHeading3(chartId, newHeading);
+        });
+    });
+
+    cancelButtons3.forEach(function(cancelButton) {
+        cancelButton.addEventListener('click', function() {
+            const chartId = this.dataset.chartId;
+            const headingSpan = document.getElementById(`heading3${chartId}`);
+            const editHeadingInput = document.getElementById(`editHeading3${chartId}`);
+            const saveButton = document.querySelector(`.save-heading3[data-chart-id="${chartId}"]`);
+            const editButton = document.querySelector(`.edit-heading3[data-chart-id="${chartId}"]`);
+
+            headingSpan.style.display = 'inline-block';
+            editHeadingInput.style.display = 'none';
+            saveButton.style.display = 'none';
+            this.style.display = 'none';
+            editButton.style.display = 'inline-block';
+        });
+    });
+});
+
+function saveChartHeading3(chartId, newHeading) {
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    fetch('/create_chart_heading/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken,
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({
+            chart_id: 4,
+            new_heading: newHeading,
+            project_id: {{project_id}}
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const headingSpan = document.getElementById(`heading3${chartId}`);
+            headingSpan.textContent = newHeading;
+            headingSpan.style.display = 'inline-block';
+            document.getElementById(`editHeading3${chartId}`).style.display = 'none';
+            document.querySelector(`.save-heading3[data-chart-id="${chartId}"]`).style.display = 'none';
+            document.querySelector(`.cancel-heading3[data-chart-id="${chartId}"]`).style.display = 'none';
+            document.querySelector(`.edit-heading3[data-chart-id="${chartId}"]`).style.display = 'inline-block';
+        } else {
+            console.error('Error updating chart heading:', data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error updating chart heading:', error);
+    });
+}
+//===============================4rth chart end=============================
 </script>
 {% endblock %}

@@ -7,6 +7,7 @@ from django.utils import timezone
 from django.db.models.signals import pre_save
 from django.dispatch import receiver
 from ckeditor.fields import RichTextField
+from django.db.models import JSONField
 import logging
 
 logger = logging.getLogger(__name__)
@@ -75,6 +76,8 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     """
     username = models.CharField(max_length=150, unique=True)
     email = models.EmailField(unique=True)
+    company_name = models.CharField(max_length=250, null=True, blank=True)
+    company_logo = models.ImageField(upload_to='company_logo/', null=True, blank=True)
     created_date = models.DateTimeField(default=timezone.now)
     updated_date = models.DateTimeField(auto_now=True)
     CLIENT = 'client'
@@ -153,13 +156,13 @@ class Project(models.Model):
     ]
 
     code = models.CharField(max_length=100, unique=True)
-    name = models.CharField(max_length=255, unique=True)
+    name = models.CharField(max_length=512)
     description = RichTextField()
     scope = RichTextField(default="")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=IN_PROGRESS)
     created_date = models.DateTimeField(default=timezone.now)
     updated_date = models.DateTimeField(auto_now=True)
-
+    objects = models.Manager()
     def __str__(self):
         """
         Return a string representation of the Project.
@@ -190,7 +193,7 @@ class UserProjectAssociation(models.Model):
     projects = models.ManyToManyField(Project)
     assigned_time = models.DateTimeField(auto_now=True)
     updated_assigned_time = models.DateTimeField(auto_now=True)
-
+    objects = models.Manager()
     def __str__(self):
         """
         Return a string representation of the UserProjectAssociation.
@@ -230,7 +233,7 @@ class ClientProjectAssociation(models.Model):
     allocation_time = models.DateTimeField(auto_now=True, null=True, blank=True)
     deallocation_time = models.DateTimeField(null=True, blank=True)
     updated_assigned_time = models.DateTimeField(auto_now=True)
-
+    objects = models.Manager()
     def __str__(self):
         """
         Return a string representation of the ClientProjectAssociation.
@@ -265,7 +268,7 @@ class KeyAccountManagerProjectAssociation(models.Model):
     projects = models.ManyToManyField(Project)
     assigned_time = models.DateTimeField(auto_now=True)
     updated_assigned_time = models.DateTimeField(auto_now=True)
-
+    objects = models.Manager()
     def __str__(self):
         """
         Return a string representation of the KeyAccountManagerProjectAssociation.
@@ -284,9 +287,9 @@ class KeyAccountManagerProjectAssociation(models.Model):
 class PatentData(models.Model):
     user = models.ForeignKey('CustomUser', on_delete=models.CASCADE,
                              related_name='patent_user')
-    project_code = models.CharField(max_length=50)
+    project_code = models.CharField(max_length=100)
     publication_number = models.CharField(max_length=50)
-    assignee_standardized = models.CharField(max_length=512)
+    assignee_standardized = models.CharField(max_length=1025)
     legal_status = models.CharField(max_length=50)
     expected_expiry_dates = models.DateField(null=True, blank=True)
     remaining_life = models.PositiveIntegerField(null=True, blank=True)
@@ -296,13 +299,13 @@ class PatentData(models.Model):
     earliest_patent_priority_date = models.DateField(null=True, blank=True)
     application_dates = models.DateField(null=True, blank=True)
     publication_dates = models.DateField(null=True, blank=True)
-    application_number = models.CharField(max_length=255)
+    application_number = models.CharField(max_length=1025)
     cpc = models.TextField()
     ipc = models.TextField()
-    e_fan = models.CharField(max_length=100)
-    priority_country = models.CharField(max_length=255, null=True, blank=True)
+    e_fan = models.CharField(max_length=1025)
+    priority_country = models.CharField(max_length=1025, null=True, blank=True)
     created_date = models.DateTimeField(default=timezone.now, blank=True, null=True)
-
+    objects = models.Manager()
     def __str__(self):
         return f"{self.assignee_standardized} - {self.publication_number}"
 
@@ -314,7 +317,7 @@ class ProjectReports(models.Model):
     uploaded_by = models.ForeignKey('CustomUser', on_delete=models.CASCADE, related_name='uploaded_files', null=True,blank=True)
     uploaded_at = models.DateTimeField(auto_now_add=True)
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='uploaded_files')
-
+    objects = models.Manager()
     def __str__(self):
         return self.file_name
 
@@ -325,22 +328,20 @@ class ProjectReports(models.Model):
 
 class Category(models.Model):
     name = models.CharField(max_length=255)
+    project_id = models.ForeignKey(Project, on_delete=models.CASCADE)
     parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True)
-
+    level = models.IntegerField(default=0)
+    value = models.JSONField(null=True, blank=True)
+    num_header_levels = models.IntegerField(default=2)
+    upload_date = models.DateTimeField(auto_now_add=True)
+    uploaded_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True, blank=True)
+    objects = models.Manager()
     def __str__(self):
         return self.name
 
-class Element(models.Model):
-    name = models.CharField(max_length=255)
-    category = models.ForeignKey(Category, on_delete=models.CASCADE)
+class ChartHeading(models.Model):
+    chart_source_id = models.IntegerField()
+    heading = models.CharField(max_length=255, default='XYZ')
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name= 'chart_project_id')
+    objects = models.Manager()
 
-    def __str__(self):
-        return self.name
-
-class Data(models.Model):
-    category = models.ForeignKey(Category, on_delete=models.CASCADE)
-    element = models.ForeignKey(Element, on_delete=models.CASCADE)
-    value = models.CharField(max_length=255)
-
-    def __str__(self):
-        return f"{self.category.name} - {self.element.name}: {self.value}"

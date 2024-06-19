@@ -106,21 +106,38 @@
         <option value="project_manager" {% if user_obj.roles == 'project_manager' %}selected{% endif %}>Project Manager</option>
         <option value="key_account_holder" {% if user_obj.roles == 'key_account_holder' %}selected{% endif %}>Key Account Manager</option>
     </select>
-    </div>
+        {% if user_obj.roles == 'client' %}
+            <div class="form-group">
+                <label for="userEmail">Company Name</label>
+                <input class="form-control" value= "{{user_obj.company_name}}" type="text" id="clientCompany" name="clientCompany"
+                       placeholder="Enter Company Name"
+                       required>
+            </div>
 
+            <div class="form-group" style="margin-top: 10px;">
+    <label for="companyLogo" style="display: block; font-weight: bold; margin-bottom: 5px;">Company Logo</label>
+    <input type="file" class="form-control-file" id="companyLogo" name="companyLogo" accept="image/*" style="width: 100%; padding: 10px;">
+{% if user_obj.company_logo %}
+    <a href="{{ user_obj.company_logo.url }}" target="_blank">
+        <img src="{{ user_obj.company_logo.url }}" alt="Company Logo" style="max-width: 200px; margin-top: 10px;">
+    </a>
+{% endif %}
+
+</div>
+        {% endif %}
+    </div>
     <div class="form-group">
         <label for="businessUnit">Business Unit</label>
         <select id="businessUnit" class="form-control" name="businessUnit" required>
-        <option value="HI_IP" {% if user_obj.business_unit == 'HI_IP' %}selected{% endif %}>HT-IP</option>
-        <option value="HC_IP" {% if user_obj.business_unit == 'HC_IP' %}selected{% endif %}>HC-IP</option>
-        <option value="HC_BI" {% if user_obj.business_unit == 'HC_BI' %}selected{% endif %}>HC-BI</option>
-        <option value="CFH" {% if user_obj.business_unit == 'CFH' %}selected{% endif %}>CFH</option>
-        <option value="BD" {% if user_obj.business_unit == 'BD' %}selected{% endif %}>BD</option>
-        <option value="SPMT" {% if user_obj.business_unit == 'SPMT' %}selected{% endif %}>SPMT</option>
-    </select>
+            <option value="HI_IP" {% if user_obj.business_unit == 'HI_IP' %}selected{% endif %}>HT-IP</option>
+            <option value="HC_IP" {% if user_obj.business_unit == 'HC_IP' %}selected{% endif %}>HC-IP</option>
+            <option value="HC_BI" {% if user_obj.business_unit == 'HC_BI' %}selected{% endif %}>HC-BI</option>
+            <option value="CFH" {% if user_obj.business_unit == 'CFH' %}selected{% endif %}>CFH</option>
+            <option value="BD" {% if user_obj.business_unit == 'BD' %}selected{% endif %}>BD</option>
+            <option value="SPMT" {% if user_obj.business_unit == 'SPMT' %}selected{% endif %}>SPMT</option>
+        </select>
     </div>
-    <button type="submit" >Save</button>
-
+    <button class="btn btn-primary" type="submit">Update</button>
 </form>
 
 {% endblock %}
