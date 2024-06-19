@@ -76,6 +76,8 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     """
     username = models.CharField(max_length=150, unique=True)
     email = models.EmailField(unique=True)
+    company_name = models.CharField(max_length=250, null=True, blank=True)
+    company_logo = models.ImageField(upload_to='company_logo/', null=True, blank=True)
     created_date = models.DateTimeField(default=timezone.now)
     updated_date = models.DateTimeField(auto_now=True)
     CLIENT = 'client'

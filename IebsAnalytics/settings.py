@@ -157,6 +157,9 @@ STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static'),
 ]
 
+
+MEDIA_URL = '/media/'  # URL for accessing media files in development
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # Internationalization
 # https://docs.djangoproject.com/en/5.0/topics/i18n/
 
