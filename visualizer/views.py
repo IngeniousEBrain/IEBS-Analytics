@@ -2939,11 +2939,13 @@ def edit_user(request, user_id):
         roles = request.POST.get('userRoles')
         BU = request.POST.get('businessUnit')
         client_company = request.POST.get('clientCompany')
+        company_logo = request.FILES.get('companyLogo', None)
         user_obj.username = username
         user_obj.email = useremail
         user_obj.roles = roles
         user_obj.business_unit = BU
         user_obj.company_name = client_company
+        user_obj.company_logo = company_logo
         if password:
             user_obj.set_password(password)
         user_obj.updated_date = timezone.now()
