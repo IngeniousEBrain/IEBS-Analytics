@@ -2,12 +2,8 @@
 {% load static %}
 {% block head %}
 {{ block.super }}
-<style>
-
-</style>
 {% endblock %}
 {% block content %}
-
 <div class="tab-container">
     <a href="{% url 'competitor_charts' project_id %}" class="tab-link active">
         <span class="tab-icon">&#8592;</span>
@@ -501,7 +497,7 @@ am5.ready(function() {
             valueField: "value",
             categoryField: "name",
             childDataField: "children",
-            maxDepth: 2, // Prevent drilling down beyond the second level
+            maxDepth: 2,
         })
     );
     series.labels.template.setAll({
@@ -678,10 +674,8 @@ const data1 = {{get_all_data|safe}};
 var container = document.getElementById("hierarchydiv");
 container.style.height = "500px";
 container.style.overflow = "auto";
-
 var root = am5.Root.new("hierarchydiv");
 root.setThemes([am5themes_Animated.new(root)]);
-
 var chartContainer = root.container.children.push(am5.Container.new(root, {
   width: am5.percent(100),
   height: am5.percent(100),
@@ -782,7 +776,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const editHeadingInput = document.getElementById(`editHeading${chartId}`);
             const saveButton = document.querySelector(`.save-heading[data-chart-id="${chartId}"]`);
             const cancelButton = document.querySelector(`.cancel-heading[data-chart-id="${chartId}"]`);
-
             headingSpan.style.display = 'none';
             editHeadingInput.style.display = 'inline-block';
             saveButton.style.display = 'inline-block';
