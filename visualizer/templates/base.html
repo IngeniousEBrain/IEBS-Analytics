@@ -136,22 +136,27 @@
                  class="brand-image  elevation-0" style="opacity: .8">
             <span class="brand-text font-weight-light">IeB Patent Pulse </span>
         </a>
+
         <!-- Sidebar -->
         <div class="sidebar">
-            <!-- Sidebar user panel (optional) -->
             <div class="user-panel mt-3 pb-3 mb-3 d-flex">
                 {% block info %}
-                <div class="info text-center" style="margin-left:5%">
-                    {% if not request.session.user_role == 'superAdmin' %}
-                    <a href="{% url 'profile' %}" class="d-block " style="font-weight: bold;">
-                        {{ request.session.user_name|title }}
-                    </a>
-                    {% else %}
-                    <a href="{% url 'admin_profile' %}" class="d-block " style="font-weight: bold;">
-                        {{ request.session.user_name|title }}
-                    </a>
-                    {% endif %}
-                </div>
+           <div class="info text-center" style="margin-left: 5%; width: 100%;">
+            {% if not request.session.user_role == 'superAdmin' %}
+            <a href="{% url 'profile' %}" class="d-block" style="display: flex; font-weight: normal;font-size: 11px; text-decoration: none; color: inherit; width: 100%;">
+                <span style="flex-grow: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-right: 10px;">
+                    {{ request.session.user_name|title }}
+                </span>
+                {% if request.session.client_company_logo %}
+                <img src="{{ request.session.client_company_logo }}" alt="client-Logo" style="opacity: 0.8; max-width: 40px; height: auto; flex-shrink: 0;">
+                {% endif %}
+            </a>
+            {% else %}
+            <a href="{% url 'admin_profile' %}" class="d-block" style="font-weight: bold;">
+                {{ request.session.user_name|title }}
+            </a>
+            {% endif %}
+        </div>
                 {% endblock %}
             </div>
             <!-- Sidebar Menu -->

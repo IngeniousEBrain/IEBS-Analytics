@@ -74,8 +74,11 @@ def login(req):
         try:
             user = CustomUser.objects.get(username=username, is_superuser=False)
             req.session['logged_in_user_id'] = user.id
-            req.session['user_name'] = username
+            req.session['user_name'] = user.username
             req.session['user_role'] = user.roles
+            if user.company_logo:
+                req.session['client_company_logo'] = user.company_logo.url
+
         except ObjectDoesNotExist:
             return JsonResponse({
                 'status': 'error',
@@ -1188,7 +1191,6 @@ def competitor_colab_view(request, proj_code):
         print(f"Error in competitor_colab_view: {e}")
         return JsonResponse({'error': 'Internal Server Error'}, status=500)
 
-
 # ===========================data view and download==============
 
 @request.validator
@@ -1774,7 +1776,6 @@ def download_top_assignee_exl(request, assignee, project_id):
                 max_len = max(df[col].astype(str).apply(len).max(), len(col))
                 worksheet.set_column(i, i, max_len)
         response['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-
         return response
 
 
@@ -1872,7 +1873,6 @@ def download_ind_cited_excel(request, patent, project_id):
                 max_len = max(df[col].astype(str).apply(len).max(), len(col))
                 worksheet.set_column(i, i, max_len)
         response['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-
         return response
 
 
@@ -2918,20 +2918,24 @@ def add_user(request):
         company_logo = request.FILES.get('companyLogo', None)
         try:
             user = CustomUser.objects.create_user(username=username, email=email,
-                                                  password=password,company_logo=company_logo,
+                                                  password=password, company_logo=company_logo,
                                                   company_name=client_company)
             user.roles = role
             user.business_unit = business_unit
             user.save()
+            if user.company_logo:
+                request.session['client_company_logo'] = user.company_logo.url
             return JsonResponse({'status': 'success', 'message': 'User created successfully'})
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)})
     return render(request, 'pages/superadmin/create_user.html')
 
 
+
 @csrf_exempt
 def edit_user(request, user_id):
     user_obj = CustomUser.objects.filter(id=user_id).first()
+
     if request.method == 'POST':
         username = request.POST.get('userName')
         useremail = request.POST.get('userEmail')
@@ -2940,19 +2944,31 @@ def edit_user(request, user_id):
         BU = request.POST.get('businessUnit')
         client_company = request.POST.get('clientCompany')
         company_logo = request.FILES.get('companyLogo', None)
-        user_obj.username = username
-        user_obj.email = useremail
-        user_obj.roles = roles
-        user_obj.business_unit = BU
-        user_obj.company_name = client_company
-        user_obj.company_logo = company_logo
+
+        if username:
+            user_obj.username = username
+        if useremail:
+            user_obj.email = useremail
+        if roles:
+            user_obj.roles = roles
+        if BU:
+            user_obj.business_unit = BU
+        if client_company:
+            user_obj.company_name = client_company
+        if company_logo:
+            user_obj.company_logo = company_logo
         if password:
             user_obj.set_password(password)
+
         user_obj.updated_date = timezone.now()
         user_obj.save()
-        return render(request, 'pages/superadmin/edit_user.html', {'user_obj': user_obj})
-    return render(request, 'pages/superadmin/edit_user.html', {'user_obj': user_obj})
 
+        if user_obj.company_logo:
+            request.session['client_company_logo'] = user_obj.company_logo.url
+
+        return render(request, 'pages/superadmin/edit_user.html', {'user_obj': user_obj})
+
+    return render(request, 'pages/superadmin/edit_user.html', {'user_obj': user_obj})
 
 @csrf_exempt
 def user_project_association(request):
