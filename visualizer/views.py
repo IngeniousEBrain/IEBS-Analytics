@@ -74,8 +74,11 @@ def login(req):
         try:
             user = CustomUser.objects.get(username=username, is_superuser=False)
             req.session['logged_in_user_id'] = user.id
-            req.session['user_name'] = username
+            req.session['user_name'] = user.username
             req.session['user_role'] = user.roles
+            if user.company_logo:
+                req.session['client_company_logo'] = user.company_logo.url
+
         except ObjectDoesNotExist:
             return JsonResponse({
                 'status': 'error',
@@ -353,7 +356,7 @@ def get_user_project_data(user_id):
 @request.validator
 def project_list(req, chart_type):
     """
-
+        project_list
     """
     user_id = req.session.get('logged_in_user_id')
     user_qs = get_object_or_404(CustomUser, id=user_id)
@@ -369,6 +372,9 @@ def project_list(req, chart_type):
 
 
 def delete_project(request):
+    """
+    delete_project
+    """
     if request.method == 'POST':
         project_id = request.POST.get('project_id')
         user_id = request.session.get('logged_in_user_id')
@@ -394,6 +400,9 @@ def delete_project(request):
 
 @csrf_exempt
 def delete_project_by_admin(request):
+    """
+    delete_project_by_admin
+    """
     if request.method == 'POST':
         project_id = request.POST.get('project_id')
         try:
@@ -408,6 +417,9 @@ def delete_project_by_admin(request):
 
 @csrf_exempt
 def edit_project(request, project_id):
+    """
+    edit_project
+    """
     project = get_object_or_404(Project, id=project_id)
     context = {'project': project}
     if request.method == 'POST':
@@ -434,7 +446,7 @@ def edit_project(request, project_id):
 def completed_project_list(req):
     """
         This Function is filtering out the completed projects
-        which are associated to the logged in user.
+        which are associated to the logged-in user.
     """
     user_id = req.session.get('logged_in_user_id')
     user_qs = get_object_or_404(CustomUser, id=user_id)
@@ -500,12 +512,9 @@ def calculate_luminance(color):
 
 def extract_assignee_partners(req, code):
     assignee_partner_dict = {}
-    user = req.session.get('logged_in_user_id')
     for patent_data in PatentData.objects.filter(project_code=code):
         assignee_partners_str = patent_data.assignee_standardized
-        # print(assignee_partners_str)
         assignee, *partners = map(lambda x: x.strip().title(), assignee_partners_str.split('|'))
-        # print(partners)
         if assignee in assignee_partner_dict:
             assignee_partner_dict[assignee].extend(p for p in partners if p)
         else:
@@ -742,7 +751,6 @@ def process_top_ten_assignees(req, project_code):
     return result
 
 
-from django.core.exceptions import ObjectDoesNotExist
 
 
 def get_child_categories_p_count(category):
@@ -756,15 +764,6 @@ def get_child_categories_p_count(category):
             p_count += sum(1 for value in child.value.values() if value == 'P')
         p_count += get_child_categories_p_count(child)
     return p_count
-
-
-def get_category_p_count(category):
-    """
-    Sum the 'p' counts directly from the category's value field.
-    """
-    if category.value:
-        return sum(1 for value in category.value.values() if value == 'P')
-    return 0
 
 
 def get_heatmap_data(request, level, project_id, num_header_levels):
@@ -870,6 +869,7 @@ def get_others_split_count(request, num_header_levels, proj_id):
                 data.append(category_info)
     else:
         print("No child columns named 'Others' found.")
+        return ''
     return data
 
 
@@ -1191,7 +1191,6 @@ def competitor_colab_view(request, proj_code):
         print(f"Error in competitor_colab_view: {e}")
         return JsonResponse({'error': 'Internal Server Error'}, status=500)
 
-
 # ===========================data view and download==============
 
 @request.validator
@@ -1229,8 +1228,6 @@ def competitor_charts(req, project_id):
     assignees = [entry['assignee'].title() for entry in result]
     partners = sorted(set(partner for entry in result for partner in entry['partners']))
     partner_count_matrix = [[entry['partners'].get(partner, None) for partner in partners] for entry in result]
-    # text_colors = [['dark' if calculate_luminance(color) < 0.5 else 'light' for color in row] for row in
-    #                partner_count_matrix]
     hover_text = [[f'<b>Assignee:</b> {assignees[i]}<br><b>Partner:</b> {partners[j]}' + (
         f'<br><b>Value:</b> {count}' if count is not None else '')
                    for j, count in enumerate(row)] for i, row in enumerate(partner_count_matrix)]
@@ -1779,7 +1776,6 @@ def download_top_assignee_exl(request, assignee, project_id):
                 max_len = max(df[col].astype(str).apply(len).max(), len(col))
                 worksheet.set_column(i, i, max_len)
         response['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-
         return response
 
 
@@ -1877,7 +1873,6 @@ def download_ind_cited_excel(request, patent, project_id):
                 max_len = max(df[col].astype(str).apply(len).max(), len(col))
                 worksheet.set_column(i, i, max_len)
         response['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-
         return response
 
 
@@ -2771,7 +2766,6 @@ def project_client_association(req):
             try:
                 project_association = UserProjectAssociation.objects.get(user=user_id)
             except UserProjectAssociation.DoesNotExist:
-                # Handle case where project manager is not associated with any project
                 project_association = None
 
         elif user_qs.roles == 'key_account_holder':
@@ -2815,8 +2809,7 @@ get_associated_projects
 @csrf_exempt
 def doc_upload(request, project_id):
     """
-doc_upload
-
+        doc_upload
     """
     uploaded_by = request.session.get('logged_in_user_id')
     project_name = Project.objects.filter(id=project_id).first().name
@@ -2881,7 +2874,7 @@ def add_project(request):
         projectCode = request.POST.get('projectCode')
         projectScope = request.POST.get('projectScope')
         projectStatus = request.POST.get('projectStatus')
-        project = Project.objects.create(
+        Project.objects.create(
             name=project_name,
             code=projectCode,
             scope=projectScope,
@@ -2895,7 +2888,7 @@ def add_project(request):
 
 @request.validator
 def user_listing(request):
-    user_obj = CustomUser.objects.all()
+    user_obj = CustomUser.objects.all().order_by('-id')
     return render(request, 'pages/superadmin/user_listing.html', {"user_obj": user_obj})
 
 
@@ -2903,9 +2896,7 @@ def user_listing(request):
 def association_listing(request, project_id):
     project_obj = Project.objects.filter(id=project_id).first()
     associations = ClientProjectAssociation.objects.filter(projects=project_obj).select_related('client')
-
     associated_managers = UserProjectAssociation.objects.filter(projects=project_obj).select_related('user')
-
     associated_kam = KeyAccountManagerProjectAssociation.objects.filter(projects=project_obj).select_related(
         'key_account_manager')
     clients = [association.client for association in associations]
@@ -2923,43 +2914,66 @@ def add_user(request):
         email = request.POST.get('userEmail')
         role = request.POST.get('userRoles')
         business_unit = request.POST.get('businessUnit')
+        client_company = request.POST.get('clientCompany')
+        company_logo = request.FILES.get('companyLogo', None)
         try:
-            user = CustomUser.objects.create_user(username=username, email=email, password=password)
+            user = CustomUser.objects.create_user(username=username, email=email,
+                                                  password=password, company_logo=company_logo,
+                                                  company_name=client_company)
             user.roles = role
             user.business_unit = business_unit
             user.save()
+            if user.company_logo:
+                request.session['client_company_logo'] = user.company_logo.url
             return JsonResponse({'status': 'success', 'message': 'User created successfully'})
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)})
     return render(request, 'pages/superadmin/create_user.html')
 
 
+
 @csrf_exempt
 def edit_user(request, user_id):
     user_obj = CustomUser.objects.filter(id=user_id).first()
+
     if request.method == 'POST':
         username = request.POST.get('userName')
         useremail = request.POST.get('userEmail')
         password = request.POST.get('userPassword')
         roles = request.POST.get('userRoles')
         BU = request.POST.get('businessUnit')
-        user_obj.username = username
-        user_obj.email = useremail
-        user_obj.roles = roles
-        user_obj.business_unit = BU
+        client_company = request.POST.get('clientCompany')
+        company_logo = request.FILES.get('companyLogo', None)
+
+        if username:
+            user_obj.username = username
+        if useremail:
+            user_obj.email = useremail
+        if roles:
+            user_obj.roles = roles
+        if BU:
+            user_obj.business_unit = BU
+        if client_company:
+            user_obj.company_name = client_company
+        if company_logo:
+            user_obj.company_logo = company_logo
         if password:
             user_obj.set_password(password)
+
         user_obj.updated_date = timezone.now()
         user_obj.save()
-        return render(request, 'pages/superadmin/edit_user.html', {'user_obj': user_obj})
-    return render(request, 'pages/superadmin/edit_user.html', {'user_obj': user_obj})
 
+        if user_obj.company_logo:
+            request.session['client_company_logo'] = user_obj.company_logo.url
+
+        return render(request, 'pages/superadmin/edit_user.html', {'user_obj': user_obj})
+
+    return render(request, 'pages/superadmin/edit_user.html', {'user_obj': user_obj})
 
 @csrf_exempt
 def user_project_association(request):
     """
-
-
+        user_project_association
     """
     manager_obj = CustomUser.objects.filter(roles__in=['project_manager', 'PROJECT_MANAGER'])
     client_obj = CustomUser.objects.filter(roles__in=['client', 'CLIENT'])
@@ -2979,9 +2993,7 @@ def admin_project_listing(request):
 @csrf_exempt
 def get_associated_users(request, project_id):
     project = get_object_or_404(Project, id=project_id)
-    # Get associated clients
     associated_clients = ClientProjectAssociation.objects.filter(projects=project).values_list('client_id', flat=True)
-    # Get associated managers
     associated_managers = UserProjectAssociation.objects.filter(projects=project).values_list('user_id', flat=True)
     associated_kam = KeyAccountManagerProjectAssociation.objects.filter(projects=project).values_list(
         'key_account_manager_id', flat=True)
@@ -3003,17 +3015,14 @@ def associate_users_with_project(request):
         selected_clients = request.POST.getlist('client_ids[]')
         selected_kam = request.POST.getlist('kam_ids[]')
         selected_managers = request.POST.getlist('manager_ids[]')
-        # project.clientprojectassociation_set.clear()  # Remove existing associations
         for client_id in selected_clients:
             client = CustomUser.objects.get(pk=client_id)
             association, created = ClientProjectAssociation.objects.get_or_create(client=client)
             association.projects.add(project)
-        # project.keyaccountmanagerprojectassociation_set.clear()  # Remove existing associations
         for kam_id in selected_kam:
             kam = CustomUser.objects.get(pk=kam_id)
             association, created = KeyAccountManagerProjectAssociation.objects.get_or_create(key_account_manager=kam)
             association.projects.add(project)
-        # project.userprojectassociation_set.clear()  # Remove existing associations
         for manager_id in selected_managers:
             manager = CustomUser.objects.get(pk=manager_id)
             association, created = UserProjectAssociation.objects.get_or_create(user=manager)
@@ -3062,7 +3071,7 @@ def deallocate_users_ajax(request):
 @request.validator
 def reports_listing(request, project_id):
     """
-
+        reports_listing
 
     """
     # uploaded_by = User.objects.filter(is_superuser=True).first().id
