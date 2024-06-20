@@ -18,6 +18,7 @@ local_settings.py
 # Static files
 
 uploaded_files/
+company_logo/
 # Media files
 media/
 #nginx/
