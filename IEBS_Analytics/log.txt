@@ -1,0 +1,19 @@
+Internal Server Error: /index
+Traceback (most recent call last):
+  File "/home/deeksha/Desktop/IEBS_Analytics/iebsenv/lib/python3.12/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/deeksha/Desktop/IEBS_Analytics/iebsenv/lib/python3.12/site-packages/django/core/handlers/base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/deeksha/Desktop/IEBS_Analytics/IEBS-Analytics/visualizer/packages/request.py", line 16, in _wrapped_view
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/deeksha/Desktop/IEBS_Analytics/IEBS-Analytics/visualizer/views.py", line 279, in index
+    context = get_user_project_data(user_id)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/deeksha/Desktop/IEBS_Analytics/IEBS-Analytics/visualizer/views.py", line 332, in get_user_project_data
+    if user_qs.roles == 'client':
+       ^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'roles'
+"GET /index HTTP/1.1" 500 80450
