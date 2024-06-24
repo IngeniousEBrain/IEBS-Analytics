@@ -590,6 +590,11 @@ def tech_charts(req, project_id):
             return heading_obj.heading if heading_obj else 'XYZ'
         except Project.DoesNotExist:
             return 'XYZ'
+        except Exception as e:
+            # Log the exception or handle it in a specific way
+            # You might want to log the error for debugging purposes
+            print(f"Error retrieving chart heading: {e}")
+            return 'XYZ'
 
     context['chart_heading1'] = get_chart_heading(project_id, 1)
     context['chart_heading2'] = get_chart_heading(project_id, 2)
@@ -749,8 +754,6 @@ def process_top_ten_assignees(req, project_code):
             'publication_numbers': publication_numbers
         })
     return result
-
-
 
 
 def get_child_categories_p_count(category):
@@ -1190,6 +1193,7 @@ def competitor_colab_view(request, proj_code):
     except Exception as e:
         print(f"Error in competitor_colab_view: {e}")
         return JsonResponse({'error': 'Internal Server Error'}, status=500)
+
 
 # ===========================data view and download==============
 
@@ -2166,7 +2170,7 @@ def download_excel_view(req):
     response['Content-Disposition'] = f'attachment; filename={status}_data.xlsx'
     with pd.ExcelWriter(response, engine='xlsxwriter') as writer:
         df.to_excel(writer, index=False, sheet_name=f'{status}_data')
-        workbook = writer.book
+        writer.book
         worksheet = writer.sheets[f'{status}_data']
         for i, col in enumerate(df.columns):
             max_len = max(df[col].astype(str).apply(len).max(), len(col))
@@ -2691,6 +2695,9 @@ def user_profile(req):
     """
     user_id = req.session.get('logged_in_user_id')
     user_qs = CustomUser.objects.get(id=user_id)
+    total_projects = 0
+    completed = 0
+    in_progress = 0
     if user_qs.roles == 'client':
         client_project_associations = ClientProjectAssociation.objects.filter(client_id=user_qs.id)
         total_projects = client_project_associations.values_list('projects', flat=True)
@@ -2931,11 +2938,9 @@ def add_user(request):
     return render(request, 'pages/superadmin/create_user.html')
 
 
-
 @csrf_exempt
 def edit_user(request, user_id):
     user_obj = CustomUser.objects.filter(id=user_id).first()
-
     if request.method == 'POST':
         username = request.POST.get('userName')
         useremail = request.POST.get('userEmail')
@@ -2959,16 +2964,14 @@ def edit_user(request, user_id):
             user_obj.company_logo = company_logo
         if password:
             user_obj.set_password(password)
-
         user_obj.updated_date = timezone.now()
         user_obj.save()
-
         if user_obj.company_logo:
             request.session['client_company_logo'] = user_obj.company_logo.url
-
         return render(request, 'pages/superadmin/edit_user.html', {'user_obj': user_obj})
 
     return render(request, 'pages/superadmin/edit_user.html', {'user_obj': user_obj})
+
 
 @csrf_exempt
 def user_project_association(request):
@@ -3074,7 +3077,6 @@ def reports_listing(request, project_id):
         reports_listing
 
     """
-    # uploaded_by = User.objects.filter(is_superuser=True).first().id
     project_name = Project.objects.filter(id=project_id).first().name
     user_role = 'superadmin'
     uploaded_files = ProjectReports.objects.filter(project_id=project_id)
