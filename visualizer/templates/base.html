@@ -113,8 +113,6 @@
     #saveButton:hover {
         background-color: #0056b3;
     }
-
-
     </style>
 </head>
 <body class="hold-transition sidebar-mini layout-fixed">
@@ -143,12 +141,12 @@
                 {% block info %}
            <div class="info text-center" style="margin-left: 5%; width: 100%;">
             {% if not request.session.user_role == 'superAdmin' %}
-            <a href="{% url 'profile' %}" class="d-block" style="display: flex; font-weight: normal;font-size: 11px; text-decoration: none; color: inherit; width: 100%;">
+            <a href="{% url 'profile' %}" class="d-block" style="display: flex; font-weight: normal;font-size: 12px; text-decoration: none; color: inherit; width: 100%;">
                 <span style="flex-grow: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-right: 10px;">
                     {{ request.session.user_name|title }}
                 </span>
                 {% if request.session.client_company_logo %}
-                <img src="{{ request.session.client_company_logo }}" alt="client-Logo" style="opacity: 0.8; max-width: 40px; height: auto; flex-shrink: 0;">
+                <img src="{{ request.session.client_company_logo }}" alt="client-Logo" style="opacity: 0.8; max-width: 90px; height: auto; flex-shrink: 0;">
                 {% endif %}
             </a>
             {% else %}
