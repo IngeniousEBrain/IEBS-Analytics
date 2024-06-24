@@ -145,8 +145,10 @@
                 <span style="flex-grow: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-right: 10px;">
                     {{ request.session.user_name|title }}
                 </span>
+               {% if request.session.client_company_logo != '/media/img/inginious_logo.png' %}
                 {% if request.session.client_company_logo %}
                 <img src="{{ request.session.client_company_logo }}" alt="client-Logo" style="opacity: 0.8; max-width: 90px; height: auto; flex-shrink: 0;">
+                {% endif %}
                 {% endif %}
             </a>
             {% else %}
