@@ -114,7 +114,7 @@
                 <label for="companyLogo" style="display: block; font-weight: bold; margin-bottom: 5px;">Company Logo</label>
                 <input type="file" class="form-control-file" id="companyLogo" name="companyLogo" accept="image/*" style="width: 100%; padding: 10px;">
                 {% if user_obj.company_logo %}
-                {% if request.session.client_company_logo != '/media/img/inginious_logo.png' %}
+               {% if '/media/img/inginious_logo.png' not in request.session.client_company_logo %}
                     <a href="{{ user_obj.company_logo.url }}" target="_blank">
                         <img src="{{ user_obj.company_logo.url }}" alt="Company Logo" style="max-width: 200px; margin-top: 10px;">
                     </a>
