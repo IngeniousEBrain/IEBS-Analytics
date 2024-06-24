@@ -157,8 +157,10 @@ class Project(models.Model):
 
     code = models.CharField(max_length=100, unique=True)
     name = models.CharField(max_length=512)
-    description = RichTextField()
-    scope = RichTextField(default="")
+    description = RichTextField(null=True, blank=True)
+    previous_info = RichTextField(null=True,blank=True)
+    geographical_coverage = models.CharField(max_length=200, null=True,blank=True)
+    scope = RichTextField(null=True, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=IN_PROGRESS)
     created_date = models.DateTimeField(default=timezone.now)
     updated_date = models.DateTimeField(auto_now=True)
