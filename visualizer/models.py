@@ -341,16 +341,16 @@ class Category(models.Model):
     def __str__(self):
         return self.name
 
-# class ChartHeading(models.Model):
-#     chart_source_id = models.IntegerField()
-#     heading = models.CharField(max_length=255, default='XYZ')
-#     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='chart_project_id')
-#
-#     objects = models.Manager()
-#
-#     class Meta:
-#         db_table = 'visualizer_chartheading'  # Specify the exact table name if it differs from the default
-#
-#     def __str__(self):
-#         return f'ChartHeading: {self.heading}'
+class ChartHeading(models.Model):
+    chart_source_id = models.IntegerField()
+    heading = models.CharField(max_length=255, default='XYZ')
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='chart_project_id')
+
+    objects = models.Manager()
+
+    class Meta:
+        db_table = 'visualizer_chartheading'  # Specify the exact table name if it differs from the default
+
+    def __str__(self):
+        return f'ChartHeading: {self.heading}'
 
