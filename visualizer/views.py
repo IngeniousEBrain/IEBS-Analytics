@@ -590,11 +590,6 @@ def tech_charts(req, project_id):
             return heading_obj.heading if heading_obj else 'XYZ'
         except Project.DoesNotExist:
             return 'XYZ'
-        except Exception as e:
-            # Log the exception or handle it in a specific way
-            # You might want to log the error for debugging purposes
-            print(f"Error retrieving chart heading: {e}")
-            return 'XYZ'
 
     context['chart_heading1'] = get_chart_heading(project_id, 1)
     context['chart_heading2'] = get_chart_heading(project_id, 2)
@@ -2780,8 +2775,9 @@ def project_client_association(req):
                 project_association = KeyAccountManagerProjectAssociation.objects.get(user=user_id)
             except KeyAccountManagerProjectAssociation.DoesNotExist:
                 project_association = None
+
         if project_association:
-            associated_projects = project_association.objects.all()
+            associated_projects = project_association.projects.all()
             associated_project_ids = [project.id for project in associated_projects]
 
             if req.method == 'POST':
