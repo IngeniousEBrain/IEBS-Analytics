@@ -2775,8 +2775,9 @@ def project_client_association(req):
                 project_association = KeyAccountManagerProjectAssociation.objects.get(user=user_id)
             except KeyAccountManagerProjectAssociation.DoesNotExist:
                 project_association = None
+
         if project_association:
-            associated_projects = project_association.objects.all()
+            associated_projects = project_association.projects.all()
             associated_project_ids = [project.id for project in associated_projects]
 
             if req.method == 'POST':
